@@ -23,6 +23,7 @@
 #import <LindChain/WindowServer/Window/NXResizeHandle.h>
 #import <LindChain/WindowServer/Window/NXWindowBar.h>
 #import <LindChain/Private/UIKitPrivate.h>
+#import <LindChain/WindowServer/NXWindowServer.h>
 
 @implementation NXWindow {
     UIStackView *_contentStack;
@@ -81,35 +82,46 @@
     _contentStack.backgroundColor = UIColor.systemBackgroundColor;
     
     _contentStack.layer.cornerRadius = 20;
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
-        _contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
-    }
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    //{
+        //_contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
+    //}
     _contentStack.layer.masksToBounds = YES;
     [self.view addSubview:_contentStack];
     
-    _windowBar = [[NXWindowBar alloc] initWithTitle:self.session.windowName withCloseCallback:^{
-        [weakSelf closeWindowWithCompletion:nil];
-    } withMaximizeCallback:^{
-        [weakSelf maximizeWindow:YES];
-    }];
-    self.session.window = self;
-    
-    [_contentStack addArrangedSubview:_windowBar];
-    
-    [NSLayoutConstraint activateConstraints:@[
-        [_windowBar.topAnchor constraintEqualToAnchor:_contentStack.topAnchor],
-        [_windowBar.leadingAnchor constraintEqualToAnchor:_contentStack.leadingAnchor],
-        [_windowBar.trailingAnchor constraintEqualToAnchor:_contentStack.trailingAnchor],
-    ]];
-    
+    BOOL isBarHidden = [NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled];
+    if (!isBarHidden) {
+        _windowBar = [[NXWindowBar alloc] initWithTitle:self.session.windowName withCloseCallback:^{
+            [weakSelf closeWindowWithCompletion:nil];
+        } withMaximizeCallback:^{
+            [weakSelf maximizeWindow:YES];
+        }];
+        self.session.window = self;
+        
+        [_contentStack addArrangedSubview:_windowBar];
+        
+        [NSLayoutConstraint activateConstraints:@[
+            [_windowBar.topAnchor constraintEqualToAnchor:_contentStack.topAnchor],
+            [_windowBar.leadingAnchor constraintEqualToAnchor:_contentStack.leadingAnchor],
+            [_windowBar.trailingAnchor constraintEqualToAnchor:_contentStack.trailingAnchor],
+        ]];
+    } else {
+        _windowBar = nil;
+        self.session.window = self;
+    }
+   
     [self addChildViewController:_session];
     _session.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [_contentStack addArrangedSubview:_session.view];
     [_contentStack sendSubviewToBack:_session.view];
     [_session didMoveToParentViewController:self];
     
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+    if([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]) {
+        //Fullscreen && Simulator
+    }
+
+    else if([NXWindowServer isMultitaskingEnabled])
     {
         /* this is to move the window obviously */
         UIPanGestureRecognizer *moveGesture =
@@ -136,7 +148,6 @@
         [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(resizeWindow:)];
         resizeGesture.minimumNumberOfTouches = 1;
         resizeGesture.maximumNumberOfTouches = 1;
-        resizeGesture.cancelsTouchesInView = NO;
         
         _resizeHandle = [[NXResizeHandle alloc] initWithFrame:CGRectMake(_contentStack.frame.size.width - 44, _contentStack.frame.size.height - 44, 44, 44)];
         [_resizeHandle addGestureRecognizer:resizeGesture];
@@ -300,10 +311,10 @@
             self.view.frame = newFrame;
             [self.view layoutIfNeeded];
             
-            if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
-            {
-                self->_contentStack.layer.cornerRadius = 0;
-            }
+            //if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
+            //{
+                //self->_contentStack.layer.cornerRadius = 0;
+            //}
             self->_contentStack.layer.borderWidth = 0;
             self.view.layer.shadowOpacity = 0;
             self->_resizeHandle.hidden = YES;
@@ -382,7 +393,7 @@
             CGRect oldFrame = self.view.frame;
             CGRect proposed = oldFrame;
             proposed.size.width  = MAX(300, self.originalFrame.size.width  + delta.x);
-            proposed.size.height = MAX(200, self.originalFrame.size.height + delta.y);
+            proposed.size.height = MAX(300, self.originalFrame.size.height + delta.y);
             
             CGRect corrected = [self.delegate window:self wantsToChangeToRect:proposed];
             BOOL widthBlocked  = (corrected.origin.x != proposed.origin.x);
@@ -469,7 +480,8 @@
     
     dispatch_once(&_viewDidAppearOnceDispatch, ^{
         // MARK: Suppose to only run on phones
-        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        //if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        if(![NXWindowServer isMultitaskingEnabled])
         {
             [self maximizeWindow:NO];
         }
@@ -552,14 +564,20 @@
     });
 }
 
-#if DEBUG
-
 - (void)dealloc
 {
     NSLog(@"deallocated %@", self);
 }
 
-#endif /* DEBUG */
+- (void)viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];   
+    self.session.additionalSafeAreaInsets = UIEdgeInsetsZero;  
+}
 
+- (void)viewSafeAreaInsetsDidChange
+{
+    [super viewSafeAreaInsetsDidChange];
+    [self.view setNeedsLayout];     
+}
 @end
-
