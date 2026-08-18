@@ -44,13 +44,6 @@ void proc_set_sugid_if_applicable(ksurface_proc_t *proc,
         return;
     }
     
-    if(entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform) &&
-       entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatformRoot))
-    {
-        /* is platform root, it is trusted to begin with */
-        return;
-    }
-    
     if(proc_getruid(proc) != backup.ruid  ||
        proc_geteuid(proc) != backup.euid  ||
        proc_getsvuid(proc) != backup.svuid ||

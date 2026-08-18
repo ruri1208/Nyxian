@@ -82,8 +82,7 @@ bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
     if(entitlement_got_entitlement(proc_getmaxentitlements(targetProc), PEEntitlementPlatform) &&
        !entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform))
     {
-        errno = EPERM;
-        goto out_no;
+        goto out_eperm_no;
     }
     
     if(proc_getsid(proc) == proc_getsid(targetProc) && proc->header.orig != NULL)
@@ -127,15 +126,13 @@ bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
        !entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform) &&
        !entitlement_got_entitlement(proc_getentitlements(targetProc), targetEntitlementsNeeded))
     {
-        errno = EPERM;
-        goto out_no;
+        goto out_eperm_no;
     }
     
     if(entitlementsNeeded != PEEntitlementNone &&
        !entitlement_got_entitlement(proc_getentitlements(proc), entitlementsNeeded))
     {
-        errno = EPERM;
-        goto out_no;
+        goto out_eperm_no;
     }
     
     /*
@@ -144,9 +141,10 @@ bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * same UID as the target.
      */
 out_euid_check:
-    if(proc_geteuid(proc) != 0 &&
+    if((proc_geteuid(proc) != 0 && proc_did_change_credentials(targetProc)) ||
        proc_geteuid(proc) != proc_geteuid(targetProc))
     {
+    out_eperm_no:
         errno = EPERM;
     out_no:
         kvo_unlock(targetProc);
