@@ -23,17 +23,15 @@ import Foundation
 import Combine
 import MobileDevelopmentKit
 
-class NXBuilder: NSObject, MDKDriverDelegate, MDKPhaseRunnerDelegate {
-    private let project: NXProject
+final class NXBuilder: NSObject {
+    private(set) var project: NXProject
+    private(set) var projectDirty: Bool
+    private(set) var database: DebugDatabase
     
-    private let database: DebugDatabase
-    
-    private var phaseRunner: NXPhaseRunner
-    private let dependencyScanner: MDKDependencyScanner
+    private(set) var dependencyScanner: MDKDependencyScanner
+    private(set) var phaseRunner: NXPhaseRunner
     
     private let incrementalBuild: Bool = UserDefaults.standard.object(forKey: "LDEIncrementalBuild") as? Bool ?? true
-    private let projectDirty: Bool
-    
     private let argsString: String
     
     static var builds: Bool = false
@@ -51,37 +49,16 @@ class NXBuilder: NSObject, MDKDriverDelegate, MDKPhaseRunnerDelegate {
         
         self.dependencyScanner = MDKDependencyScanner(arguments: self.project.projectConfig.compilerFlags)
         
-        guard let swiftFiles = LDEFilesFinder(self.project.url.path, ["swift"], ["Resources","Config"]),
-              let codeFiles = LDEFilesFinder(self.project.url.path, ["c","cpp","m","mm"], ["Resources","Config"]) else {
-            self.database.addMessage(message: "A fatal error has happened finding code files.", severity: .error)
+        let phaseEngine: NXPhaseEngine
+        do {
+            phaseEngine = try NXPhaseEngine(project: self.project)
+        } catch {
+            self.database.addMessage(message: error.localizedDescription, severity: .error)
             self.database.saveDatabase(toPath: project.cacheURL.appendingPathComponent("debug.json").path)
             return nil
         }
         
-        var driverFlags: [String] = []
-        driverFlags.append(contentsOf: swiftFiles)
-        driverFlags.append(contentsOf: codeFiles)
-        driverFlags.append("-o")
-        driverFlags.append(self.project.machoURL.path)
-        
-        let phaseEngine: MDKPhaseEngine
-        if swiftFiles.isEmpty && codeFiles.isEmpty {
-            self.database.addMessage(message: "Nothing to build. No code files were found, please create a code file.", severity: .error)
-            self.database.saveDatabase(toPath: project.cacheURL.appendingPathComponent("debug.json").path)
-            return nil
-        } else if !swiftFiles.isEmpty {
-            driverFlags.append(contentsOf: self.project.projectConfig.swiftFlags)
-            driverFlags.append("-module-name")
-            driverFlags.append(NXMakeContentCodeFriendly(self.project.projectConfig.displayName))
-            
-            phaseEngine = MDKPhaseEngine(swiftFlags: driverFlags, withOtherClangFlags: self.project.projectConfig.compilerFlags, withOtherLinkerFlags: self.project.projectConfig.linkerFlags)
-        } else {
-            driverFlags.append(contentsOf: self.project.projectConfig.compilerFlags)
-            
-            phaseEngine = MDKPhaseEngine(clangFlags: driverFlags, withOtherLinkerFlags: self.project.projectConfig.linkerFlags)
-        }
-        
-        self.argsString = driverFlags.joined(separator: " ")
+        self.argsString = self.project.projectConfig.swiftFlags.joined(separator: " ") + self.project.projectConfig.compilerFlags.joined(separator: " ")
         
         // Check if the args string matches up
         if self.incrementalBuild,
@@ -103,65 +80,6 @@ class NXBuilder: NSObject, MDKDriverDelegate, MDKPhaseRunnerDelegate {
         self.phaseRunner.delegate = self
     }
     
-    func driver(_ driver: MDKDriver,
-                outputPathForInputFile file: MDKFile) -> String? {
-        return "\(self.project.cacheURL.path)/\(NXExpectedObjectFileURLForFileURL(NXRelativeURLFromBaseURLToFullURL(self.project.url, file.fileURL)).path)"
-    }
-    
-    func driver(_ driver: MDKDriver,
-                skipCompileForInputFile file: MDKFile) -> Bool {
-        if !CCFileTypeIsSwiftFile(file.type),
-           !self.projectDirty {
-            
-            let path: String = file.fileURL.path
-            let objectPath = "\(self.project.cacheURL.path)/\(NXExpectedObjectFileURLForFileURL(NXRelativeURLFromBaseURLToFullURL(self.project.url, file.fileURL)).path)"
-            
-            // Checking if the source file is newer than the compiled object file
-            guard let sourceDate = try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate] as? Date,
-                  let objectDate = try? FileManager.default.attributesOfItem(atPath: objectPath)[.modificationDate] as? Date,
-                  objectDate > sourceDate else {
-                return false
-            }
-            
-            // Checking if the header files included by the source code are newer than the object file
-            guard let headers = self.dependencyScanner.headerFiles(for: file) else {
-                return false
-            }
-            
-            for header in headers {
-                guard let fileURL = header.fileURL,
-                      let headerDate = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.modificationDate] as? Date,
-                      objectDate > headerDate else {
-                    return false
-                }
-            }
-            
-            return true
-        } else {
-            return false
-        }
-    }
-    
-    func runner(_ runner: MDKPhaseRunner,
-                multithreadingThreadCountFor phase: MDKPhase) -> CFIndex {
-        return CFIndex(LDEGetUserSetThreadCount())
-    }
-    
-    func runner(_ runner: MDKPhaseRunner,
-                phase: MDKPhase,
-                finishedRunning job: MDKJob,
-                withResultingDiagnostics diagnostics: [MDKDiagnostic]?,
-                withMainSource mainSource: String?,
-                wasSuccessful success: Bool) {
-        if let diagnostics = diagnostics {
-            if job.type == .linker {
-                self.database.addDiagnosticMessages(title: "Linker", items: diagnostics, clearPrevious: true)
-            } else if let mainSource = mainSource {
-                self.database.setFileDebug(ofPath: mainSource, synItems: diagnostics)
-            }
-        }
-    }
-    
     func headsup(buildType: NXBuilder.BuildType) throws {
         let type = project.projectConfig.schemeKind
         if(type != .app && type != .utility) {
@@ -171,8 +89,6 @@ class NXBuilder: NSObject, MDKDriverDelegate, MDKPhaseRunnerDelegate {
         guard let osVersionNeeded: MDKOSVersion = MDKOSVersion(versionString: project.projectConfig.deploymentTarget) else {
             throw NSError(domain: "com.cr4zy.nyxian.builder.headsup", code: 1, userInfo: [NSLocalizedDescriptionKey:"Target \"\(self.project.projectConfig.displayName ?? "Unknown") (\(self.project.projectConfig.bundleid ?? "Unknown"))\" cannot be build, host version cannot be compared. Version \(project.projectConfig.deploymentTarget!) is not valid."])
         }
-        
-        
         
         // Nyxian requirement check
         let minimumOSVersion: MDKOSVersion = MDKOSVersion(versionString: NXOSVersion.NXOSVersionSupportedBuildVersions.first)!
