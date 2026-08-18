@@ -67,7 +67,7 @@ class SettingsViewController: UIThemedTableViewController {
                 //cell.textLabel?.text = "Credits"
             //} else {
                 //cell.imageView?.image = UIImage(systemName: "app.badge.fill")
-                /cell.textLabel?.text = "Applications"
+                //cell.textLabel?.text = "Applications"
             //}
             //break
         case 2:
