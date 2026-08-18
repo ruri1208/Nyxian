@@ -53,7 +53,7 @@ struct NXApplicationState {
     }()
 }
 
-func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {
+func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }) {
     if !NXApplicationState.extensionExists {
         errorFallback(title: "Extension Not Found", message: """
         The required NSExtension could not be found.
@@ -79,10 +79,9 @@ func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, s
         completionHandler(false)
         return
     }
-    
     LCUtils.validateCertificate { status, someWords in
         completionHandler(status == 0)
-        if status == 0 || !showAlert {
+        if status == 0 {
             return
         }
         
@@ -90,16 +89,16 @@ func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, s
             let alert = UIAlertController(
                 title: {
                     switch status {
-                    default:
-                        return "Signing Isn't Set Up"
+                        default:
+                            return "Signing Isn't Set Up"
                     }
                 }(),
                 message: {
                     switch status {
-                    default:
-                        return "Nyxian needs a signing certificate to install and launch the apps you build. Without one you can still write and compile code, but you won't be able to run it on this device."
-                    }
-                }(), preferredStyle: .alert)
+                        default:
+                            return "Nyxian needs a signing certificate to install and launch the apps you build. Without one you can still write and compile code, but you won't be able to run it on this device."
+                }
+            }(), preferredStyle: .alert)
             
             alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
             alert.addAction(UIAlertAction(title: "Set Up Signing", style: .default) { _ in
@@ -117,7 +116,7 @@ func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, s
                                 }
                             ]
                         }
-                        
+                            
                         sheet.prefersGrabberVisible = true
                     }
                 }
@@ -214,7 +213,7 @@ struct UIOnboardingHelper {
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDelegate, UIOnboardingViewControllerDelegate {
     var window: NXWindowServer?
-    
+    weak var themedTabViewController: UIThemedTabViewController?
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
         
@@ -229,32 +228,38 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
             return;
         }
         
+        
         NXBootstrap.shared().bootstrap()
         
-        let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
-        
+        //let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
+        let themedTabViewController = UIThemedTabViewController() 
+        self.themedTabViewController = themedTabViewController
+     
         let contentViewController: ContentViewController = ContentViewController()
         let settingsViewController: SettingsViewController = SettingsViewController()
-        
+        let appsViewController: ApplicationManagementViewController = ApplicationManagementViewController.shared
+     
         let contentNavigationController: UINavigationController = UINavigationController(rootViewController: contentViewController)
         let settingsNavigationController: UINavigationController = UINavigationController(rootViewController: settingsViewController)
-        
+        let appsNavigationController: UINavigationController = UINavigationController(rootViewController: appsViewController)
+     
         contentNavigationController.tabBarItem = UITabBarItem(title: "Projects", image: UIImage(systemName: "square.grid.2x2.fill"), tag: 0)
         settingsNavigationController.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gear"), tag: 1)
+        appsNavigationController.tabBarItem = UITabBarItem(title: "Apps", image: UIImage(systemName: "app.badge"), tag: 2)
+     
+        var viewControllers: [UIViewController] = [contentNavigationController, settingsNavigationController, appsNavigationController]
         
-        var viewControllers: [UIViewController] = [contentNavigationController, settingsNavigationController]
-        
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            if #available(iOS 26.0, *) {
-                if !NXApplicationState.extensionLessMode {
-                    let fakeViewController: UIViewController = UIViewController()
-                    fakeViewController.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
-                    fakeViewController.tabBarItem.title = "Switcher"
-                    fakeViewController.tabBarItem.image = UIImage(systemName: "iphone.app.switcher")
-                    viewControllers.append(fakeViewController)
-                }
-            }
-        }
+        //if UIDevice.current.userInterfaceIdiom == .phone {
+            //if #available(iOS 26.0, *) {
+                //if !NXApplicationState.extensionLessMode {
+                    //let fakeViewController: UIViewController = UIViewController()
+                    //fakeViewController.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
+                    //fakeViewController.tabBarItem.title = "Switcher"
+                    //fakeViewController.tabBarItem.image = UIImage(systemName: "iphone.app.switcher")
+                    //viewControllers.append(fakeViewController)
+                //}
+            //}
+        //}
         
         themedTabViewController.viewControllers = viewControllers
         themedTabViewController.delegate = self
@@ -279,10 +284,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         if tabBarController.selectedViewController === viewController && NXBuilder.builds {
             return false
         }
-        if viewController.tabBarItem.tag == 2 {
-            self.window?.showAppSwitcherExternal()
-            return false
-        }
+        //if viewController.tabBarItem.tag == 2 {
+            //self.window?.showAppSwitcherExternal()
+            //return false
+        //}
         return true
     }
     
