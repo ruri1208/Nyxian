@@ -25,7 +25,8 @@
 		86DCC30A2FA521A600973169 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC3082FA5219900973169 /* libz.tbd */; };
 		86E4D4F72FB8CF63008BFE4D /* TreeSitterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 86E4D4F62FB8CF63008BFE4D /* TreeSitterSwift */; };
 		8F4D96E62FFBF8FB006CAF3C /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8F4D96E52FFBF8FB006CAF3C /* Runestone */; };
-		8F60051A3033D5230028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F6005193033D5230028EDFD /* UIOnboarding */; };
+		8F60051D3033DD2F0028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051C3033DD2F0028EDFD /* UIOnboarding */; };
+		8F6005203033EB920028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051F3033EB920028EDFD /* UIOnboarding */; };
 		8F60FE5A3032DB610028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE593032DB610028EDFD /* UIOnboarding */; };
 		8F60FE5D3032DC260028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE5C3032DC260028EDFD /* UIOnboarding */; };
 		8FB3BB043030089000DB3ABC /* LiveShim.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; };
@@ -565,9 +566,10 @@
 				860D91E02FAE2E4C000D321B /* CoreCompiler.framework in Frameworks */,
 				79D1DA672F92A6CE0020518A /* TreeSitterSwift in Frameworks */,
 				8F60FE5D3032DC260028EDFD /* UIOnboarding in Frameworks */,
+				8F6005203033EB920028EDFD /* UIOnboarding in Frameworks */,
 				8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */,
 				AF99195B2DC9176900DDF895 /* TreeSitterC in Frameworks */,
-				8F60051A3033D5230028EDFD /* UIOnboarding in Frameworks */,
+				8F60051D3033DD2F0028EDFD /* UIOnboarding in Frameworks */,
 				AFF4E3492DCCCE0F00B1B5F9 /* TreeSitterXML in Frameworks */,
 				793A7E502EB5996A0044418E /* SwiftTerm in Frameworks */,
 			);
@@ -782,7 +784,8 @@
 				8FECB24C2FFD367A00049BB0 /* Runestone */,
 				8F60FE593032DB610028EDFD /* UIOnboarding */,
 				8F60FE5C3032DC260028EDFD /* UIOnboarding */,
-				8F6005193033D5230028EDFD /* UIOnboarding */,
+				8F60051C3033DD2F0028EDFD /* UIOnboarding */,
+				8F60051F3033EB920028EDFD /* UIOnboarding */,
 			);
 			productName = LindDE;
 			productReference = 7944B5652DEC74EA00834134 /* Nyxian.app */;
@@ -837,7 +840,7 @@
 				79B708BA2F73157F000F38E7 /* XCRemoteSwiftPackageReference "tree-sitter-cpp" */,
 				86E4D4F52FB8CF63008BFE4D /* XCRemoteSwiftPackageReference "tree-sitter-swift" */,
 				8FECB24B2FFD367A00049BB0 /* XCRemoteSwiftPackageReference "Runestone" */,
-				8F6005183033D5230028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */,
+				8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AF9916D02DC8C42200DDF895;
@@ -1806,7 +1809,7 @@
 				kind = branch;
 			};
 		};
-		8F6005183033D5230028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */ = {
+		8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/emexlab/UIOnboarding";
 			requirement = {
@@ -1888,9 +1891,13 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Runestone;
 		};
-		8F6005193033D5230028EDFD /* UIOnboarding */ = {
+		8F60051C3033DD2F0028EDFD /* UIOnboarding */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8F6005183033D5230028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */;
+			productName = UIOnboarding;
+		};
+		8F60051F3033EB920028EDFD /* UIOnboarding */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */;
 			productName = UIOnboarding;
 		};
 		8F60FE593032DB610028EDFD /* UIOnboarding */ = {

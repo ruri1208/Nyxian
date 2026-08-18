@@ -22,10 +22,10 @@
 import UIKit
 import UIOnboarding
 
-func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }) {
+func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {
     LCUtils.validateCertificate { status, someWords in
         completionHandler(status == 0)
-        if status == 0 {
+        if status == 0 || !showAlert {
             return
         }
         
