@@ -60,21 +60,21 @@ class SettingsViewController: UIThemedTableViewController {
             //cell.imageView?.image = UIImage(systemName: "app.badge.fill")
             //cell.textLabel?.text = "Applications"
             //break
-        case 3:
+        case 2:
             cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
             cell.textLabel?.text = "Customization"
             break
 #if DEBUG
-        case 4:
+        case 3:
             cell.imageView?.image = UIImage(systemName: "ant.fill")
             cell.textLabel?.text = "Kernel Log"
             break
-        case 5:
+        case 4:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
 #else
-        case 4:
+        case 3:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
@@ -100,15 +100,15 @@ class SettingsViewController: UIThemedTableViewController {
                 return ManagementViewController(style: .insetGrouped)
             //case 2:
                 //return ApplicationManagementViewController.shared
-            case 3:
+            case 2:
                 return CustomizationViewController(style: .insetGrouped)
 #if DEBUG
-            case 4:
+            case 3:
                 return KernelLogViewController()
-            case 5:
+            case 4:
                 return CreditsViewController(style: .insetGrouped)
 #else
-            case 6:
+            case 3:
                 return CreditsViewController(style: .insetGrouped)
 #endif // DEBUG
             default:
