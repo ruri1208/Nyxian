@@ -99,7 +99,7 @@ final class NXBuilder: NSObject {
         
         // Project requirement check
         if osVersionNeeded > MDKOSVersion.host,
-           buildType == .RunningApp {
+           buildType == .run {
             throw NSError(domain: "com.cr4zy.nyxian.builder.headsup", code: 1, userInfo: [NSLocalizedDescriptionKey:"Target \"\(self.project.projectConfig.displayName ?? "Unknown") (\(self.project.projectConfig.bundleid ?? "Unknown"))\" declares deployment target \(osVersionNeeded) which doesn't support the host version \(MDKOSVersion.host). Please update your idevice."])
         }
     }
@@ -131,7 +131,7 @@ final class NXBuilder: NSObject {
         }
     }
     
-    func executeRunner() throws {
+    func build() throws {
         if !self.phaseRunner.runPhases() {
             throw NSError(domain: "com.cr4zy.nyxian.builder.runner", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to run project."])
         }
@@ -151,7 +151,7 @@ final class NXBuilder: NSObject {
             XCButton.stopSpinning()
         }
         
-        if(buildType == .RunningApp) {
+        if buildType == .run {
             var success: Bool = false;
             let semaphore = DispatchSemaphore(value: 0)
             checkSigningSetup() { codeSigningSetup in
@@ -171,8 +171,7 @@ final class NXBuilder: NSObject {
                 LCUtils.signAppBundle(withZSign: self.project.bundleURL) { [weak self] result, error in
                     guard let self = self else { return }
                     
-                    if(self.project.projectConfig.signMachOWithNyxianEntitlements)
-                    {
+                    if self.project.projectConfig.signMachOWithNyxianEntitlements {
                         macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
                     }
                     
@@ -196,12 +195,10 @@ final class NXBuilder: NSObject {
                     throw nsError
                 }
             } else if self.project.projectConfig.schemeKind == .utility {
-                if LCUtils.certificateData == nil {
-                    throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"No code signature present to perform signing, import code signature in Settings > Certificate. Note that the code signature must be the same code signature used to sign Nyxian."])
-                }
-                
                 MachOObject.signBinary(atPath: self.project.machoURL.path)
-                macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
+                if self.project.projectConfig.signMachOWithNyxianEntitlements {
+                    macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
+                }
                 
                 let path: String? = LDEApplicationWorkspace.shared().fastpathUtility(self.project.machoURL.path)
                 if path == nil {
@@ -210,8 +207,7 @@ final class NXBuilder: NSObject {
                 executablePathCallback(path)
             }
         } else {
-            if(self.project.projectConfig.signMachOWithNyxianEntitlements)
-            {
+            if self.project.projectConfig.signMachOWithNyxianEntitlements {
                 macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
             }
             if self.project.projectConfig.schemeKind == .app {
@@ -228,8 +224,8 @@ final class NXBuilder: NSObject {
     /// Static function to build the project
     ///
     enum BuildType {
-        case RunningApp
-        case InstallPackagedApp
+        case run
+        case export
     }
     
     static func buildProject(withProject project: NXProject,
@@ -273,25 +269,23 @@ final class NXBuilder: NSObject {
             
             do {
                 // prepare
-                
                 let flow: [(String?,Double?,() throws -> Void)] = [
                     (nil,nil,{ try builder.headsup(buildType: buildType) }),
                     (nil,nil,{ try builder.clean() }),
                     (nil,nil,{ try builder.prepare() }),
-                    (nil,nil,{ try builder.executeRunner() }),
+                    (nil,nil,{ try builder.build() }),
                     ("arrow.down.app.fill",nil,{try builder.install(buildType: buildType, executablePathCallback: { path in
                         execPath = path
                     }) })
                 ];
                 
-                // doit
+                // doit, just do it!
                 try progressFlowBuilder(flow: flow)
             } catch {
                 try? builder.clean()
                 result = false
                 builder.database.addMessage(message: error.localizedDescription, severity: .error)
             }
-            
             builder.database.saveDatabase(toPath: project.cacheURL.appendingPathComponent("debug.json").path)
             
             completion(result, execPath)
@@ -330,12 +324,8 @@ func buildProjectWithArgumentUI(targetViewController: UIViewController,
                         let loggerView = UINavigationController(rootViewController: UIDebugViewController(project: project))
                         loggerView.modalPresentationStyle = .formSheet
                         targetViewController.present(loggerView, animated: true)
-                    } else if buildType == .InstallPackagedApp {
-                        if project.projectConfig.schemeKind == .app {
-                            share(url: project.packageURL, remove: true)
-                        } else {
-                            share(url: project.machoURL, remove: true)
-                        }
+                    } else if buildType == .export {
+                        share(url: project.packageURL, remove: true)
                     }
                     
                     completion(result, fastPath)

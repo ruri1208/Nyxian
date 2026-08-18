@@ -231,7 +231,7 @@ class MainSplitViewController: UISplitViewController, UISplitViewControllerDeleg
                 masterVC.navigationItem.leftBarButtonItem?.isEnabled = false
                 self.detailVC?.logView?.clearConsole()
                 
-                buildProjectWithArgumentUI(targetViewController: detailVC, project: project, buildType: .RunningApp) { [weak self] result, execPath in
+                buildProjectWithArgumentUI(targetViewController: detailVC, project: project, buildType: .run) { [weak self] result, execPath in
                     if let process = detailVC.process {
                         process.removeObserver(detailVC)
                         detailVC.process = nil
@@ -622,7 +622,7 @@ class SplitScreenDetailViewController: UIViewController, FBProcessObserver {
         }
         barButtons.append(UIBarButtonItem(image: UIImage(systemName: "archivebox.fill"), primaryAction: UIAction { [weak self] _ in
             guard let self = self else { return }
-            buildProjectWithArgumentUI(targetViewController: self, project: self.project, buildType: .InstallPackagedApp)
+            buildProjectWithArgumentUI(targetViewController: self, project: self.project, buildType: .export)
         }))
         barButtons.append(UIBarButtonItem(image: UIImage(systemName: "exclamationmark.triangle.fill"), primaryAction: UIAction { [weak self] _ in
             guard let self = self else { return }

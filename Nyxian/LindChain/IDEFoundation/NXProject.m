@@ -494,7 +494,7 @@
         return [NSURL fileURLWithPath:outputPath];
     }
 }
-- (NSURL*)packageURL { return [self.cacheURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"ipa"]]; }
+- (NSURL*)packageURL { return self.projectConfig.schemeKind == NXProjectSchemeKindApp ? [self.cacheURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"ipa"]] : self.machoURL; }
 
 - (BOOL)reload
 {

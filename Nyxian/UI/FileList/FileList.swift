@@ -296,7 +296,7 @@ import UniformTypeIdentifiers
             if !NXApplicationState.extensionLessMode {
                 projectMenuElements.append(UIAction(title: "Run", image: UIImage(systemName: "play.fill"), handler: { [weak self] _ in
                     guard let self = self else { return }
-                    buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .RunningApp) { result, execPath in
+                    buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .run) { result, execPath in
                         if result {
                             if project.projectConfig.schemeKind == .app {
                                 PEProcessManager.shared().spawnProcess(withBundleIdentifier: project.projectConfig.bundleid, withItems: [:], withKernelSurfaceProcess: nil, doRestartIfRunning: true)
@@ -310,7 +310,7 @@ import UniformTypeIdentifiers
             }
             projectMenuElements.append(UIAction(title: "Export", image: UIImage(systemName: "archivebox.fill"), handler: { [weak self] _ in
                 guard let self = self else { return }
-                buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .InstallPackagedApp)
+                buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .export)
             }))
             projectMenuElements.append(UIAction(title: "Issue Navigator", image: UIImage(systemName: "exclamationmark.triangle.fill"), handler: { [weak self] _ in
                 guard let self = self else { return }
