@@ -261,7 +261,10 @@ static inline void ksurface_kinit_kproc(void)
     const char *name = strrchr(kproc->nyx.executable_path, '/');
     name = name ? name + 1 : kproc->nyx.executable_path;
     strlcpy(kproc->bsd.kp_proc.p_comm, name, MAXCOMLEN);
+#endif /* KSURFACE_EMIT_KERNEL_TASK */
     
+    /* otherwise a child in the tree can see us as a other pid */
+#if !KSURFACE_EMIT_KERNEL_TASK && !KSURFACE_EMIT_LAUNCHD
     /* kernel shall only expose its task name */
     task_t task;
     kern_return_t kr = task_get_special_port(mach_task_self(), TASK_NAME_PORT, &task);
@@ -271,7 +274,7 @@ static inline void ksurface_kinit_kproc(void)
         environment_panic("failed to aquire task name of kernel it self");
     }
     kproc->task = task;
-#endif /* KSURFACE_EMIT_KERNEL_TASK */
+#endif /* !KSURFACE_EMIT_KERNEL_TASK && !KSURFACE_EMIT_LAUNCHD */
     
     proc_setentitlements(kproc, PEEntitlementKernel);
     proc_setmaxentitlements(kproc, PEEntitlementKernel);
