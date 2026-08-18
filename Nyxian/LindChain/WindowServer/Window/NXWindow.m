@@ -216,10 +216,10 @@
 {
     assert([NSThread isMainThread]);
     
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
-        return;
-    }
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    //{
+        //return;
+    //}
     if(!_focusHitView)
     {
         return;
