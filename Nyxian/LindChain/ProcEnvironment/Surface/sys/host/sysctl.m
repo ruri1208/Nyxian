@@ -25,6 +25,7 @@
 #import <LindChain/ProcEnvironment/Surface/proc/list.h>
 #include <sys/sysctl.h>
 #include <regex.h>
+#include <ksurface_config.h>
 
 /* sysctl defs */
 typedef struct {
@@ -330,6 +331,13 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     }
 
     pid_t pid = (pid_t)req->name[2];
+#if KSURFACE_EMIT_KERNEL_TASK
+    if(pid == 0)
+    {
+        req->err = EINVAL;
+        return -1;
+    }
+#endif /* KSURFACE_EMIT_KERNEL_TASK */
 
     size_t user_outlen = 0;
     if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))

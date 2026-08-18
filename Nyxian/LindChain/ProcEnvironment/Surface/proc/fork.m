@@ -67,7 +67,8 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
     PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child);
     
     ksurface_ent_result_t resultBlob;
-    if([nsPath isEqualToString:@"/usr/libexec/containerd"] ||
+    if([nsPath isEqualToString:@"/sbin/launchd"] ||
+       [nsPath isEqualToString:@"/usr/libexec/containerd"] ||
        [nsPath isEqualToString:@"/usr/libexec/installd"])
     {
         entitlement = PEEntitlementSystemDaemon;

@@ -94,7 +94,7 @@ typedef struct {
         radix_tree_t tree;
         
         /*
-         * kernel process(aka Nyxian it self
+         * launch process(aka Nyxian it self
          * running as host for the glient
          * processes).
          */

@@ -238,6 +238,19 @@ static inline void ksurface_kinit_kproc(void)
     }
     klog_log("ksurface:kinit:kproc", "allocated kernel process @ %p", kproc);
     
+#if KSURFACE_EMIT_KERNEL_TASK
+    /* setting up properties */
+    proc_setpid(kproc, 0);
+    proc_setppid(kproc, 0);
+    proc_setsid(kproc, 0);
+    strlcpy(kproc->bsd.kp_proc.p_comm, "kernel_task", MAXCOMLEN);
+#else
+    /* setting up properties */
+    pid_t pid = getpid();
+    proc_setpid(kproc, pid);
+    proc_setppid(kproc, PID_LAUNCHD);   /* this is done, because when debugging it has a other ppid */
+    proc_setsid(kproc, pid);
+    
     /* writing executable path */
     uint32_t bufsize = PATH_MAX;
     if(_NSGetExecutablePath(kproc->nyx.executable_path, &bufsize) > 0)
@@ -258,17 +271,12 @@ static inline void ksurface_kinit_kproc(void)
         environment_panic("failed to aquire task name of kernel it self");
     }
     kproc->task = task;
+#endif /* KSURFACE_EMIT_KERNEL_TASK */
     
-    /* setting up properties */
-    pid_t pid = getpid();
-    proc_setpid(kproc, pid);
-    proc_setppid(kproc, PID_LAUNCHD);   /* this is done, because when debugging it has a other ppid */
-    proc_setsid(kproc, pid);
     proc_setentitlements(kproc, PEEntitlementKernel);
     proc_setmaxentitlements(kproc, PEEntitlementKernel);
     
     /* storing kernel proc */
-    ksurface->proc_info.kern_proc = kproc;
     klog_log("ksurface:kinit:kproc", "inserting kernel process");
     kern_return_t error = proc_insert(kproc);
     if(error != KERN_SUCCESS)
@@ -276,6 +284,19 @@ static inline void ksurface_kinit_kproc(void)
         /* shall never happen */
         environment_panic("failed to insert kernel process");
     }
+    
+#if KSURFACE_EMIT_LAUNCHD
+    ksurface_proc_t *launchdproc = proc_fork(kproc, 1, "/sbin/launchd");
+    if(launchdproc == NULL)
+    {
+        /* shall never happen */
+        environment_panic("got NULL launchd process");
+    }
+    klog_log("ksurface:kinit:kproc", "allocated launchd process @ %p", launchdproc);
+    ksurface->proc_info.kern_proc = launchdproc;
+#else
+    ksurface->proc_info.kern_proc = kproc;
+#endif /* KSURFACE_EMIT_LAUNCHD */
     
     /* releaing our reference to kernel proc, because we return now and kproc is now held by the radix tree */
     kvo_release(kproc);
