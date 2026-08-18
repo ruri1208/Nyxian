@@ -67,7 +67,7 @@
     /* crafting phase engine */
     if([swiftFiles count] != 0)
     {
-        [driverFlags addObjectsFromArray:driverFlags];
+        [driverFlags addObjectsFromArray:project.projectConfig.swiftFlags];
         [driverFlags addObject:@"-module-name"];
         [driverFlags addObject:NXMakeContentCodeFriendly(project.projectConfig.displayName)];
         return [super initWithSwiftFlags:driverFlags withOtherClangFlags:project.projectConfig.compilerFlags withOtherLinkerFlags:project.projectConfig.linkerFlags];

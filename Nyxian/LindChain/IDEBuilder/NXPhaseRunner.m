@@ -104,7 +104,10 @@
 {
     for(MDKPhase *phase in phases)
     {
-        self.steps += phase.jobs.count;
+        if([phase isKindOfClass:[MDKPhase class]])
+        {
+            self.steps += phase.jobs.count;
+        }
     }
     return [super runPhasesWithPhases:phases];
 }
