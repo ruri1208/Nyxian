@@ -141,8 +141,8 @@ bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * same UID as the target.
      */
 out_euid_check:
-    if((proc_geteuid(proc) != 0 && proc_did_change_credentials(targetProc)) ||
-       proc_geteuid(proc) != proc_geteuid(targetProc))
+    if(proc_geteuid(proc) != 0 &&
+       (proc_did_change_credentials(targetProc) || proc_geteuid(proc) != proc_geteuid(targetProc)))
     {
     out_eperm_no:
         errno = EPERM;
