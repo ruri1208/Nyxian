@@ -39,6 +39,11 @@ ksurface_proc_ucred_backup_t proc_make_ucred_backup(ksurface_proc_t *proc)
 void proc_set_sugid_if_applicable(ksurface_proc_t *proc,
                                   ksurface_proc_ucred_backup_t backup)
 {
+    if(proc->bsd.kp_proc.p_flag & P_SUGID)
+    {
+        return;
+    }
+    
     if(entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform) &&
        entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatformRoot))
     {
