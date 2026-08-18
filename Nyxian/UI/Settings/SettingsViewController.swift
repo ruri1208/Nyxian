@@ -37,9 +37,9 @@ class SettingsViewController: UIThemedTableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 #if DEBUG
-        return 6
-#else
         return 5
+#else
+        return 4
 #endif // DEBUG
     }
 
@@ -56,10 +56,10 @@ class SettingsViewController: UIThemedTableViewController {
             cell.imageView?.image = UIImage(systemName: "bolt.shield.fill")
             cell.textLabel?.text = "Management"
             break
-        case 2:
-            cell.imageView?.image = UIImage(systemName: "app.badge.fill")
-            cell.textLabel?.text = "Applications"
-            break
+        //case 2:
+            //cell.imageView?.image = UIImage(systemName: "app.badge.fill")
+            //cell.textLabel?.text = "Applications"
+            //break
         case 3:
             cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
             cell.textLabel?.text = "Customization"
@@ -98,8 +98,8 @@ class SettingsViewController: UIThemedTableViewController {
                 return ToolChainViewController(style: .insetGrouped)
             case 1:
                 return ManagementViewController(style: .insetGrouped)
-            case 2:
-                return ApplicationManagementViewController.shared
+            //case 2:
+                //return ApplicationManagementViewController.shared
             case 3:
                 return CustomizationViewController(style: .insetGrouped)
 #if DEBUG
