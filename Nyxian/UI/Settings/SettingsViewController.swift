@@ -37,9 +37,9 @@ class SettingsViewController: UIThemedTableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 #if DEBUG
-        return NXApplicationState.extensionLessMode ? 2 : 5
+        return NXApplicationState.extensionLessMode ? 3 : 6
 #else
-        return NXApplicationState.extensionLessMode ? 2 : 4
+        return NXApplicationState.extensionLessMode ? 3 : 5
 #endif // DEBUG
     }
 
@@ -61,30 +61,30 @@ class SettingsViewController: UIThemedTableViewController {
                 cell.textLabel?.text = "Management"
             }
             break
-        //case 2:
-            //if NXApplicationState.extensionLessMode {
-                //cell.imageView?.image = UIImage(systemName: "person.3.fill")
-                //cell.textLabel?.text = "Credits"
-            //} else {
-                //cell.imageView?.image = UIImage(systemName: "app.badge.fill")
-                //cell.textLabel?.text = "Applications"
-            //}
-            break
         case 2:
+            if NXApplicationState.extensionLessMode {
+                cell.imageView?.image = UIImage(systemName: "person.3.fill")
+                cell.textLabel?.text = "Credits"
+            } else {
+                cell.imageView?.image = UIImage(systemName: "app.badge.fill")
+                cell.textLabel?.text = "Applications"
+            }
+            break
+        case 3:
             cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
             cell.textLabel?.text = "Customization"
             break
 #if DEBUG
-        case 3:
+        case 4:
             cell.imageView?.image = UIImage(systemName: "ant.fill")
             cell.textLabel?.text = "Kernel Log"
             break
-        case 4:
+        case 5:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
 #else
-        case 3:
+        case 4:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
@@ -112,21 +112,21 @@ class SettingsViewController: UIThemedTableViewController {
                 } else {
                     return ManagementViewController(style: .insetGrouped)
                 }
-            //case 2:
-                //if NXApplicationState.extensionLessMode {
-                    //return CreditsViewController(style: .insetGrouped)
-                //} else {
-                    //return ApplicationManagementViewController.shared
-                //}
             case 2:
+                if NXApplicationState.extensionLessMode {
+                    return CreditsViewController(style: .insetGrouped)
+                } else {
+                    return ApplicationManagementViewController.shared
+                }
+            case 3:
                 return CustomizationViewController(style: .insetGrouped)
 #if DEBUG
-            case 3:
-                return KernelLogViewController()
             case 4:
+                return KernelLogViewController()
+            case 5:
                 return CreditsViewController(style: .insetGrouped)
 #else
-            case 3:
+            case 4:
                 return CreditsViewController(style: .insetGrouped)
 #endif // DEBUG
             default:
