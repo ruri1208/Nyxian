@@ -194,10 +194,79 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
         super.viewDidLoad()
         self.tableView.register(ProjectTableCell.self, forCellReuseIdentifier: ProjectTableCell.reuseIdentifier)
         LDEApplicationWorkspace.shared().ping()
-        self.title = "Applications"
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "square.and.arrow.down.fill"), target: self, action: #selector(plusButtonPressed))
+        self.title = "Apps"
+        //self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "square.and.arrow.down.fill"), target: self, action: #selector(plusButtonPressed))
+        let importItem = UIBarButtonItem(image: UIImage(systemName: "square.and.arrow.down.fill"), style: .plain, target: self, action: #selector(plusButtonPressed))
+        self.navigationItem.rightBarButtonItems = [importItem]
+
+        let hasConfiguredMode = UserDefaults.standard.bool(forKey: "HasConfiguredDisplayMode")
+        if !hasConfiguredMode {
+            UserDefaults.standard.set(true, forKey: "HasConfiguredDisplayMode")
+            setMode(multitasking: true, fullscreen: false, simulator: false)
+        } else {
+            updateMultitaskingButton()
+        }
     }
-    
+ 
+    private func updateMultitaskingButton() {
+        let isMultitasking = NXWindowServer.isMultitaskingEnabled()
+        let isFullscreen = NXWindowServer.isFullscreenEnabled()
+        let isSimulator = NXWindowServer.isSimulatorEnabled()
+        let isSheet = !isMultitasking && !isFullscreen && !isSimulator
+        let currentImageName: String
+       
+        if isFullscreen {
+            currentImageName = "ipad.and.iphone"
+        } else if isSimulator {
+            currentImageName = "rectangle.ratio.9.to.16"
+        } else if isMultitasking {
+            currentImageName = "square.on.square"
+        } else {
+            currentImageName = "inset.filled.rectangle.portrait"
+        }
+        let sheetAction = UIAction(title: "Sheet Mode", image: UIImage(systemName: "inset.filled.rectangle.portrait"), state: isSheet ? .on : .off) { [weak self] _ in
+            self?.setMode(multitasking: false, fullscreen: false, simulator: false)
+        }
+        let multitaskAction = UIAction(title: "Multitask Mode", image: UIImage(systemName: "square.on.square"), state: isMultitasking ? .on : .off) { [weak self] _ in
+            self?.setMode(multitasking: true, fullscreen: false, simulator: false)
+        }
+        let fullscreenAction = UIAction(title: "Fullscreen Mode", image: UIImage(systemName: "ipad.and.iphone"), state: isFullscreen ? .on : .off) { [weak self] _ in
+            self?.setMode(multitasking: false, fullscreen: true, simulator: false)
+        }
+        let simulatorAction = UIAction(title: "Simulator Mode", image: UIImage(systemName: "rectangle.ratio.9.to.16"), state: isSimulator ? .on : .off) { [weak self] _ in
+            self?.setMode(multitasking: false, fullscreen: false, simulator: true)
+        }
+        
+        let modeMenu = UIMenu(title: "Display Mode", children: [multitaskAction, fullscreenAction, simulatorAction])
+        let menuButton = UIButton(type: .system)
+        menuButton.setImage(UIImage(systemName: currentImageName), for: .normal)
+        menuButton.menu = modeMenu
+        menuButton.showsMenuAsPrimaryAction = true
+     
+        let modeItem = UIBarButtonItem(customView: menuButton)
+        self.navigationItem.leftBarButtonItems = [modeItem]
+    }
+
+    private func setMode(multitasking: Bool, fullscreen: Bool, simulator: Bool) {
+        if multitasking {
+            NXWindowServer.setMultitaskingEnabled(true)
+        } else if fullscreen {
+            NXWindowServer.setFullscreenEnabled(true)
+        } else if simulator {
+            NXWindowServer.setSimulatorEnabled(true)
+        } else {
+            NXWindowServer.setMultitaskingEnabled(false)
+            NXWindowServer.setFullscreenEnabled(false)
+            NXWindowServer.setSimulatorEnabled(false)
+        }
+
+        let isSheetMode = !multitasking && !fullscreen && !simulator
+        UserDefaults.standard.set(isSheetMode, forKey: "LCAppSwitcherEnabled")
+
+        NotificationCenter.default.post(name: NSNotification.Name("NXMultitaskingStateDidChange"), object: nil)
+
+        updateMultitaskingButton()
+    }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
     }
@@ -357,7 +426,6 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                                 alert.dismiss(animated: true)
                                 return
                             }
-                            
                             DispatchQueue.global().async {
                                 LCUtils.signAppBundle(withZSign: bundle.bundleURL) { result, error in
                                     if result {
@@ -385,7 +453,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                                             }
                                         }
                                     }
-                                }
+                                } 
                             }
                         }
                     }
