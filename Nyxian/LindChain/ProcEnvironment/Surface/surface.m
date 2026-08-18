@@ -276,6 +276,7 @@ static inline void ksurface_kinit_kproc(void)
     kproc->task = task;
 #endif /* !KSURFACE_EMIT_KERNEL_TASK && !KSURFACE_EMIT_LAUNCHD */
     
+    kproc->bsd.kp_proc.p_flag = P_SYSTEM | P_LP64;
     proc_setentitlements(kproc, PEEntitlementKernel);
     proc_setmaxentitlements(kproc, PEEntitlementKernel);
     

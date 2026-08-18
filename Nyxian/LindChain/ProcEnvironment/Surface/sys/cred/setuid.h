@@ -24,6 +24,20 @@
 
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 
+typedef struct {
+    uid_t ruid;
+    uid_t euid;
+    uid_t svuid;
+    gid_t rgid;
+    gid_t egid;
+    gid_t svgid;
+} ksurface_proc_ucred_backup_t;
+
+ksurface_proc_ucred_backup_t proc_make_ucred_backup(ksurface_proc_t *proc);
+void proc_set_sugid_if_applicable(ksurface_proc_t *proc, ksurface_proc_ucred_backup_t backup);
+
+bool proc_is_privileged(ksurface_proc_t *proc);
+
 DEFINE_SYSCALL_HANDLER(setuid);
 DEFINE_SYSCALL_HANDLER(seteuid);
 DEFINE_SYSCALL_HANDLER(setreuid);
