@@ -27,11 +27,11 @@
 		8F4D96E62FFBF8FB006CAF3C /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8F4D96E52FFBF8FB006CAF3C /* Runestone */; };
 		8F60051D3033DD2F0028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051C3033DD2F0028EDFD /* UIOnboarding */; };
 		8F6005203033EB920028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051F3033EB920028EDFD /* UIOnboarding */; };
+		8F6008783033F9200028EDFD /* LiveProcess.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 79BF97F72E6291EE00C60D4C /* LiveProcess.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8F60FE5A3032DB610028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE593032DB610028EDFD /* UIOnboarding */; };
 		8F60FE5D3032DC260028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE5C3032DC260028EDFD /* UIOnboarding */; };
 		8FB3BB043030089000DB3ABC /* LiveShim.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; };
 		8FB3BB053030089000DB3ABC /* LiveShim.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8FB3BE87303131D300DB3ABC /* LiveProcess.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 79BF97F72E6291EE00C60D4C /* LiveProcess.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8FECB2472FFD34D500049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB2462FFD34D500049BB0 /* Runestone */; };
 		8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB24C2FFD367A00049BB0 /* Runestone */; };
 		AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */ = {isa = PBXBuildFile; productRef = AF9919572DC9175A00DDF895 /* TreeSitterObjc */; };
@@ -62,19 +62,19 @@
 			remoteGlobalIDString = 86DCC2592FA5209600973169;
 			remoteInfo = CoreCompiler;
 		};
+		8F6008793033F9200028EDFD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
+			remoteInfo = LiveProcess;
+		};
 		8FB3BB063030089000DB3ABC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8FB3BADA302FFBAA00DB3ABC;
 			remoteInfo = LiveShim;
-		};
-		8FB3BE88303131D300DB3ABC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
-			remoteInfo = LiveProcess;
 		};
 		8FB3BE8B303131D800DB3ABC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -105,6 +105,17 @@
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8F60087B3033F9200028EDFD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8F6008783033F9200028EDFD /* LiveProcess.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FB3BB083030089000DB3ABC /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -114,17 +125,6 @@
 				8FB3BB053030089000DB3ABC /* LiveShim.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8FB3BE8A303131D300DB3ABC /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				8FB3BE87303131D300DB3ABC /* LiveProcess.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */ = {
@@ -753,15 +753,15 @@
 				AF9916D62DC8C42200DDF895 /* Frameworks */,
 				AF9916D72DC8C42200DDF895 /* Resources */,
 				AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */,
-				8FB3BE8A303131D300DB3ABC /* Embed Foundation Extensions */,
+				8F60087B3033F9200028EDFD /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				860D917C2FAE1F95000D321B /* PBXTargetDependency */,
 				860D91E32FAE2E4C000D321B /* PBXTargetDependency */,
-				8FB3BE89303131D300DB3ABC /* PBXTargetDependency */,
 				8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */,
+				8F60087A3033F9200028EDFD /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AF9916DB2DC8C42200DDF895 /* Nyxian */,
@@ -958,15 +958,15 @@
 			target = 86DCC2592FA5209600973169 /* CoreCompiler */;
 			targetProxy = 860D91E22FAE2E4C000D321B /* PBXContainerItemProxy */;
 		};
+		8F60087A3033F9200028EDFD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
+			targetProxy = 8F6008793033F9200028EDFD /* PBXContainerItemProxy */;
+		};
 		8FB3BB073030089000DB3ABC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8FB3BADA302FFBAA00DB3ABC /* LiveShim */;
 			targetProxy = 8FB3BB063030089000DB3ABC /* PBXContainerItemProxy */;
-		};
-		8FB3BE89303131D300DB3ABC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
-			targetProxy = 8FB3BE88303131D300DB3ABC /* PBXContainerItemProxy */;
 		};
 		8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

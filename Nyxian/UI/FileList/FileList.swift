@@ -293,33 +293,31 @@ import UniformTypeIdentifiers
         // Project Roots Menu in case its the root of the project obviously
         if !self.isSublink, UIDevice.current.userInterfaceIdiom != .pad, let project = self.project {
             var projectMenuElements: [UIMenuElement] = []
-            projectMenuElements.append(UIAction(title: "Run", image: UIImage(systemName: "play.fill"), handler: { [weak self] _ in
-                guard let self = self else { return }
-                buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .RunningApp) { result, execPath in
-                    if result {
-                        if project.projectConfig.schemeKind == .app {
-                            PEProcessManager.shared().spawnProcess(withBundleIdentifier: project.projectConfig.bundleid, withItems: [:], withKernelSurfaceProcess: nil, doRestartIfRunning: true)
-                        } else if project.projectConfig.schemeKind == .utility, let execPath = execPath {
-                            let terminalSession: NXWindowSessionTerminal = NXWindowSessionTerminal(utilityPath: execPath)
-                            NXWindowServer.shared().openWindow(with: terminalSession, withCompletion: nil)
+            if !NXApplicationState.extensionLessMode {
+                projectMenuElements.append(UIAction(title: "Run", image: UIImage(systemName: "play.fill"), handler: { [weak self] _ in
+                    guard let self = self else { return }
+                    buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .RunningApp) { result, execPath in
+                        if result {
+                            if project.projectConfig.schemeKind == .app {
+                                PEProcessManager.shared().spawnProcess(withBundleIdentifier: project.projectConfig.bundleid, withItems: [:], withKernelSurfaceProcess: nil, doRestartIfRunning: true)
+                            } else if project.projectConfig.schemeKind == .utility, let execPath = execPath {
+                                let terminalSession: NXWindowSessionTerminal = NXWindowSessionTerminal(utilityPath: execPath)
+                                NXWindowServer.shared().openWindow(with: terminalSession, withCompletion: nil)
+                            }
                         }
                     }
-                }
+                }))
+            }
+            projectMenuElements.append(UIAction(title: "Export", image: UIImage(systemName: "archivebox.fill"), handler: { [weak self] _ in
+                guard let self = self else { return }
+                buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .InstallPackagedApp)
             }))
-            if project.projectConfig.schemeKind == .app {
-                projectMenuElements.append(UIAction(title: "Export", image: UIImage(systemName: "archivebox.fill"), handler: { [weak self] _ in
-                    guard let self = self else { return }
-                    buildProjectWithArgumentUI(targetViewController: self, project: project, buildType: .InstallPackagedApp)
-                }))
-            }
-            if project.projectConfig.schemeKind == .app || project.projectConfig.schemeKind == .utility {
-                projectMenuElements.append(UIAction(title: "Issue Navigator", image: UIImage(systemName: "exclamationmark.triangle.fill"), handler: { [weak self] _ in
-                    guard let self = self else { return }
-                    let loggerView = UINavigationController(rootViewController: UIDebugViewController(project: project))
-                    loggerView.modalPresentationStyle = .formSheet
-                    self.present(loggerView, animated: true)
-                }))
-            }
+            projectMenuElements.append(UIAction(title: "Issue Navigator", image: UIImage(systemName: "exclamationmark.triangle.fill"), handler: { [weak self] _ in
+                guard let self = self else { return }
+                let loggerView = UINavigationController(rootViewController: UIDebugViewController(project: project))
+                loggerView.modalPresentationStyle = .formSheet
+                self.present(loggerView, animated: true)
+            }))
             
             rootMenuChildren.append({
                 return UIMenu(title: "Project", options: [.displayAsPalette, .displayInline], children: projectMenuElements.reversed())
