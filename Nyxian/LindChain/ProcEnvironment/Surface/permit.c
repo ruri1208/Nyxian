@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <errno.h>
 
-bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
+bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
                                               pid_t targetPid,
                                               PEEntitlement entitlementsNeeded,
                                               PEEntitlement targetEntitlementsNeeded)

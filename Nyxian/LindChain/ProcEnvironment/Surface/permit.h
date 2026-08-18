@@ -25,6 +25,6 @@
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
-bool proc_snapshot_permitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlement entitlementsNeeded, PEEntitlement targetEntitlementsNeeded);
+bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlement entitlementsNeeded, PEEntitlement targetEntitlementsNeeded);
 
 #endif /* PROCENVIRONMENT_PERMIT_H */

@@ -216,8 +216,18 @@
 {
     assert([NSThread isMainThread]);
     
-    if(!_focusHitView) return;
-    if(![self.delegate windowWantsToFocus:self]) return;
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    {
+        return;
+    }
+    if(!_focusHitView)
+    {
+        return;
+    }
+    if(![self.delegate windowWantsToFocus:self])
+    {
+        return;
+    }
     self.session.isFocused = YES;
     
     [self.view.superview bringSubviewToFront:self.view];
@@ -237,7 +247,14 @@
 {
     assert([NSThread isMainThread]);
     
-    if (_focusHitView != nil) return;
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    {
+        return;
+    }
+    if(_focusHitView != nil)
+    {
+        return;
+    }
     self.session.isFocused = NO;
     
     [_windowBar changeFocus:false];
