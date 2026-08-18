@@ -38,6 +38,7 @@
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/IDELanguageServer/NXLanguageServer.h>
 #import <LindChain/IDEBuilder/LDEFilesFinder.h>
+#import <LindChain/IDEBuilder/NXPhaseRunner.h>
 #import <LindChain/IDEConsole/NXConsoleView.h>
 
 /* LindChain Core Headers */

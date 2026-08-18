@@ -23,55 +23,6 @@ import Foundation
 import Combine
 import MobileDevelopmentKit
 
-class NXPhaseRunner: MDKPhaseRunner {
-    private var pstep: Double = 0.0 // TODO: needs to be float for extremely large projects
-    private var steps: Int = 0 {
-        didSet {
-            self.pstep = 1.0 / Double(self.steps)
-            self.refreshDoneStep()
-        }
-    }
-    private var donestep: Int = 0 {
-        didSet {
-            self.refreshDoneStep()
-        }
-    }
-    
-    private func refreshDoneStep() {
-        let progress: Double = self.pstep * Double(self.donestep)
-        XCButton.updateProgress(withValue: progress)
-    }
-    
-    override func run(_ job: MDKJob, within phase: MDKPhase) -> Bool {
-        let success: Bool = super.run(job, within: phase)
-        self.donestep += 1
-        return success
-    }
-    
-    override func run(_ phase: MDKPhase) -> Bool {
-        switch phase.type {
-        case .compiler:
-            fallthrough
-        case .swiftCompiler:
-            XCButton.switchImageSync(withSystemName: "hammer.fill", animated: true, withDuration: 0.25)
-        case .linker:
-            XCButton.switchImageSync(withSystemName: "link", animated: true, withDuration: 0.25)
-        default:
-            break
-        }
-        return super.run(phase)
-    }
-    
-    override func runPhases(withPhases phases: [Any]) -> Bool {
-        for phase in phases {
-            if let phase: MDKPhase = phase as? MDKPhase {
-                self.steps += phase.jobs.count
-            }
-        }
-        return super.runPhases(withPhases: phases)
-    }
-}
-
 class NXBuilder: NSObject, MDKDriverDelegate, MDKPhaseRunnerDelegate {
     private let project: NXProject
     
