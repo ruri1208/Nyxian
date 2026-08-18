@@ -32,19 +32,80 @@ jobs:
       - name: Install Dependencies
         run: |
           set -e
-
-          # Packages we desperately need
           brew install ldid dpkg libarchive
 
-      - name: Setup
+      - name: Setup LLVM Toolchain
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLVM_RUN_ID: "29906841202"
         run: |
           set -e
+
+          GH_REPO="ruri1208/LLVM-On-iOS"
+
+          rm -rf CoreCompiler/CoreCompilerSupportLibs Frameworks/CoreCompiler/CoreCompilerSupportLibs
+          mkdir -p CoreCompiler/CoreCompilerSupportLibs
+          mkdir -p Frameworks/CoreCompiler/CoreCompilerSupportLibs
+          mkdir -p tmp_download/libs
+          mkdir -p tmp_download/llvm
+
+          if [ -n "$LLVM_RUN_ID" ]; then
+            RUN_ID="$LLVM_RUN_ID"
+          else
+            RUN_ID=$(gh run list \
+              --repo "$GH_REPO" \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              -q '.[0].databaseId')
+          fi
+
+          gh run download "$RUN_ID" --repo "$GH_REPO" -n "CoreCompilerSupportLibs" --dir tmp_download/libs
+          tar -xJ -f tmp_download/libs/CoreCompilerSupportLibs.tar.xz -C tmp_download/
+          
+          if [ -d "tmp_download/CoreCompilerSupportLibs" ]; then
+            rsync -a tmp_download/CoreCompilerSupportLibs/ CoreCompiler/CoreCompilerSupportLibs/
+          else
+            rsync -a tmp_download/libs/ CoreCompiler/CoreCompilerSupportLibs/
+          fi
+
+          gh run download "$RUN_ID" --repo "$GH_REPO" -n "LLVM.xcframework" --dir tmp_download/llvm
+          mkdir -p tmp_download/llvm_extract
+          tar -xJ -f tmp_download/llvm/LLVM.xcframework.tar.xz -C tmp_download/llvm_extract/
+
+          TARGET_XCFRAMEWORK="CoreCompiler/CoreCompilerSupportLibs/LLVM.xcframework"
+          mkdir -p "$TARGET_XCFRAMEWORK"
+
+          if [ -d "tmp_download/llvm_extract/LLVM.xcframework" ]; then
+            rsync -a tmp_download/llvm_extract/LLVM.xcframework/ "$TARGET_XCFRAMEWORK/"
+          else
+            rsync -a tmp_download/llvm_extract/ "$TARGET_XCFRAMEWORK/"
+          fi
+
+          LLVM_DIR=$(find CoreCompiler/CoreCompilerSupportLibs/LLVM.xcframework -type d -name "llvm" | head -n 1)
+
+          if [ -n "$LLVM_DIR" ]; then
+            mkdir -p CoreCompiler/CoreCompilerSupportLibs/include
+            mkdir -p "$TARGET_XCFRAMEWORK/Headers"
+            mkdir -p "$TARGET_XCFRAMEWORK/ios-arm64/Headers"
+            mkdir -p "$TARGET_XCFRAMEWORK/ios-arm64_x86_64-simulator/Headers"
+
+            rsync -a "$LLVM_DIR" CoreCompiler/CoreCompilerSupportLibs/
+            rsync -a "$LLVM_DIR" CoreCompiler/CoreCompilerSupportLibs/include/
+            rsync -a "$LLVM_DIR" "$TARGET_XCFRAMEWORK/Headers/"
+            rsync -a "$LLVM_DIR" "$TARGET_XCFRAMEWORK/ios-arm64/Headers/"
+            rsync -a "$LLVM_DIR" "$TARGET_XCFRAMEWORK/ios-arm64_x86_64-simulator/Headers/"
+          fi
+
+          rsync -a CoreCompiler/CoreCompilerSupportLibs/ Frameworks/CoreCompiler/CoreCompilerSupportLibs/
+
+          rm -rf tmp_download
+          rm -rf Shared/SwiftToolchain
 
       - name: Build Nyxian
         timeout-minutes: 1200
         run: |
           set -e
-
           CHECK_DEPS=0 make all
 
       - name: Upload Nyxian
