@@ -52,6 +52,8 @@
 - (void)waitTillDone;
 - (BOOL)isNewest;
 
++ (NSData * _Nullable)issueBookmarkForURL:(NSURL * _Nullable)url;
+
 @end
 
 #endif /* NXBOOTSTRAP_H */

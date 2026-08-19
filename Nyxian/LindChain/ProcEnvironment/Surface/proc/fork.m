@@ -211,7 +211,7 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
     /* performing contract */
     child_new->children.parent = parent;
     child_new->children.parent_cld_idx = parent->children.children_cnt++;
-    child_new->children.children[child_new->children.parent_cld_idx] = child_new;
+    parent->children.children[child_new->children.parent_cld_idx] = child_new;
     
     pthread_mutex_unlock(&(child_new->children.mutex));
     pthread_mutex_unlock(&(parent->children.mutex));
