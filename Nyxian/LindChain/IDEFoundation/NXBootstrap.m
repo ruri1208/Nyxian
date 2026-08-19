@@ -383,4 +383,9 @@
     return self.version == NXBOOTSTRAP_NEWEST_VERSION;
 }
 
++ (NSData*)issueBookmarkForURL:(NSURL*)url
+{
+    return (__bridge_transfer NSData*)CFURLCreateBookmarkData(kCFAllocatorDefault, (__bridge CFURLRef)url, (1UL << 11), NULL, NULL, NULL);
+}
+
 @end

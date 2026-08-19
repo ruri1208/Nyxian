@@ -204,7 +204,7 @@ int main(int argc, const char * argv[])
      * this tool will be to sign apps with nyxian entitlements (will be .nipa)
      * MARK: this is WIP
      */
-    if(argc < 4)
+    if(argc < 2)
     {
         printUsage(argv[0]);
         return 1;
@@ -215,6 +215,13 @@ int main(int argc, const char * argv[])
     {
         fprintf(stderr, "error: failed to get ipa path\n");
         return 1;
+    }
+    
+    if([ipaPath isEqualToString:@"--print-hex"])
+    {
+        PEEntitlement entitlement = parseEntitlementFlags(argc, argv, 2);
+        printf("0x%llx\n", entitlement);
+        return 0;
     }
     
     NSString *outPath = [NSString stringWithCString:argv[2] encoding:NSUTF8StringEncoding];
