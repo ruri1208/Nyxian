@@ -54,6 +54,7 @@
     if(self)
     {
         _process = process;
+        [_process addObserver:self];
     }
     return self;
 }
@@ -366,25 +367,6 @@
     return self.process.displayName;
 }
 
-- (void)prepareForInject
-{
-    /* making sure LDEProcess wont close this */
-    self.process.wid = (id_t)-1;
-    self.process.session = nil;
-}
-
-- (BOOL)injectProcess:(PEProcess*)process
-{
-    assert([NSThread isMainThread]);
-    self.process = process;
-    if(![self bindInApplicationWindow])
-    {
-        return NO;
-    }
-    [self activateWindow];
-    return YES;
-}
-
 - (NSString*)getWindowName
 {
     NSString *windowName = [super getWindowName];
@@ -500,6 +482,13 @@
     }];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC), dispatch_get_main_queue(), unstretch);
+}
+
+- (void)process:(PEProcess *)process didExitWithWait4Code:(int)code
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NXWindowServer shared] closeWindowWithIdentifier:self.windowIdentifier withCompletion:nil];
+    });
 }
 
 #if DEBUG

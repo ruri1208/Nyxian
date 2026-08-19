@@ -24,7 +24,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 
-ksurface_proc_t *proc_fork(ksurface_proc_t *parent, pid_t child_pid, const char *path);
+kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent, ksurface_proc_t **child, pid_t child_pid, const char *path);
 
 kern_return_t proc_reap(ksurface_proc_t *child);
 kern_return_t proc_zombify(ksurface_proc_t *child);

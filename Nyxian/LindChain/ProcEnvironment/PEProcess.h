@@ -30,13 +30,10 @@
 #import <LindChain/ProcEnvironment/PEProcessObserver.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
-@class NXWindowSessionApplication;
-
 @interface PEProcess : NSObject <FBProcessObserver>
 
 @property (nonatomic) ksurface_proc_t *proc;
 
-@property (nonatomic,weak) NXWindowSessionApplication *session;
 @property (nonatomic,strong) FBProcess *process;
 @property (nonatomic,strong) UIImage *snapshot;
 
@@ -45,11 +42,10 @@
 @property (nonatomic,strong) NSString *executablePath;
 
 @property (nonatomic) pid_t pid;
-@property (nonatomic) id_t wid;
 
 @property (nonatomic) BOOL isSuspended;
 
-- (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc withSession:(NXWindowSessionApplication*)session;
+- (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc;
 
 - (void)sendSignal:(int)signal;
 

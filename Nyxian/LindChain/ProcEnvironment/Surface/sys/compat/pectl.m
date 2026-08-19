@@ -334,38 +334,23 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                 }
                 
                 PEProcess *process = [[PEProcessManager shared] processForProcessIdentifier:proc_getpid(sys_proc_snapshot_)];
-                if(process == NULL)
+                if(process == nil || process.bundleIdentifier == nil)
                 {
                     /* process must exist in Process Manager */
-                    err = ESRCH;
+                    err = EACCES;
                     return;
                 }
                 
-                if(process.wid < 0)
+                id_t wid = [sharedWindowServer windowIdentifierForBundleIdentifier:process.bundleIdentifier];
+                if(wid < 0)
                 {
-                    err = EPERM;
+                    /* bundleid is already presented */
+                    err = EACCES;
                     return;
                 }
                 
-                if(process.session == nil)
-                {
-                    NXWindowSessionApplication *session = [[NXWindowSessionApplication alloc] initWithProcess:process];
-                    [sharedWindowServer openWindowWithSession:session withCompletion:^(BOOL windowOpened){
-                        if(windowOpened)
-                        {
-                            process.wid = session.windowIdentifier;
-                            process.session = session;
-                        }
-                    }];
-                }
-                else
-                {
-                    if([process.session injectProcess:process])
-                    {
-                        process.wid = process.session.windowIdentifier;
-                        [process.session activateWindow];
-                    }
-                }
+                NXWindowSessionApplication *session = [[NXWindowSessionApplication alloc] initWithProcess:process];
+                [sharedWindowServer openWindowWithSession:session withCompletion:nil];
             });
             sys_return_failure(err);
         }

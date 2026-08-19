@@ -130,17 +130,17 @@
     return _autoRestart;
 }
 
-- (void)dealloc
-{
-    [_process sendSignal:SIGKILL];
-}
-
 - (void)process:(PEProcess *)process didExitWithWait4Code:(int)code
 {
     if(self.shouldAutorestart)
     {
         [self ignition];
     }
+}
+
+- (void)dealloc
+{
+    [_process sendSignal:SIGKILL];
 }
 
 @end

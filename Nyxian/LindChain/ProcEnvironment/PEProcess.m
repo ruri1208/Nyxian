@@ -22,7 +22,6 @@
 #import <LindChain/ProcEnvironment/PEProcess.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
-#import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/Services/containerd/PEContainer.h>
@@ -42,7 +41,6 @@
 
 - (instancetype)initWithItems:(NSDictionary*)items
      withKernelSurfaceProcess:(ksurface_proc_t*)proc
-                  withSession:(NXWindowSessionApplication*)session
 {
     if(proctil(kProctilActionCount) != KERN_SUCCESS)
     {
@@ -59,10 +57,6 @@
         {
             return nil;
         }
-        
-        /* shall deprecate soon */
-        self.session = session;
-        self.wid = (id_t)-1;
         
         self.executablePath = items[@"PEExecutablePath"];
         if(![[PEContainer shared] isReadableFileAtPath:self.executablePath])
@@ -102,8 +96,9 @@
             return nil;
         }
         
-        ksurface_proc_t *child = proc_fork(proc ?: kernel_proc_, self.pid, [self.executablePath UTF8String]);
-        if(child == NULL)
+        ksurface_proc_t *child = NULL;
+        kern_return_t kr = proc_fork_plus_exec(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
+        if(kr != KERN_SUCCESS)
         {
             [self terminate];
             proctil(kProctilActionUnlock);
@@ -211,17 +206,6 @@
     [self enumerateObservers:^(id<PEProcessObserver> observer) {
         [observer process:self didExitWithWait4Code:arg1.exitContext.underlyingContext.legacyCode];
     }];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if(self.wid != -1)
-        {
-            [[NXWindowServer shared] closeWindowWithIdentifier:self.wid withCompletion:nil];
-        }
-        else if(self.session && self.session.windowIdentifier != -1)
-        {
-            [[NXWindowServer shared] closeWindowWithIdentifier:self.session.windowIdentifier withCompletion:nil];
-        }
-    });
     
     [[PEProcessManager shared] unregisterProcessWithProcessIdentifier:self.pid];
 }
