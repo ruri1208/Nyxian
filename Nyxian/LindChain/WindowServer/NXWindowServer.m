@@ -21,9 +21,8 @@
 
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/NXAppTile.h>
+#import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
-#import <LindChain/WindowServer/Window/NXFloatingBallWindow.h>
-
 
 @interface NXWindowLayerView : UIView
 @end
@@ -46,8 +45,6 @@
     UIScrollView *_runningAppsScrollView;
     
     NXWindowLayerView *_windowLayer;
-    NSLayoutConstraint *_appSwitcherHeightConstraint;
-    
 }
 
 - (instancetype)initWithWindowScene:(UIWindowScene *)windowScene
@@ -67,8 +64,7 @@
         _activeWindowIdentifier = (id_t)-1;
         _appSwitcherView = nil;
         
-        //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-        if(YES)
+        if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
         {
             [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
             [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:nil];
@@ -87,26 +83,6 @@
 {
     [super layoutSubviews];
     _windowLayer.frame = self.bounds;
-    if ([NXWindowServer isSimulatorEnabled] && _activeWindowIdentifier != (id_t)-1) { 
-        NXWindow *activeWin = self.windows[@(_activeWindowIdentifier)]; 
-        if (activeWin) { 
-            [self layoutSimulatorWindow:activeWin]; 
-        }
-    }
-    if (self.appSwitcherView && _appSwitcherHeightConstraint) { 
-        BOOL isIPad = (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad); 
-        UIInterfaceOrientation orientation = self.windowScene.interfaceOrientation; 
-        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);  
-        CGFloat newMultiplier = isIPad ? (isLandscape ? 0.48 : 0.36) : (isLandscape ? 0.90 : 0.45);
-        
-        if (fabs(_appSwitcherHeightConstraint.multiplier - newMultiplier) > 0.01) {
-            _appSwitcherHeightConstraint.active = NO;
-            _appSwitcherHeightConstraint = [self.appSwitcherView.heightAnchor constraintEqualToAnchor:self.rootViewController.view.heightAnchor multiplier:newMultiplier];
-            _appSwitcherHeightConstraint.active = YES;
-            [self.rootViewController.view setNeedsLayout];
-            [self.rootViewController.view layoutIfNeeded];
-        }
-    }
 }
 
 + (instancetype)sharedWithWindowScene:(UIWindowScene*)windowScene
@@ -126,45 +102,6 @@
 + (instancetype)shared
 {
     return [self sharedWithWindowScene:nil];
-}
-
-+ (BOOL)isMultitaskingEnabled {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"MultitaskingEnabled"];
-}
-
-+ (void)setMultitaskingEnabled:(BOOL)enabled {
-    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"MultitaskingEnabled"];
-    if (enabled) {
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"FullscreenEnabled"];
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"SimulatorEnabled"];
-    }
-    [[NSUserDefaults standardUserDefaults] synchronize];
-}
-
-+ (BOOL)isFullscreenEnabled {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"FullscreenEnabled"];
-}
-
-+ (void)setFullscreenEnabled:(BOOL)enabled {
-    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"FullscreenEnabled"];
-    if (enabled) {
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"MultitaskingEnabled"];
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"SimulatorEnabled"];
-    }
-    [[NSUserDefaults standardUserDefaults] synchronize];
-}
-
-+ (BOOL)isSimulatorEnabled {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"SimulatorEnabled"];
-}
-
-+ (void)setSimulatorEnabled:(BOOL)enabled {
-    [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:@"SimulatorEnabled"];
-    if (enabled) {
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"MultitaskingEnabled"];
-        [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"FullscreenEnabled"];
-    }
-    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (void)moveWindowToFrontWithNumber:(NSNumber *)number
@@ -192,19 +129,6 @@
         [_windowLayer addSubview:window.view];
         [window openWindow];
         [window focusWindow];
-        
-        if ([NXWindowServer isSimulatorEnabled]) {
-            [self layoutSimulatorWindow:window]; 
-        }
-
-        if ([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]) { 
-            NXFloatingBallWindow *ball = [NXFloatingBallWindow sharedInstance];
-            [ball updateVisibility];
-            if (!ball.hidden) {
-                ball.windowLevel = CGFLOAT_MAX;
-                [ball makeKeyAndVisible]; 
-            }
-        }     
     }
     
     if(self.appSwitcherView)
@@ -217,7 +141,6 @@
         completion();
     }
 }
-
 
 - (void)deactivateWindowByPullDown:(BOOL)pullDown
                     withIdentifier:(id_t)identifier
@@ -267,6 +190,52 @@
     return nil;
 }
 
+- (NXWindowSession*)windowSessionForBundleIdentifier:(NSString*)bundleIdentifier
+{
+    assert([NSThread isMainThread]);
+    for(NXWindow *window in _windows.allValues)
+    {
+        NXWindowSessionApplication *applicationSession = (NXWindowSessionApplication*)window.session;
+        if([applicationSession isKindOfClass:[NXWindowSessionApplication class]])
+        {
+            PEProcess *process = applicationSession.process;
+            if(process == nil)
+            {
+                continue;
+            }
+            
+            if([process.bundleIdentifier isEqualToString:bundleIdentifier])
+            {
+                return applicationSession;
+            }
+        }
+    }
+    return nil;
+}
+
+- (id_t)windowIdentifierForBundleIdentifier:(NSString*)bundleIdentifier
+{
+    assert([NSThread isMainThread]);
+    for(NXWindow *window in _windows.allValues)
+    {
+        NXWindowSessionApplication *applicationSession = (NXWindowSessionApplication*)window.session;
+        if([applicationSession isKindOfClass:[NXWindowSessionApplication class]])
+        {
+            PEProcess *process = applicationSession.process;
+            if(process == nil)
+            {
+                continue;
+            }
+            
+            if([process.bundleIdentifier isEqualToString:bundleIdentifier])
+            {
+                return applicationSession.windowIdentifier;
+            }
+        }
+    }
+    return (id_t)-1;
+}
+
 - (void)unfocusFocusedWindow
 {
     assert([NSThread isMainThread]);
@@ -278,8 +247,7 @@
 
 - (void)windowsGetOutOfMyWay
 {
-    //if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
-    if(![NXWindowServer isMultitaskingEnabled])
+    if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
     {
         return;
     }
@@ -291,8 +259,7 @@
 
 - (void)windowsGetInMyWay
 {
-    //if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
-    if(![NXWindowServer isMultitaskingEnabled])
+    if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
     {
         return;
     }
@@ -340,9 +307,8 @@
     
     NXWindow *window = self.windows[@(_activeWindowIdentifier)];
     if(window != nil &&
-       _activeWindowIdentifier != window.identifier && ![NXWindowServer isMultitaskingEnabled])
-       
-       //[[UIDevice currentDevice] userInterfaceIdiom] != UIUserInterfaceIdiomPad)
+       _activeWindowIdentifier != window.identifier &&
+       [[UIDevice currentDevice] userInterfaceIdiom] != UIUserInterfaceIdiomPad)
     {
         // close first the old one and wait
         [self deactivateWindowByPullDown:YES withIdentifier:_activeWindowIdentifier withCompletion:^{
@@ -375,7 +341,6 @@
             {
                 [self.windows removeObjectForKey:@(identifier)];
                 [self.windowOrder removeObject:@(identifier)];
-                [[NXFloatingBallWindow sharedInstance] updateVisibility];
             }
             
             if(completion) completion(closedWindow);
@@ -396,18 +361,18 @@
     [self bringSubviewToFront:_windowLayer];
     [_windowLayer setUserInteractionEnabled:YES];
 
-    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    //{
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    {
         /* iOS 26 and above uses the tabbar button instead of gesture */
-        //if(@available(iOS 26.0, *))
-        //{
-            //return;
-        //}
+        if(@available(iOS 26.0, *))
+        {
+            return;
+        }
             
         /* add the gesture */
-        //UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-        //[self addGestureRecognizer:gestureRecognizer];
-    //}
+        UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        [self addGestureRecognizer:gestureRecognizer];
+    }
 }
 
 // TODO: FRIDA! PLS MAKE LDEWINDOWSERVERTILEVIEW!!!! IM SO LAZY ONG
@@ -424,7 +389,6 @@
         [self showAppSwitcher];
     }
 }
-
 
 - (void)buildAppSwitcherView
 {
@@ -483,16 +447,11 @@
     
     self.appSwitcherView = container;
     [self.rootViewController.view addSubview:self.appSwitcherView];
-    BOOL isIPad = (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad); 
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].windows.firstObject.windowScene.interfaceOrientation;  
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation); 
-    CGFloat heightMultiplier = isIPad ? (isLandscape ? 0.48 : 0.36) : (isLandscape ? 0.90 : 0.45);
-    _appSwitcherHeightConstraint = [self.appSwitcherView.heightAnchor constraintEqualToAnchor:self.rootViewController.view.heightAnchor multiplier:heightMultiplier];
+    
     [NSLayoutConstraint activateConstraints:@[
         [self.appSwitcherView.leadingAnchor constraintEqualToAnchor:self.rootViewController.view.leadingAnchor],
         [self.appSwitcherView.trailingAnchor constraintEqualToAnchor:self.rootViewController.view.trailingAnchor],
-        _appSwitcherHeightConstraint
-        //[self.appSwitcherView.heightAnchor constraintEqualToAnchor:self.rootViewController.view.heightAnchor multiplier:0.55]
+        [self.appSwitcherView.heightAnchor constraintEqualToAnchor:self.rootViewController.view.heightAnchor multiplier:0.55]
     ]];
     
     self.appSwitcherTopConstraint = [self.appSwitcherView.topAnchor constraintEqualToAnchor:self.rootViewController.view.bottomAnchor];
@@ -506,8 +465,6 @@
     self.impactGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
     [self.impactGenerator prepare];
 }
-
-
 
 - (UIVisualEffectView *)createBlurEffectView
 {
@@ -794,7 +751,7 @@
 - (void)showAppSwitcher
 {
     self.appSwitcherTopConstraint.active = NO;
-    self.appSwitcherTopConstraint = [self.appSwitcherView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor];
+    self.appSwitcherTopConstraint = [self.appSwitcherView.topAnchor constraintEqualToAnchor:self.centerYAnchor];
     self.appSwitcherTopConstraint.active = YES;
 
     [UIView animateWithDuration:0.6 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.6 options:UIViewAnimationOptionCurveEaseInOut animations:^{
@@ -821,7 +778,6 @@
         [self.appSwitcherView removeFromSuperview];
         self.appSwitcherView = nil;
         self.appSwitcherTopConstraint = nil;
-        self->_appSwitcherHeightConstraint = nil;
         self->_placeholderStack = nil;
         self->_stackView = nil;
         self->_runningAppsScrollView = nil;
@@ -919,11 +875,7 @@
     [window deinit];
     [self.windows removeObjectForKey:@(window.identifier)];
     [self.windowOrder removeObject:@(window.identifier)];
-    dispatch_async(dispatch_get_main_queue(), ^{ 
-        [[NXFloatingBallWindow sharedInstance] updateVisibility];
-    }); 
 }
-
 
 - (void)windowWantsToMinimize:(NXWindow *)window
 {
@@ -974,27 +926,21 @@
     CGRect bounds = self.bounds;
     
     /* calculating fullscreen rectangle */
-    CGRect boundsInset = UIEdgeInsetsInsetRect(bounds, insets);
-    CGRect allowed = bounds;
-    allowed.origin.y += insets.top;
-    allowed.size.height -= insets.top;
+    CGRect allowed = UIEdgeInsetsInsetRect(bounds, insets);
+    CGRect boundsInset = allowed;
+    allowed.size.height += insets.bottom;
     
     /* checking if maximised */
-    if([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]){
-        return self.bounds;
-    }
-    
-    else if(window.isMaximized)
+    if(window.isMaximized)
     {
-        //if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
-        //if([NXWindowServer isMultitaskingEnabled])
-        //{
-            //return self.bounds;
-        //}
-        //else
-        //{
+        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+        {
+            return self.bounds;
+        }
+        else
+        {
             return allowed;
-        //}
+        }
     }
     else
     {
@@ -1041,14 +987,9 @@
             NXWindow *window = self.windows[key];
             if(window != nil)
             {
-                if ([NXWindowServer isSimulatorEnabled]) {
-                    [self layoutSimulatorWindow:window];
-                } else {
-                    [window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
-                }
+                [window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
             }
         }
-        [self layoutIfNeeded];
     });
 }
 
@@ -1093,73 +1034,9 @@
             {
                 [super bringSubviewToFront:_fullScreenWindow.view];
             }
-              
-            [[NXFloatingBallWindow sharedInstance] updateVisibility];
         }
-    }    
-}
-- (void)layoutSimulatorWindow:(NXWindow *)window
-{
-    if (!window || !window.view) return;
-    
-    window.view.frame = self.bounds;
-    window.view.backgroundColor = [UIColor blackColor];
-    
-
-    UIEdgeInsets safeArea = self.safeAreaInsets;
-    CGFloat availableW = self.bounds.size.width - safeArea.left - safeArea.right;
-    CGFloat availableH = self.bounds.size.height - safeArea.top - safeArea.bottom;
-
-    if (availableW <= 0 || availableH <= 0) return;
-
-    BOOL isPad = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
-    BOOL isLandscape = (availableW > availableH);
-
-    CGFloat targetW = 0.0;
-    CGFloat targetH = 0.0;
-
-    if (!isPad) {
-        if (!isLandscape) {
-
-            targetW = availableW;
-            targetH = (targetW) * (16.0 / 9.0);
-        } else {
-
-            targetH = availableH;
-            targetW = (targetH) * (16.0 / 9.0);
-        }
-    } else {
-        if (isLandscape) {
-            
-            targetH = availableH;
-            targetW = (targetH) * (9.0 / 16.0);
-        } else {
-         
-            targetW = availableW;
-            targetH = (targetW) * (9.0 / 16.0);
-        }
+        return;
     }
-    if (targetW > availableW) {
-        targetW = availableW;
-    }
-    if (targetH > availableH) {
-        targetH = availableH;
-    }
-
-    CGFloat x = safeArea.left + (availableW - targetW) / 2.0;
-    CGFloat y = safeArea.top  + (availableH - targetH) / 2.0;
-    CGRect contentFrame = CGRectMake(x, y, targetW, targetH);
-
-    for (UIView *subview in window.view.subviews) {
-        subview.frame = contentFrame;
-        subview.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | 
-                                   UIViewAutoresizingFlexibleRightMargin | 
-                                   UIViewAutoresizingFlexibleTopMargin | 
-                                   UIViewAutoresizingFlexibleBottomMargin;
-    }
-    
-    [window.view setNeedsLayout];
-    [window.view layoutIfNeeded];
 }
 
 @end
