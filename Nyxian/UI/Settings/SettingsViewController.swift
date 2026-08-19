@@ -77,7 +77,7 @@ class SettingsViewController: UIThemedTableViewController {
 #if DEBUG
         case 4:
             cell.imageView?.image = UIImage(systemName: "ant.fill")
-            cell.textLabel?.text = "Kernel Log"
+            cell.textLabel?.text = "Debug"
             break
         case 5:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
@@ -122,7 +122,7 @@ class SettingsViewController: UIThemedTableViewController {
                 return CustomizationViewController(style: .insetGrouped)
 #if DEBUG
             case 4:
-                return KernelLogViewController()
+                return DebugToolboxViewController()
             case 5:
                 return CreditsViewController(style: .insetGrouped)
 #else

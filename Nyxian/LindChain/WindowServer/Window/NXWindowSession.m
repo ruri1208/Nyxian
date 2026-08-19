@@ -24,9 +24,18 @@
 
 @implementation NXWindowSession
 
+- (instancetype)init
+{
+    self = [super init];
+    if(self)
+    {
+        _startWindowRect = CGRectMake(50, 50, 375, 667);
+    }
+    return self;
+}
+
 - (BOOL)openWindow
 {
-    _startWindowRect = CGRectMake(50, 50, 375, 667);
     return (self.windowScene != nil);
 }
 

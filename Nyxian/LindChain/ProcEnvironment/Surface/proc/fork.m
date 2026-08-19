@@ -28,11 +28,12 @@
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/Services/containerd/PEContainer.h>
 
-ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
-                           pid_t child_pid,
-                           const char *path)
+kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
+                                  ksurface_proc_t **child,
+                                  pid_t child_pid,
+                                  const char *path)
 {
-    assert(parent != NULL && path != NULL);
+    assert(parent != NULL && child != NULL && path != NULL);
     
     /*
      * must convert to a nsPath, we shall not
@@ -42,18 +43,18 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
     NSString *nsPath = [NSString stringWithCString:path encoding:NSUTF8StringEncoding];
     if(nsPath == nil)
     {
-        return NULL;
+        return KERN_FAILURE;
     }
     
-    ksurface_proc_t *child = kvo_copy(parent);
-    if(child == NULL)
+    ksurface_proc_t *child_new = kvo_copy(parent);
+    if(child_new == NULL)
     {
-        return NULL;
+        return KERN_FAILURE;
     }
-    child->nyx.explicit_cdhash = false;
+    child_new->nyx.explicit_cdhash = false;
 
-    proc_setppid(child, proc_getpid(child));    /* as the child is the copy of the parent the current pid is the ppid */
-    proc_setpid(child, child_pid);  /* function passed pid of child */
+    proc_setppid(child_new, proc_getpid(child_new));    /* as the child is the copy of the parent the current pid is the ppid */
+    proc_setpid(child_new, child_pid);      /* function passed pid of child */
     
     /*
      * getting the entitlements passed of the
@@ -63,8 +64,8 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
      * sayed executable.
      */
     PEEntitlement entitlement = PEEntitlementNone;
-    PEEntitlement currentEntitlement = proc_getentitlements(child);
-    PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child);
+    PEEntitlement currentEntitlement = proc_getentitlements(child_new);
+    PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
     
     ksurface_ent_result_t resultBlob;
     if([nsPath isEqualToString:@"/sbin/launchd"] ||
@@ -82,8 +83,8 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
             entitlement = entitlement_sanitize(resultBlob.blob.entitlement);
             
             /* and copy cdhash */
-            memcpy(child->nyx.cdhash, resultBlob.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-            child->nyx.explicit_cdhash = true;
+            memcpy(child_new->nyx.cdhash, resultBlob.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+            child_new->nyx.explicit_cdhash = true;
         }
     }
     
@@ -118,8 +119,8 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
          * Nyxian and ksurface crash immediately.
          */
         currentEntitlement = PEEntitlementNone;
-        proc_setmobilecred(child);
-        proc_setsid(child, child_pid);
+        proc_setmobilecred(child_new);
+        proc_setsid(child_new, child_pid);
     }
     else if(entitlement_got_entitlement(currentEntitlement, PEEntitlementProcessSpawnInheriteEntitlements))
     {
@@ -146,7 +147,7 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
          * child process exeuctable is platform binary and has
          * the special platform root entitlement.
          */
-        proc_setrootcred(child);
+        proc_setrootcred(child_new);
     }
     
     /*
@@ -154,24 +155,24 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
      * and the entitlements of the executable.
      */
     PEEntitlement combinedEntitlement = entitlement_sanitize(currentEntitlement | entitlement);
-    proc_setentitlements(child, combinedEntitlement);
-    proc_setmaxentitlements(child, combinedEntitlement);
+    proc_setentitlements(child_new, combinedEntitlement);
+    proc_setmaxentitlements(child_new, combinedEntitlement);
     
-    strlcpy(child->nyx.executable_path, path, PATH_MAX);
+    strlcpy(child_new->nyx.executable_path, path, PATH_MAX);
         
     /* FIXME: argv[0] shall be used for p_comm and not the last path component */
     const char *name = strrchr(path, '/');
     name = name ? name + 1 : path;
-    strlcpy(child->bsd.kp_proc.p_comm, name, MAXCOMLEN + 1);
+    strlcpy(child_new->bsd.kp_proc.p_comm, name, MAXCOMLEN + 1);
     
     /* insert will retain the child process */
-    if(proc_insert(child) != KERN_SUCCESS)
+    if(proc_insert(child_new) != KERN_SUCCESS)
     {
-        klog_log("proc:fork", "[%d] fork failed process %p failed to be inserted", proc_getpid(child), child);
+        klog_log("proc:fork", "[%d] fork failed process %p failed to be inserted", proc_getpid(child_new), child);
         
         /* releasing child process because of failed insert */
-        kvo_release(child);
-        return NULL;
+        kvo_release(child_new);
+        return KERN_FAILURE;
     }
     
     /*
@@ -195,28 +196,30 @@ ksurface_proc_t *proc_fork(ksurface_proc_t *parent,
      * of child processes per process.
      */
     if(parent->children.children_cnt >= CHILD_PROC_MAX ||
-       !kvo_retain(child))
+       !kvo_retain(child_new))
     {
         pthread_mutex_unlock(&(parent->children.mutex));
-        kvo_release(parent);
+        kvo_release(child_new);
         
     out_parent_contract_retain_failed:
-        proc_remove_by_pid(proc_getpid(child));
-        return NULL;
+        proc_remove_by_pid(proc_getpid(child_new));
+        return KERN_FAILURE;
     }
     
-    pthread_mutex_lock(&(child->children.mutex));
+    pthread_mutex_lock(&(child_new->children.mutex));
     
     /* performing contract */
-    child->children.parent = parent;
-    child->children.parent_cld_idx = parent->children.children_cnt++;
-    parent->children.children[child->children.parent_cld_idx] = child;
+    child_new->children.parent = parent;
+    child_new->children.parent_cld_idx = parent->children.children_cnt++;
+    child_new->children.children[child_new->children.parent_cld_idx] = child_new;
     
-    pthread_mutex_unlock(&(child->children.mutex));
+    pthread_mutex_unlock(&(child_new->children.mutex));
     pthread_mutex_unlock(&(parent->children.mutex));
     
+    *child = child_new;
+    
     /* child stays retained for the caller */
-    return child;
+    return KERN_SUCCESS;
 }
 
 kern_return_t proc_reap(ksurface_proc_t *proc)

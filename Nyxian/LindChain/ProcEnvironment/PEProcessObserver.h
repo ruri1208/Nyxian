@@ -19,23 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PELAUNCHSERVICE_H
-#define PELAUNCHSERVICE_H
+#ifndef PRPROCESSOBSERVER_H
+#define PRPROCESSOBSERVER_H
 
 #import <Foundation/Foundation.h>
-#import <LindChain/ProcEnvironment/PEProcess.h>
 
-@interface PELaunchService : NSObject <PEProcessObserver>
+@class PEProcess;
 
-@property (nonatomic,readonly,getter=getProcess) PEProcess *process;
-@property (nonatomic,readonly,getter=getExecutablePath) NSString *executablePath;
-@property (nonatomic,readonly,getter=getServiceIdentifier) NSString *serviceIdentifier;
-@property (nonatomic,readonly,getter=shouldAutorestart) BOOL autoRestart;
+@protocol PEProcessObserver <NSObject>
 
-+ (instancetype)launchServiceWithPlistPath:(NSString*)plistPath;
-- (instancetype)initWithPlistPath:(NSString*)plistPath;
-- (BOOL)isServiceWithServiceIdentifier:(NSString*)serviceIdentifier;
+@optional
+- (void)process:(PEProcess*)process didExitWithWait4Code:(int)code;
 
 @end
 
-#endif /* PELAUNCHSERVICE_H */
+#endif /* PRPROCESSOBSERVER_H */

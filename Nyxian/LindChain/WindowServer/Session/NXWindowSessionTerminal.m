@@ -149,30 +149,7 @@
     }
     
     _terminal.objcDelegate = self;
-    
-    __weak typeof(self) weakSelf = self;
-    
-    _process.exitingCallback = ^{
-        __strong typeof(self) strongSelf = weakSelf;
-        
-        if(!strongSelf)
-        {
-            return;
-        }
-        
-        if(strongSelf.focused)
-        {
-            write(strongSelf->_tty->userspacefd[SLAVEFD], "\n[process exited]\n", 18);
-            
-            strongSelf.atExit = YES;
-        }
-        else
-        {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [[NXWindowServer shared] closeWindowWithIdentifier:strongSelf.windowIdentifier withCompletion:nil];
-            });
-        }
-    };
+    [_process addObserver:self];
     
     _terminal.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:_terminal];
@@ -255,6 +232,27 @@
     
     /* notifying child process */
     [self.process sendSignal:SIGWINCH];
+}
+
+- (void)process:(PEProcess *)process didExitWithWait4Code:(int)code
+{
+    if(!self)
+    {
+        return;
+    }
+    
+    if(self.focused)
+    {
+        write(_tty->userspacefd[SLAVEFD], "\n[process exited]\n", 18);
+        
+        self.atExit = YES;
+    }
+    else
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[NXWindowServer shared] closeWindowWithIdentifier:self.windowIdentifier withCompletion:nil];
+        });
+    }
 }
 
 - (void)dealloc

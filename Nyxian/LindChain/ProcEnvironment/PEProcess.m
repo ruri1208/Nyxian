@@ -22,7 +22,6 @@
 #import <LindChain/ProcEnvironment/PEProcess.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
-#import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/Services/containerd/PEContainer.h>
@@ -34,84 +33,84 @@
 #import <MobileDevelopmentKit/MDKThreadPool.h>
 
 @implementation PEProcess {
-    dispatch_once_t _notifyWindowManagerOnce;
+    NSHashTable<id<PEProcessObserver>> *_observers;
+    os_unfair_lock _lock;
 }
 
 @dynamic pid;
 
 - (instancetype)initWithItems:(NSDictionary*)items
      withKernelSurfaceProcess:(ksurface_proc_t*)proc
-                  withSession:(NXWindowSessionApplication*)session
 {
     if(proctil(kProctilActionCount) != KERN_SUCCESS)
     {
         return nil;
     }
     
-    if(proctil(kProctilActionLock) != KERN_SUCCESS)
-    {
-        return nil;
-    }
-    
     self = [super init];
-    
-    self.session = session;
-    
-    self.executablePath = items[@"PEExecutablePath"];
-    if(self.executablePath == nil)
+    if(self)
     {
+        _observers = [[NSHashTable alloc] initWithOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPointerPersonality capacity:0];
+        _lock = OS_UNFAIR_LOCK_INIT;
+        
+        if(proctil(kProctilActionLock) != KERN_SUCCESS)
+        {
+            return nil;
+        }
+        
+        self.executablePath = items[@"PEExecutablePath"];
+        if(![[PEContainer shared] isReadableFileAtPath:self.executablePath])
+        {
+            proctil(kProctilActionUnlock);
+            return nil;
+        }
+        
+        LDEApplicationObject *applicationObject = nil;
+        
+        if(PELaunchServiceManager.shared.isBooted)
+        {
+            applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
+        }
+        
+        self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
+        self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
+        
+        /* spawning process */
+        self.process = PESpawnFBProcess(items);
+        if(self.process == nil)
+        {
+            proctil(kProctilActionUnlock);
+            return nil;
+        }
+        
+        [self.process addObserver:self];
+        if(!self.process.running)
+        {
+            /*
+             * prevents a race condition, when we add a observer
+             * and it already died then we shall handle the exit.
+             */
+            FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];
+            [manager _removeProcess:self.process];
+            proctil(kProctilActionUnlock);
+            return nil;
+        }
+        
+        ksurface_proc_t *child = NULL;
+        kern_return_t kr = proc_fork_plus_exec(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
+        if(kr != KERN_SUCCESS)
+        {
+            [self terminate];
+            proctil(kProctilActionUnlock);
+            return nil;
+        }
+        else
+        {
+            self.proc = child;
+        }
+        
         proctil(kProctilActionUnlock);
-        return nil;
     }
-    /* FIXME: before it was a isExecutableFileAtPath check, but since installd broke the permissions at install time we can forget that lol */
-    if(![[PEContainer shared] isReadableFileAtPath:self.executablePath]) return nil;
-    
-    self.wid = (id_t)-1;
-    
-    LDEApplicationObject *applicationObject = nil;
-    
-    if(PELaunchServiceManager.shared.isBooted)
-    {
-        applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
-    }
-    
-    self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
-    self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
-    
-    /* spawning process */
-    self.process = PESpawnFBProcess(items);
-    if(self.process == nil)
-    {
-        proctil(kProctilActionUnlock);
-        return nil;
-    }
-    
-    [self.process addObserver:self];
-    if(!self.process.running)
-    {
-        /*
-         * prevents a race condition, when we add a observer
-         * and it already died then we shall handle the exit.
-         */
-        FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];
-        [manager _removeProcess:self.process];
-        proctil(kProctilActionUnlock);
-        return nil;
-    }
-    
-    ksurface_proc_t *child = proc_fork(proc ?: kernel_proc_, self.pid, [self.executablePath UTF8String]);
-    if(child == NULL)
-    {
-        [self terminate];
-        proctil(kProctilActionUnlock);
-        return nil;
-    }
-    else
-    {
-        self.proc = child;
-    }
-    
-    proctil(kProctilActionUnlock);
     return self;
 }
 
@@ -165,7 +164,7 @@
     }
 }
 
-- (BOOL)terminate
+- (void)terminate
 {
     [self sendSignal:SIGTERM];
     __weak typeof(self) weakSelf = self;
@@ -177,17 +176,16 @@
             [strongSelf sendSignal:SIGKILL];
         }
     });
-    return YES;
 }
 
-- (void)setExitingCallback:(void(^)(void))callback
+- (void)suspend
 {
-    _exitingCallback = callback;
+    [self sendSignal:SIGSTOP];
 }
 
-- (void)setSnapshotReceivedCallback:(void(^)(UIImage*))callback
+- (void)resume
 {
-    _snapshotReceivedCallback = callback;
+    [self sendSignal:SIGCONT];
 }
         
 - (void)processDidExit:(FBProcess *)arg1
@@ -204,24 +202,10 @@
         }
     }
     
-    if(self.exitingCallback)
-    {
-        /* exit callback shall never run on the same queue */
-        MDKPthreadDispatch(^{
-            self.exitingCallback();
-        });
-    }
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if(self.wid != -1)
-        {
-            [[NXWindowServer shared] closeWindowWithIdentifier:self.wid withCompletion:nil];
-        }
-        else if(self.session && self.session.windowIdentifier != -1)
-        {
-            [[NXWindowServer shared] closeWindowWithIdentifier:self.session.windowIdentifier withCompletion:nil];
-        }
-    });
+    /* notify observers */
+    [self enumerateObservers:^(id<PEProcessObserver> observer) {
+        [observer process:self didExitWithWait4Code:arg1.exitContext.underlyingContext.legacyCode];
+    }];
     
     [[PEProcessManager shared] unregisterProcessWithProcessIdentifier:self.pid];
 }
@@ -246,6 +230,32 @@
     return [super forwardingTargetForSelector:sel];
 }
 
+- (void)enumerateObservers:(void (^)(id<PEProcessObserver> observer))block
+{
+    os_unfair_lock_lock(&_lock);
+    NSArray<id<PEProcessObserver>> *snapshot = _observers.allObjects;
+    os_unfair_lock_unlock(&_lock);
+
+    for (id<PEProcessObserver> observer in snapshot) {
+        block(observer);
+    }
+}
+
+- (void)addObserver:(id<PEProcessObserver>)observer
+{
+    NSParameterAssert(observer);
+    os_unfair_lock_lock(&_lock);
+    [_observers addObject:observer];
+    os_unfair_lock_unlock(&_lock);
+}
+
+- (void)removeObserver:(id<PEProcessObserver>)observer
+{
+    os_unfair_lock_lock(&_lock);
+    [_observers removeObject:observer];
+    os_unfair_lock_unlock(&_lock);
+}
+
 - (void)dealloc
 {
     if(_proc != NULL)
@@ -253,15 +263,6 @@
         kvo_release(_proc);
     }
     proctil(kProctilActionUncount);
-}
-
-- (void)setSnapshot:(UIImage *)snapshot
-{
-    if(_snapshotReceivedCallback)
-    {
-        _snapshotReceivedCallback(snapshot);
-    }
-    _snapshot = snapshot;
 }
 
 @end

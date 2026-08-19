@@ -19,9 +19,9 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import UIKit
-
 #if DEBUG
+
+import UIKit
 
 class KernelLogViewController: UIViewController {
     private let scrollView: UIScrollView = {

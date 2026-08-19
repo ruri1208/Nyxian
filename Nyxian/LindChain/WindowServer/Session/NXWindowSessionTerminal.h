@@ -25,7 +25,7 @@
 #import <LindChain/WindowServer/Window/NXWindowSession.h>
 #import <LindChain/ProcEnvironment/PEProcess.h>
 
-@interface NXWindowSessionTerminal : NXWindowSession
+@interface NXWindowSessionTerminal : NXWindowSession <PEProcessObserver>
 
 @property (nonatomic,strong) NSString *utilityPath;
 

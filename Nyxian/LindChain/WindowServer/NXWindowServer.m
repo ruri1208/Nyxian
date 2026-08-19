@@ -21,6 +21,7 @@
 
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/NXAppTile.h>
+#import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 
 @interface NXWindowLayerView : UIView
@@ -187,6 +188,52 @@
         return window.session;
     }
     return nil;
+}
+
+- (NXWindowSession*)windowSessionForBundleIdentifier:(NSString*)bundleIdentifier
+{
+    assert([NSThread isMainThread]);
+    for(NXWindow *window in _windows.allValues)
+    {
+        NXWindowSessionApplication *applicationSession = (NXWindowSessionApplication*)window.session;
+        if([applicationSession isKindOfClass:[NXWindowSessionApplication class]])
+        {
+            PEProcess *process = applicationSession.process;
+            if(process == nil)
+            {
+                continue;
+            }
+            
+            if([process.bundleIdentifier isEqualToString:bundleIdentifier])
+            {
+                return applicationSession;
+            }
+        }
+    }
+    return nil;
+}
+
+- (id_t)windowIdentifierForBundleIdentifier:(NSString*)bundleIdentifier
+{
+    assert([NSThread isMainThread]);
+    for(NXWindow *window in _windows.allValues)
+    {
+        NXWindowSessionApplication *applicationSession = (NXWindowSessionApplication*)window.session;
+        if([applicationSession isKindOfClass:[NXWindowSessionApplication class]])
+        {
+            PEProcess *process = applicationSession.process;
+            if(process == nil)
+            {
+                continue;
+            }
+            
+            if([process.bundleIdentifier isEqualToString:bundleIdentifier])
+            {
+                return applicationSession.windowIdentifier;
+            }
+        }
+    }
+    return (id_t)-1;
 }
 
 - (void)unfocusFocusedWindow

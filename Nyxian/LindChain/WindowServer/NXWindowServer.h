@@ -54,6 +54,8 @@ static NXWindowServerPresentationState const NXWindowServerPresentationStateOutO
 
 - (void)focusWindowForIdentifier:(id_t)identifier;
 - (NXWindowSession*)windowSessionForIdentifier:(id_t)identifier;
+- (NXWindowSession*)windowSessionForBundleIdentifier:(NSString*)bundleIdentifier;
+- (id_t)windowIdentifierForBundleIdentifier:(NSString*)bundleIdentifier;
 - (void)unfocusFocusedWindow;
 - (void)windowsGetOutOfMyWay;
 - (void)windowsGetInMyWay;

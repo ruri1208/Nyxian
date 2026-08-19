@@ -27,35 +27,34 @@
 #import <LindChain/Private/UIKitPrivate.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/ProcEnvironment/PEFileTable.h>
+#import <LindChain/ProcEnvironment/PEProcessObserver.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
-
-@class NXWindowSessionApplication;
 
 @interface PEProcess : NSObject <FBProcessObserver>
 
 @property (nonatomic) ksurface_proc_t *proc;
 
-@property (nonatomic,weak) NXWindowSessionApplication *session;
 @property (nonatomic,strong) FBProcess *process;
 @property (nonatomic,strong) UIImage *snapshot;
 
 @property (nonatomic,strong) NSString *bundleIdentifier;
 @property (nonatomic,strong) NSString *displayName;
 @property (nonatomic,strong) NSString *executablePath;
+
 @property (nonatomic) pid_t pid;
-@property (nonatomic) id_t wid;
 
 @property (nonatomic) BOOL isSuspended;
-@property (nonatomic, copy) void (^exitingCallback)(void);
-@property (nonatomic, copy) void (^snapshotReceivedCallback)(UIImage *);
 
-- (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc withSession:(NXWindowSessionApplication*)session;
+- (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc;
 
 - (void)sendSignal:(int)signal;
-- (BOOL)terminate;
 
-- (void)setExitingCallback:(void(^)(void))callback;
-- (void)setSnapshotReceivedCallback:(void(^)(UIImage*))callback;
+- (void)terminate;
+- (void)suspend;
+- (void)resume;
+
+- (void)addObserver:(id<PEProcessObserver>)observer;
+- (void)removeObserver:(id<PEProcessObserver>)observer;
 
 @end
 
