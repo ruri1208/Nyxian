@@ -21,34 +21,23 @@
 
 #import <LindChain/WindowServer/Window/NXWindowSession.h>
 #import <LindChain/WindowServer/Window/NXWindow.h>
-#import <LindChain/WindowServer/NXWindowServer.h>
 
 @implementation NXWindowSession
 
-- (BOOL)openWindow
+- (instancetype)init
 {
-    UIView *view = self.view; 
-    CGRect bounds = view.bounds;
-    
-    if([NXWindowServer isMultitaskingEnabled]) {
-        BOOL isLandscape = bounds.size.width > bounds.size.height;
-        CGFloat targetWidth  = isLandscape ? 360.0 : 360.0;
-        CGFloat targetHeight = isLandscape ? 360.0 : 360.0;
-        CGFloat windowWidth  = MIN(targetWidth, bounds.size.width);
-        CGFloat windowHeight = MIN(targetHeight, bounds.size.height);
-        CGFloat x = (bounds.size.width - windowWidth) / 2.0;
-        CGFloat y = (bounds.size.height - windowHeight) / 2.0;
-        _startWindowRect = CGRectMake(x, y, windowWidth, windowHeight);
-        return (self.windowScene != nil);
-    } 
-    else
+    self = [super init];
+    if(self)
     {
-    UIEdgeInsets insets = view.safeAreaInsets;
-    _startWindowRect = UIEdgeInsetsInsetRect(bounds, insets);
-    return (self.windowScene != nil);
+        _startWindowRect = CGRectMake(50, 50, 375, 667);
     }
+    return self;
 }
 
+- (BOOL)openWindow
+{
+    return (self.windowScene != nil);
+}
 
 - (BOOL)closeWindow
 {
@@ -126,11 +115,6 @@
 }
 
 - (void)commitInteractiveResize
-{
-    
-}
-
-- (void)cancelInteractiveResize
 {
     
 }
