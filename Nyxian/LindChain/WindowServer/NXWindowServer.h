@@ -30,7 +30,7 @@ typedef UInt64 NXWindowServerPresentationState NS_TYPED_ENUM;
 static NXWindowServerPresentationState const NXWindowServerPresentationStateDefault = 0;
 static NXWindowServerPresentationState const NXWindowServerPresentationStateFullScreen = 1;
 static NXWindowServerPresentationState const NXWindowServerPresentationStateOutOfMyWay = 2;
-
+@class NXFloatingBall;
 @interface NXWindowServer : UIWindow <UIGestureRecognizerDelegate,NXWindowDelegate>
 
 @property (nonatomic, readonly) NXWindowServerPresentationState presentationState;
@@ -61,6 +61,12 @@ static NXWindowServerPresentationState const NXWindowServerPresentationStateOutO
 - (void)windowsGetInMyWay;
 
 - (void)showAppSwitcherExternal;
++ (BOOL)isMultitaskingEnabled;
++ (void)setMultitaskingEnabled:(BOOL)enabled;
++ (BOOL)isFullscreenEnabled;
++ (void)setFullscreenEnabled:(BOOL)enabled;
++ (BOOL)isSimulatorEnabled;
++ (void)setSimulatorEnabled:(BOOL)enabled;
 
 @end
 
