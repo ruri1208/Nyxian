@@ -343,7 +343,6 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                 
                 if(process.wid < 0)
                 {
-                    /* window can only be opened once */
                     err = EPERM;
                     return;
                 }

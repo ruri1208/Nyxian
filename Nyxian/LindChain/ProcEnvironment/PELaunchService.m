@@ -21,8 +21,19 @@
 
 #import <LindChain/ProcEnvironment/PELaunchService.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
+#import <os/lock.h>
 
-@implementation PELaunchService
+@implementation PELaunchService {
+    os_unfair_lock _lock;
+    PEProcess *_process;
+    NSXPCListenerEndpoint *_endpoint;
+    NSDictionary *_dictionary;
+    
+    /* properties for async access */
+    NSString *_executablePath;
+    NSString *_serviceIdentifier;
+    BOOL _autoRestart;
+}
 
 + (instancetype)launchServiceWithPlistPath:(NSString*)plistPath
 {
@@ -85,13 +96,7 @@
     }
     
     /* now assign handlers */
-    if(self.shouldAutorestart)
-    {
-        __weak typeof(self) weakSelf = self;
-        [_process setExitingCallback:^{
-            [weakSelf ignition];
-        }];
-    }
+    [_process addObserver:self];
     
     os_unfair_lock_unlock(&_lock);
 }
@@ -128,6 +133,14 @@
 - (void)dealloc
 {
     [_process sendSignal:SIGKILL];
+}
+
+- (void)process:(PEProcess *)process didExitWithWait4Code:(int)code
+{
+    if(self.shouldAutorestart)
+    {
+        [self ignition];
+    }
 }
 
 @end

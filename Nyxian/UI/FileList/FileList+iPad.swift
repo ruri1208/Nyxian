@@ -233,7 +233,7 @@ class MainSplitViewController: UISplitViewController, UISplitViewControllerDeleg
                 
                 buildProjectWithArgumentUI(targetViewController: detailVC, project: project, buildType: .run) { [weak self] result, execPath in
                     if let process = detailVC.process {
-                        process.removeObserver(detailVC)
+                        process.remove(detailVC)
                         detailVC.process = nil
                     }
                     
@@ -279,8 +279,8 @@ class MainSplitViewController: UISplitViewController, UISplitViewControllerDeleg
                         
                         if processIdentifier > 0,
                            let process: PEProcess = PEProcessManager.shared().process(forProcessIdentifier: processIdentifier) {
-                            process.process.addObserver(detailVC)
-                            detailVC.process = process.process
+                            process.add(detailVC)
+                            detailVC.process = process
                         } else {
                             if let logView = detailVC.logView {
                                 logView.writeMessage(toConsole: "failed to spawn process")
@@ -293,11 +293,11 @@ class MainSplitViewController: UISplitViewController, UISplitViewControllerDeleg
     }
 }
 
-class SplitScreenDetailViewController: UIViewController, FBProcessObserver {
+class SplitScreenDetailViewController: UIViewController, PEProcessObserver {
     let project: NXProject
     
     var lock: os_unfair_lock = os_unfair_lock()
-    var process: FBProcess? = nil
+    var process: PEProcess? = nil
     
     var logView: NXConsoleView?
     var logViewHeightConstraint: NSLayoutConstraint?
@@ -713,17 +713,14 @@ class SplitScreenDetailViewController: UIViewController, FBProcessObserver {
         logView?.layer.borderColor = currentTheme?.backgroundColor.cgColor ?? UIColor.white.withAlphaComponent(0.2).cgColor
     }
     
-    func processDidExit(_ arg1: FBProcess!) {
+    func process(_ process: PEProcess!, didExitWithWait4Code code: Int32) {
         DispatchQueue.main.sync {
-            if let logView = self.logView,
-               let exitContext: FBProcessExitContext = arg1.exitContext as? FBProcessExitContext {
-                let legacyCode: Int32 = exitContext.underlyingContext.legacyCode
-                
-                let signalBits = legacyCode & 0x7F
+            if let logView = self.logView {
+                let signalBits = code & 0x7F
                 let isStopped = signalBits == 0x7F
                 
                 if signalBits == 0 {
-                    let exitCode = (legacyCode >> 8) & 0xFF
+                    let exitCode = (code >> 8) & 0xFF
                     logView.writeMessage(toConsole: "process did exit with code: \(exitCode)", with: exitCode == 0 ? .systemGreen : .systemRed)
                 } else if !isStopped {
                     let signalNumber = signalBits
@@ -734,17 +731,11 @@ class SplitScreenDetailViewController: UIViewController, FBProcessObserver {
                     logView.writeMessage(toConsole: "process was killed by signal: \(signalNumber) (\(PosixSignal(rawValue: signalNumber)?.description ?? "SIGUNKNOWN"))", with: color)
                 } else {
                     // IDK how this would happen
-                    let stopSignal = (legacyCode >> 8) & 0xFF
+                    let stopSignal = (code >> 8) & 0xFF
                     logView.writeMessage(toConsole: "process was stopped by signal: \(stopSignal) (\(PosixSignal(rawValue: stopSignal)?.description ?? "SIGUNKNOWN"))", with: .yellow)
                 }
             }
         }
-    }
-        
-    func processWillExit(_ arg1: FBProcess!) {
-    }
-    
-    func process(_ arg1: FBProcess!, stateDidChangeFrom arg2: FBProcessState!, to arg3: FBProcessState!) {
     }
 }
 
