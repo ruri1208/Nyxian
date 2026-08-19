@@ -79,8 +79,6 @@ enum kvObjSnap: uint8_t {
 /* kernel virt object types */
 typedef struct kvobject     kvobject_t;             /* weak object type (needs retain on use) */
 typedef struct kvobject     kvobject_snapshot_t;    /* snapshot of object (references object usually) */
-typedef struct rcu_kvobject rcu_kvobject_t;         /* weak rcu object */
-typedef struct rcu_kvobject rcu_kvobject_strong_t;  /* strong rcu object */
 
 /* kernel virt object event type */
 typedef struct kvevent      kvobject_event_t;
