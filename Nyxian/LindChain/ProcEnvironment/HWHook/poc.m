@@ -19,9 +19,9 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/HWHook/HWHookThreadContext.h>
+#include <Frameworks/HWHook/HWHKHookThreadContext.h>
 
-int test_open(const char *path, int flags, ...)
+int hook_open(const char *path, int flags, ...)
 {
     mode_t mode = 0;
     if(flags & O_CREAT)
@@ -32,34 +32,37 @@ int test_open(const char *path, int flags, ...)
         va_end(ap);
     }
     
-    HWHookThreadContextExit(HWHookThreadContextGetCurrent());
-    return open(path, flags, mode);
+    HWHKHookThreadContext *context = [HWHKHookThreadContext current];
+    [context exit];
+    open(path, flags, mode);
+    [context enter];
+    return 27;
+}
+
+int hook_close(int fd)
+{
+    HWHKHookThreadContext *context = [HWHKHookThreadContext current];
+    [context exit];
+    close(fd);
+    [context enter];
+    return 27;
 }
 
 __attribute__((constructor))
 void test_hwhook(void)
 {
-    HWHookRef hook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, open, test_open);
-    if(hook == NULL)
+    HWHKHookThreadContext *context = [HWHKHookThreadContext context];
+    if(![context addHook:[HWHKHook hookWithPointerToSymbol:close withReplacementSymbol:hook_close]] ||
+       ![context addHook:[HWHKHook hookWithPointerToSymbol:open withReplacementSymbol:hook_open]] ||
+       ![context enter])
     {
-        exit(1);
+        return;
     }
     
-    HWHookThreadContextRef context = HWHookThreadContextCreate(kCFAllocatorDefault);
-    if(context == NULL)
-    {
-        CFRelease(hook);
-        exit(1);
-    }
-    
-    if(!HWHookThreadContextAppendHook(context, hook) ||
-       !HWHookThreadContextEnter(context))
-    {
-        CFRelease(hook);
-        CFRelease(context);
-        exit(1);
-    }
-    
-    int ret = open("test.txt", O_CREAT | O_RDWR, 0777);
+    int ret = open("test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
     printf("hook returned: %d\n", ret);
+    ret = close(-1);
+    printf("hook returned: %d\n", ret);
+    
+    [context exit];
 }

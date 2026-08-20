@@ -19,8 +19,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/Private/CoreFoundation/CFRuntime.h>
-#include <LindChain/ProcEnvironment/HWHook/HWHookThreadContext.h>
+#include "CFRuntime.h"
+#include "HWHookThreadContext.h"
 #include <pthread.h>
 #include <mach/mach.h>
 
@@ -217,7 +217,7 @@ void *__HWHookThreadContextServer(void *ctxp)
                 return NULL;
             }
             printf("[+] reply send to the kernel\n");
-            printf("[+] baiii :3\n");
+            printf("[+] baiii :3\n\n");
             return NULL;
         }
         else
@@ -286,7 +286,7 @@ void *__HWHookThreadContextServer(void *ctxp)
             printf("[!] failed to send reply to the kernel\n");
             return NULL;
         }
-        printf("[+] reply send to the kernel\n");
+        printf("[+] reply sent to the kernel\n\n");
     }
     
     return NULL;

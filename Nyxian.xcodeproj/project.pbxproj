@@ -34,6 +34,7 @@
 		8FB3BB053030089000DB3ABC /* LiveShim.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8FECB2472FFD34D500049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB2462FFD34D500049BB0 /* Runestone */; };
 		8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB24C2FFD367A00049BB0 /* Runestone */; };
+		8FF32E203036F78D00C46FE4 /* libHWHook.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */; };
 		AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */ = {isa = PBXBuildFile; productRef = AF9919572DC9175A00DDF895 /* TreeSitterObjc */; };
 		AF99195B2DC9176900DDF895 /* TreeSitterC in Frameworks */ = {isa = PBXBuildFile; productRef = AF99195A2DC9176900DDF895 /* TreeSitterC */; };
 		AFF4D5D92DC9390B00B1B5F9 /* Shared in Resources */ = {isa = PBXBuildFile; fileRef = AF99171F2DC8EA3C00DDF895 /* Shared */; };
@@ -83,6 +84,13 @@
 			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
 			remoteInfo = LiveProcess;
 		};
+		8FF32E213036F78D00C46FE4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8FF32DEC3036F59E00C46FE4;
+			remoteInfo = HWHook;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -127,6 +135,15 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FF32DEB3036F59E00C46FE4 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -158,6 +175,7 @@
 		86DCC3092FA521A100973169 /* libz.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.tbd; path = usr/lib/libz.1.tbd; sourceTree = SDKROOT; };
 		8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiveShim.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FB3C1EA3031450500DB3ABC /* ksurface_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ksurface_config.h; sourceTree = "<group>"; };
+		8FF32DED3036F59E00C46FE4 /* libHWHook.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libHWHook.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF99171F2DC8EA3C00DDF895 /* Shared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Shared; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -417,6 +435,17 @@
 			);
 			target = 860D91742FAE1F95000D321B /* MobileDevelopmentKit */;
 		};
+		8FF32E1A3036F5F500C46FE4 /* Exceptions for "Frameworks" folder in "HWHook" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HWHook/HWHKCFType.m,
+				HWHook/HWHKHook.m,
+				HWHook/HWHKHookThreadContext.m,
+				HWHook/HWHook.c,
+				HWHook/HWHookThreadContext.c,
+			);
+			target = 8FF32DEC3036F59E00C46FE4 /* HWHook */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
@@ -488,6 +517,7 @@
 				8FB3C25E303145F100DB3ABC /* Exceptions for "Frameworks" folder in "CoreCompiler" target */,
 				8FB3C25F303145F100DB3ABC /* Exceptions for "Frameworks" folder in "Embed Libraries" phase from "CoreCompiler" target */,
 				8FB3C27B3031460B00DB3ABC /* Exceptions for "Frameworks" folder in "LiveShim" target */,
+				8FF32E1A3036F5F500C46FE4 /* Exceptions for "Frameworks" folder in "HWHook" target */,
 			);
 			path = Frameworks;
 			sourceTree = "<group>";
@@ -546,6 +576,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FF32DEA3036F59E00C46FE4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF9916D62DC8C42200DDF895 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -561,6 +598,7 @@
 				AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */,
 				793A4E3B2F84FE1D003B609A /* Runestone in Frameworks */,
 				791C96052F8726B0006AF674 /* Runestone in Frameworks */,
+				8FF32E203036F78D00C46FE4 /* libHWHook.a in Frameworks */,
 				793FCD242E6730740011B3F5 /* libarchive.tbd in Frameworks */,
 				860D91E02FAE2E4C000D321B /* CoreCompiler.framework in Frameworks */,
 				79D1DA672F92A6CE0020518A /* TreeSitterSwift in Frameworks */,
@@ -609,6 +647,7 @@
 				86DCC25A2FA5209600973169 /* CoreCompiler.framework */,
 				860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */,
 				8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */,
+				8FF32DED3036F59E00C46FE4 /* libHWHook.a */,
 			);
 			sourceTree = "<group>";
 		};
@@ -744,6 +783,25 @@
 			productReference = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		8FF32DEC3036F59E00C46FE4 /* HWHook */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8FF32DF43036F59E00C46FE4 /* Build configuration list for PBXNativeTarget "HWHook" */;
+			buildPhases = (
+				8FF32DE93036F59E00C46FE4 /* Sources */,
+				8FF32DEA3036F59E00C46FE4 /* Frameworks */,
+				8FF32DEB3036F59E00C46FE4 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HWHook;
+			packageProductDependencies = (
+			);
+			productName = HWHook;
+			productReference = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		AF9916D82DC8C42200DDF895 /* Nyxian */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AF9916E72DC8C42400DDF895 /* Build configuration list for PBXNativeTarget "Nyxian" */;
@@ -761,6 +819,7 @@
 				860D91E32FAE2E4C000D321B /* PBXTargetDependency */,
 				8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */,
 				8F60087A3033F9200028EDFD /* PBXTargetDependency */,
+				8FF32E223036F78D00C46FE4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AF9916DB2DC8C42200DDF895 /* Nyxian */,
@@ -817,6 +876,9 @@
 					8FB3BADA302FFBAA00DB3ABC = {
 						CreatedOnToolsVersion = 27.0;
 					};
+					8FF32DEC3036F59E00C46FE4 = {
+						CreatedOnToolsVersion = 27.0;
+					};
 					AF9916D82DC8C42200DDF895 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -852,6 +914,7 @@
 				86DCC2592FA5209600973169 /* CoreCompiler */,
 				79AA11BB2F7FFE24002FEAF2 /* nxtool */,
 				8FB3BADA302FFBAA00DB3ABC /* LiveShim */,
+				8FF32DEC3036F59E00C46FE4 /* HWHook */,
 			);
 		};
 /* End PBXProject section */
@@ -931,6 +994,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FF32DE93036F59E00C46FE4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF9916D52DC8C42200DDF895 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -971,6 +1041,11 @@
 			isa = PBXTargetDependency;
 			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
 			targetProxy = 8FB3BE8B303131D800DB3ABC /* PBXContainerItemProxy */;
+		};
+		8FF32E223036F78D00C46FE4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8FF32DEC3036F59E00C46FE4 /* HWHook */;
+			targetProxy = 8FF32E213036F78D00C46FE4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1346,6 +1421,32 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		8FF32DF53036F59E00C46FE4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = L4A6CKH3TV;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8FF32DF63036F59E00C46FE4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = L4A6CKH3TV;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -1757,6 +1858,15 @@
 			buildConfigurations = (
 				8FB3BAE6302FFBAA00DB3ABC /* Debug */,
 				8FB3BAE7302FFBAA00DB3ABC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8FF32DF43036F59E00C46FE4 /* Build configuration list for PBXNativeTarget "HWHook" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FF32DF53036F59E00C46FE4 /* Debug */,
+				8FF32DF63036F59E00C46FE4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

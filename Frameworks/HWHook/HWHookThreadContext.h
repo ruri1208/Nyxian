@@ -23,7 +23,7 @@
 #define HWHOOKTHREADCONTEXT_H
 
 #include <CoreFoundation/CoreFoundation.h>
-#include <LindChain/ProcEnvironment/HWHook/HWHook.h>
+#include "HWHook.h"
 
 typedef struct __HWHookThreadContext *HWHookThreadContextRef;
 
