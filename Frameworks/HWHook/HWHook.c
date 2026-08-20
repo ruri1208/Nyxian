@@ -19,8 +19,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/Private/CoreFoundation/CFRuntime.h>
-#include <LindChain/ProcEnvironment/HWHook/HWHook.h>
+#include "CFRuntime.h"
+#include "HWHook.h"
 
 static CFTypeID gHWHookTypeID = _kCFRuntimeNotATypeID;
 
