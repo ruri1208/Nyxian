@@ -34,7 +34,7 @@
 		8FB3BB053030089000DB3ABC /* LiveShim.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8FECB2472FFD34D500049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB2462FFD34D500049BB0 /* Runestone */; };
 		8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB24C2FFD367A00049BB0 /* Runestone */; };
-		8FF32E203036F78D00C46FE4 /* libHWHook.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */; };
+		8FF32E2D3036F8DC00C46FE4 /* libHWHook.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */; };
 		AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */ = {isa = PBXBuildFile; productRef = AF9919572DC9175A00DDF895 /* TreeSitterObjc */; };
 		AF99195B2DC9176900DDF895 /* TreeSitterC in Frameworks */ = {isa = PBXBuildFile; productRef = AF99195A2DC9176900DDF895 /* TreeSitterC */; };
 		AFF4D5D92DC9390B00B1B5F9 /* Shared in Resources */ = {isa = PBXBuildFile; fileRef = AF99171F2DC8EA3C00DDF895 /* Shared */; };
@@ -84,7 +84,7 @@
 			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
 			remoteInfo = LiveProcess;
 		};
-		8FF32E213036F78D00C46FE4 /* PBXContainerItemProxy */ = {
+		8FF32E2E3036F8DC00C46FE4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
 			proxyType = 1;
@@ -348,6 +348,7 @@
 				LiveShim/LiveShimSyscall.h,
 				LiveShim/mach/fileport.h,
 				LiveShim/mach/fileport.m,
+				LiveShim/shims/dyld.m,
 				LiveShim/shims/io.c,
 				LiveShim/shims/ioctl.c,
 				LiveShim/shims/shim.h,
@@ -573,6 +574,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FF32E2D3036F8DC00C46FE4 /* libHWHook.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -598,7 +600,6 @@
 				AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */,
 				793A4E3B2F84FE1D003B609A /* Runestone in Frameworks */,
 				791C96052F8726B0006AF674 /* Runestone in Frameworks */,
-				8FF32E203036F78D00C46FE4 /* libHWHook.a in Frameworks */,
 				793FCD242E6730740011B3F5 /* libarchive.tbd in Frameworks */,
 				860D91E02FAE2E4C000D321B /* CoreCompiler.framework in Frameworks */,
 				79D1DA672F92A6CE0020518A /* TreeSitterSwift in Frameworks */,
@@ -775,6 +776,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				8FF32E2F3036F8DC00C46FE4 /* PBXTargetDependency */,
 			);
 			name = LiveShim;
 			packageProductDependencies = (
@@ -819,7 +821,6 @@
 				860D91E32FAE2E4C000D321B /* PBXTargetDependency */,
 				8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */,
 				8F60087A3033F9200028EDFD /* PBXTargetDependency */,
-				8FF32E223036F78D00C46FE4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AF9916DB2DC8C42200DDF895 /* Nyxian */,
@@ -1042,10 +1043,10 @@
 			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
 			targetProxy = 8FB3BE8B303131D800DB3ABC /* PBXContainerItemProxy */;
 		};
-		8FF32E223036F78D00C46FE4 /* PBXTargetDependency */ = {
+		8FF32E2F3036F8DC00C46FE4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8FF32DEC3036F59E00C46FE4 /* HWHook */;
-			targetProxy = 8FF32E213036F78D00C46FE4 /* PBXContainerItemProxy */;
+			targetProxy = 8FF32E2E3036F8DC00C46FE4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

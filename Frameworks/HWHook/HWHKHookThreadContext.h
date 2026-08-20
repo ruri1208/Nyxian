@@ -35,6 +35,9 @@
 - (BOOL)enter;
 - (BOOL)exit;
 
+- (BOOL)enableHooks;
+- (BOOL)disableHooks;
+
 - (BOOL)addHook:(HWHKHook*)hook;
 
 @end
