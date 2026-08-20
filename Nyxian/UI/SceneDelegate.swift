@@ -53,7 +53,7 @@ struct NXApplicationState {
     }()
 }
 
-func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }) {
+func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {
     if !NXApplicationState.extensionExists {
         if showAlert {
             errorFallback(title: "Extension Not Found", message: """
