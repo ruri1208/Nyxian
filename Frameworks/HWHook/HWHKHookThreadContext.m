@@ -49,6 +49,16 @@
     return HWHookThreadContextExit((__bridge HWHookThreadContextRef)self);
 }
 
+- (BOOL)enableHooks
+{
+    return HWHookThreadContextEnableHooks((__bridge HWHookThreadContextRef)self);
+}
+
+- (BOOL)disableHooks
+{
+    return HWHookThreadContextDisableHooks((__bridge HWHookThreadContextRef)self);
+}
+
 - (BOOL)addHook:(HWHKHook *)hook
 {
     return HWHookThreadContextAppendHook((__bridge HWHookThreadContextRef)self, (__bridge HWHookRef)hook);

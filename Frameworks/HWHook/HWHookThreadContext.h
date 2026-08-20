@@ -32,17 +32,27 @@ CF_EXPORT CFTypeID HWHookThreadContextGetTypeID(void);
 /* so you can exit the context easily */
 CF_EXPORT HWHookThreadContextRef HWHookThreadContextGetCurrent(void);
 
-/* one context per thread! */
+/* creates brand new thread context */
 CF_EXPORT HWHookThreadContextRef HWHookThreadContextCreate(CFAllocatorRef allocator);
 
 /* enters on a per thread basis */
 CF_EXPORT Boolean HWHookThreadContextEnter(HWHookThreadContextRef context);
 CF_EXPORT Boolean HWHookThreadContextExit(HWHookThreadContextRef context);
 
+/* disables while being entered */
+CF_EXPORT Boolean HWHookThreadContextEnableHooks(HWHookThreadContextRef context);
+CF_EXPORT Boolean HWHookThreadContextDisableHooks(HWHookThreadContextRef context);
+
 /*
  * you have to exit the context to call the original
  * other than that this hooks symbols until the context
  * ran out.
+ *
+ * don't append hooks while a thread entered the context,
+ * this will be a future feature tho, altering the context
+ * while being in it.
+ *
+ * Duy Tran, this! THIS is flexibility and scalability!
  */
 CF_EXPORT Boolean HWHookThreadContextAppendHook(HWHookThreadContextRef context, HWHookRef hook);
 

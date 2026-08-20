@@ -124,12 +124,9 @@ void *__HWHookThreadContextServer(void *ctxp)
             printf("[!] failed to receive exception\n");
             return NULL;
         }
-        printf("[+] received exception\n");
         
         if(!ctx->post_debug_set)
         {
-            printf("[*] target thread is still at setup\n");
-            
             /* setting debug state */
             kern_return_t kr = thread_set_state(request.v.thread.name, ARM_DEBUG_STATE64, (thread_state_t)&ctx->state, ARM_DEBUG_STATE64_COUNT);
             if(kr != KERN_SUCCESS)
@@ -137,7 +134,6 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to set debug thread state\n");
                 return NULL;
             }
-            printf("[+] set debug thread state\n");
             
             /* skip over pseudo exception */
             arm_thread_state64_t state;
@@ -148,7 +144,6 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to get normal thread state\n");
                 return NULL;
             }
-            printf("[+] got normal thread state\n");
             
             /* skipping over __builtin_trap */
             state.__pc += 4;
@@ -159,14 +154,11 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to set normal thread state\n");
                 return NULL;
             }
-            printf("[+] set normal thread state\n");
             
             ctx->post_debug_set = true;
         }
         else if(ctx->teardown)
         {
-            printf("[*] target thread requested teardown\n");
-            
             /* clear hooks */
             arm_debug_state64_t clear;
             memset(&clear, 0, sizeof(clear));
@@ -216,15 +208,11 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to send reply to the kernel\n");
                 return NULL;
             }
-            printf("[+] reply send to the kernel\n");
-            printf("[+] baiii :3\n\n");
             return NULL;
         }
         else
         {
             /* debug register are set */
-            printf("[*] target thread called hook\n");
-            
             arm_thread_state64_t state;
             mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
             kern_return_t kr = thread_get_state(request.v.thread.name, ARM_THREAD_STATE64, (thread_state_t)&state, &count);
@@ -233,7 +221,6 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to get normal thread state\n");
                 return NULL;
             }
-            printf("[+] got normal thread state\n");
             
             /* matching hook */
             HWHookRef matchingHook = NULL;
@@ -253,21 +240,15 @@ void *__HWHookThreadContextServer(void *ctxp)
                 printf("[!] failed to match the hook\n");
                 return NULL;
             }
-            void *symbolPtr = HWHookGetSymbolPtr(matchingHook);
-            void *replacementPtr = HWHookGetReplacementPtr(matchingHook);
-            printf("[+] matchingHook = %p\n", matchingHook);
-            printf("    symbolPtr = %p\n", symbolPtr);
-            printf("    replacementPtr = %p\n", replacementPtr);
             
             /* now call the replacement */
-            state.__pc = (uint64_t)replacementPtr;
+            state.__pc = (uint64_t)HWHookGetReplacementPtr(matchingHook);
             kr = thread_set_state(request.v.thread.name, ARM_THREAD_STATE64, (thread_state_t)&state, count);
             if(kr != KERN_SUCCESS)
             {
                 printf("[!] failed to set normal thread state\n");
                 return NULL;
             }
-            printf("[+] set normal thread state\n");
         }
         
         __Reply__exception_raise_t reply;
@@ -286,7 +267,6 @@ void *__HWHookThreadContextServer(void *ctxp)
             printf("[!] failed to send reply to the kernel\n");
             return NULL;
         }
-        printf("[+] reply sent to the kernel\n\n");
     }
     
     return NULL;
@@ -344,13 +324,7 @@ Boolean HWHookThreadContextEnter(HWHookThreadContextRef context)
     }
     
     /* creating detached HWHookThreadContextServer */
-    mach_msg_type_number_t old_stateCnt = ARM_DEBUG_STATE64_COUNT;
-    kr = thread_get_state(currentThread, ARM_DEBUG_STATE64, (thread_state_t)&tCurrentServerContext.state, &old_stateCnt);
-    if(kr != KERN_SUCCESS)
-    {
-        goto out_stop_server;
-    }
-    
+    memset(&tCurrentServerContext.state, 0, sizeof(tCurrentServerContext.state));
     CFIndex hookCount = CFArrayGetCount(context->symbols);
     for(CFIndex index = 0; index < hookCount; index++)
     {
@@ -403,6 +377,41 @@ Boolean HWHookThreadContextExit(HWHookThreadContextRef context)
     tCurrentServerContext.teardown = true;
     __asm__ volatile ("brk #2" ::: "memory");
     tCurrentContext = NULL;
+    
+    return true;
+}
+
+Boolean HWHookThreadContextEnableHooks(HWHookThreadContextRef context)
+{
+    if(context == NULL || tCurrentContext != context)
+    {
+        return false;
+    }
+    
+    memset(&tCurrentServerContext.state, 0, sizeof(tCurrentServerContext.state));
+    CFIndex hookCount = CFArrayGetCount(context->symbols);
+    for(CFIndex index = 0; index < hookCount; index++)
+    {
+        HWHookRef hook = (HWHookRef)CFArrayGetValueAtIndex(context->symbols, index);
+        tCurrentServerContext.state.__bvr[index] = (uint64_t)HWHookGetSymbolPtr(hook);
+        tCurrentServerContext.state.__bcr[index] = (0xFu << 5) | (0b10u << 1) | 1u;
+    }
+    tCurrentServerContext.post_debug_set = false;
+    __asm__ volatile ("brk #2" ::: "memory");
+    
+    return true;
+}
+
+Boolean HWHookThreadContextDisableHooks(HWHookThreadContextRef context)
+{
+    if(context == NULL || tCurrentContext != context)
+    {
+        return false;
+    }
+    
+    memset(&tCurrentServerContext.state, 0, sizeof(tCurrentServerContext.state));
+    tCurrentServerContext.post_debug_set = false;
+    __asm__ volatile ("brk #2" ::: "memory");
     
     return true;
 }
