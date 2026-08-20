@@ -27,6 +27,23 @@
 #import <UI/XCodeButton.h>
 #import <Nyxian-Swift.h>
 
+static BOOL urlIsContainedIn(NSURL *candidate,
+                             NSURL *root)
+{
+    NSURL *candidateSatnderized = candidate.URLByResolvingSymlinksInPath.URLByStandardizingPath;
+    NSURL *rootSatnderized = root.URLByResolvingSymlinksInPath.URLByStandardizingPath;
+    
+    NSString *candidatePath = candidateSatnderized.path;
+    NSString *rootPath = rootSatnderized.path;
+    
+    if(![rootPath hasSuffix:@"/"])
+    {
+        rootPath = [rootPath stringByAppendingString:@"/"];
+    }
+    NSString *canditateSlash = [candidatePath hasSuffix:@"/"] ? candidatePath : [candidatePath stringByAppendingString:@"/"];
+    return [canditateSlash isEqualToString:rootPath] || [canditateSlash hasPrefix:rootPath];
+}
+
 @interface NXBootstrap ()
 
 @property (readwrite) UInt64 version;
@@ -95,6 +112,15 @@
 - (NSURL*)swiftModuleCacheURL
 {
     return [self.rootURL URLByAppendingPathComponent:@"/ModuleCache"];
+}
+
+- (NSURL*)rootfsURL
+{
+    NSURL *rootfsURL = [self.rootURL URLByAppendingPathComponent:@"/rootfs"];
+    [[NSFileManager defaultManager] createDirectoryAtURL:rootfsURL withIntermediateDirectories:NO attributes:nil error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtURL:[rootfsURL URLByAppendingPathComponent:@"Documents"] withIntermediateDirectories:NO attributes:nil error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtURL:[rootfsURL URLByAppendingPathComponent:@"tmp"] withIntermediateDirectories:NO attributes:nil error:nil];
+    return rootfsURL;
 }
 
 - (UInt64)version
@@ -383,9 +409,25 @@
     return self.version == NXBOOTSTRAP_NEWEST_VERSION;
 }
 
-+ (NSData*)issueBookmarkForURL:(NSURL*)url
++ (NSData*)issueSandboxFileExtensionForURL:(NSURL*)url
+                                 readWrite:(BOOL)readWrite
 {
-    return (__bridge_transfer NSData*)CFURLCreateBookmarkData(kCFAllocatorDefault, (__bridge CFURLRef)url, (1UL << 11), NULL, NULL, NULL);
+    if(!urlIsContainedIn(url, [[NXBootstrap shared] rootfsURL]))
+    {
+        return nil;
+    }
+    
+    extern char *sandbox_extension_issue_file(const char *ext_class, const char *path, uint32_t flags);
+    const char *cls = readWrite ? "com.apple.app-sandbox.read-write" : "com.apple.app-sandbox.read";    /* MARK: note that com.apple.sandbox.executable is the only class that doesn't work */
+    char *tok = sandbox_extension_issue_file(cls, url.path.UTF8String, 0);
+    if(tok == NULL)
+    {
+        return nil;
+    }
+    
+    NSData *data = [NSData dataWithBytes:tok length:strlen(tok) + 1];
+    free(tok);
+    return data;
 }
 
 @end

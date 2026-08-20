@@ -148,6 +148,18 @@ int LiveProcessMain(int argc, char *argv[])
     uid_t serviceUserIdentifier = [appInfo[@"PEUserIdentifier"] unsignedIntValue];
     gid_t serviceGroupIdentifier = [appInfo[@"PEGroupIdentifier"] unsignedIntValue];
     
+    /* for the start */
+    NSDictionary *filePermissions = appInfo[@"PEFilePermissions"];
+    for(NSData *filePermission in filePermissions)
+    {
+        extern int64_t sandbox_extension_consume(const char *token);
+        int64_t handle = sandbox_extension_consume((const char *)filePermission.bytes);
+        if(handle < 0)
+        {
+            return 1;
+        }
+    }
+    
     /* destroy the payload once in for all */
     appInfo = nil;
     

@@ -37,6 +37,7 @@
 @property (nonatomic, readonly, strong, nonnull) NSURL *bootstrapPlistURL;
 @property (nonatomic, readonly, strong, nonnull) NSURL *swiftURL;
 @property (nonatomic, readonly, strong, nonnull) NSURL *swiftModuleCacheURL;
+@property (nonatomic, readonly, strong, nonnull) NSURL *rootfsURL;
 
 @property (atomic, readonly) UInt64 version;
 @property (atomic, readonly) BOOL isInstalled;
@@ -52,7 +53,7 @@
 - (void)waitTillDone;
 - (BOOL)isNewest;
 
-+ (NSData * _Nullable)issueBookmarkForURL:(NSURL * _Nullable)url;
++ (NSData * _Nullable)issueSandboxFileExtensionForURL:(NSURL * _Nullable)url readWrite:(BOOL)readOnly;
 
 @end
 

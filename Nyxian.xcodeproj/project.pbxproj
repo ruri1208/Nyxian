@@ -223,7 +223,6 @@
 			membershipExceptions = (
 				LindChain/Services/applicationmgmtd/LDEApplicationObject.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.m,
-				LindChain/Services/containerd/MoltenFileManager.m,
 				LindChain/Services/containerd/PEContainer.m,
 			);
 			target = AF9916D82DC8C42200DDF895 /* Nyxian */;
@@ -348,7 +347,7 @@
 				LiveShim/LiveShimSyscall.h,
 				LiveShim/mach/fileport.h,
 				LiveShim/mach/fileport.m,
-				LiveShim/shims/dyld.m,
+				LiveShim/shims/dyld.c,
 				LiveShim/shims/io.c,
 				LiveShim/shims/ioctl.c,
 				LiveShim/shims/shim.h,
