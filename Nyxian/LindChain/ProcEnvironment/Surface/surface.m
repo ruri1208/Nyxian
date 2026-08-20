@@ -238,17 +238,19 @@ static inline void ksurface_kinit_kproc(void)
     }
     klog_log("ksurface:kinit:kproc", "allocated kernel process @ %p", kproc);
     
+    kern_return_t kr;
 #if KSURFACE_EMIT_KERNEL_TASK
     /* setting up properties */
     proc_setpid(kproc, 0);
     proc_setppid(kproc, 0);
     proc_setsid(kproc, 0);
+    kproc->bsd.kp_proc.p_flag = P_SYSTEM | P_LP64;
     strlcpy(kproc->bsd.kp_proc.p_comm, "kernel_task", MAXCOMLEN);
 #else
     /* setting up properties */
     pid_t pid = getpid();
     proc_setpid(kproc, pid);
-    proc_setppid(kproc, PID_LAUNCHD);   /* this is done, because when debugging it has a other ppid */
+    proc_setppid(kproc, 1); /* this is done, because when debugging it has a other ppid than launchd's pid */
     proc_setsid(kproc, pid);
     
     /* writing executable path */
@@ -261,46 +263,45 @@ static inline void ksurface_kinit_kproc(void)
     const char *name = strrchr(kproc->nyx.executable_path, '/');
     name = name ? name + 1 : kproc->nyx.executable_path;
     strlcpy(kproc->bsd.kp_proc.p_comm, name, MAXCOMLEN);
-#endif /* KSURFACE_EMIT_KERNEL_TASK */
     
-    /* otherwise a child in the tree can see us as a other pid */
-#if !KSURFACE_EMIT_KERNEL_TASK && !KSURFACE_EMIT_LAUNCHD
     /* kernel shall only expose its task name */
     task_t task;
-    kern_return_t kr = task_get_special_port(mach_task_self(), TASK_NAME_PORT, &task);
+    kr = task_get_special_port(mach_task_self(), TASK_NAME_PORT, &task);
     if(kr != KERN_SUCCESS)
     {
         /* shall never happen */
         environment_panic("failed to aquire task name of kernel it self");
     }
     kproc->task = task;
-#endif /* !KSURFACE_EMIT_KERNEL_TASK && !KSURFACE_EMIT_LAUNCHD */
+#endif /* KSURFACE_EMIT_KERNEL_TASK */
     
-    kproc->bsd.kp_proc.p_flag = P_SYSTEM | P_LP64;
-    proc_setentitlements(kproc, PEEntitlementKernel);
-    proc_setmaxentitlements(kproc, PEEntitlementKernel);
+    proc_setentitlements(kproc, kPEEntitlementKernel);
+    proc_setmaxentitlements(kproc, kPEEntitlementKernel);
     
     /* storing kernel proc */
     klog_log("ksurface:kinit:kproc", "inserting kernel process");
-    kern_return_t error = proc_insert(kproc);
-    if(error != KERN_SUCCESS)
+    kr = proc_insert(kproc);
+    if(kr != KERN_SUCCESS)
     {
         /* shall never happen */
         environment_panic("failed to insert kernel process");
     }
     
 #if KSURFACE_EMIT_LAUNCHD
-    ksurface_proc_t *launchdproc = proc_fork(kproc, 1, "/sbin/launchd");
-    if(launchdproc == NULL)
+    kr = proc_spawn(kproc, &kproc, 1, "/sbin/launchd");
+    if(kr != KERN_SUCCESS)
     {
         /* shall never happen */
         environment_panic("got NULL launchd process");
     }
-    klog_log("ksurface:kinit:kproc", "allocated launchd process @ %p", launchdproc);
-    ksurface->proc_info.kern_proc = launchdproc;
-#else
-    ksurface->proc_info.kern_proc = kproc;
+    
+    /* when there is no kernel task we need to set ppid to 0 */
+#if !KSURFACE_EMIT_KERNEL_TASK
+    proc_setppid(kproc, 0);
+#endif /* !KSURFACE_EMIT_KERNEL_TASK */
+    
 #endif /* KSURFACE_EMIT_LAUNCHD */
+    ksurface->proc_info.kern_proc = kproc;
     
     /* releaing our reference to kernel proc, because we return now and kproc is now held by the radix tree */
     kvo_release(kproc);

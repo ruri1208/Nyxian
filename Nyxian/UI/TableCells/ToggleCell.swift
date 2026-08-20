@@ -54,6 +54,10 @@ class ToggleTableCell: UITableViewCell {
         accessoryView = toggle
         
         NotificationCenter.default.addObserver(self, selector: #selector(handleThemeChange), name: Notification.Name("uiColorChangeNotif"), object: nil)
+        
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            self.applyTheme()
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -88,11 +92,6 @@ class ToggleTableCell: UITableViewCell {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        applyTheme()
-    }
-    
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
         applyTheme()
     }
     

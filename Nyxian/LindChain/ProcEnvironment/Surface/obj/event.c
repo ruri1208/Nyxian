@@ -99,7 +99,7 @@ void kvobject_event_trigger(kvobject_t *kvo,
     }
     
     /* the main event handler shall always be called */
-    kvo->main_handler(&kvo, type);
+    kvo->main_handler(&kvo, type, 0);
     
     PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(kvo->event_rwlock));
     

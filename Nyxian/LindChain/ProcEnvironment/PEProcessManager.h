@@ -25,7 +25,7 @@
 #import <Foundation/Foundation.h>
 #import <LindChain/ProcEnvironment/PEProcess.h>
 
-@interface PEProcessManager : NSObject
+@interface PEProcessManager : NSObject <PEProcessObserver>
 
 - (instancetype)init;
 + (instancetype)shared;
@@ -36,7 +36,6 @@
 - (void)closeIfRunningUsingBundleIdentifier:(NSString*)bundleIdentifier;
 - (PEProcess*)processForProcessIdentifier:(pid_t)pid;
 - (PEProcess*)processForBundleIdentifier:(NSString*)bundleIdentifier;
-- (void)unregisterProcessWithProcessIdentifier:(pid_t)pid;
 
 - (void)killAllRunningProcesses;
 

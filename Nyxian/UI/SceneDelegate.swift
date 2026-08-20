@@ -55,27 +55,31 @@ struct NXApplicationState {
 
 func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }) {
     if !NXApplicationState.extensionExists {
-        errorFallback(title: "Extension Not Found", message: """
-        The required NSExtension could not be found.
+        if showAlert {
+            errorFallback(title: "Extension Not Found", message: """
+The required NSExtension could not be found.
 
-        Make sure the app was installed with its extension intact and that it wasn't removed during signing or installation.
-        
-        App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
-        """)
+Make sure the app was installed with its extension intact and that it wasn't removed during signing or installation.
+
+App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
+""")
+        }
         completionHandler(false)
         return
     }
     
     if !NXApplicationState.extensionCorrectlyEntitled {
-        errorFallback(title: "Unsupported Provisioning Profile", message: """
-        Extension doesn't have the "get-task-allow" entitlement.
+        if showAlert {
+            errorFallback(title: "Unsupported Provisioning Profile", message: """
+Extension doesn't have the "get-task-allow" entitlement.
 
-        Distribution certificates are not supported. You must use a Developer certificate issued by Apple.
+Distribution certificates are not supported. You must use a Developer certificate issued by Apple.
 
-        The 7 day certificate is a Developer certificate.
-        
-        App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
-        """)
+The 7 day certificate is a Developer certificate.
+
+App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
+""")
+        }
         completionHandler(false)
         return
     }

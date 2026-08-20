@@ -87,8 +87,8 @@
        arguments &&
        environment &&
        workingDirectory &&
-       (entitlement_got_entitlement(proc_getentitlements(_proc), PEEntitlementProcessSpawn) ||
-        entitlement_got_entitlement(proc_getentitlements(_proc), PEEntitlementProcessSpawnSignedOnly)))
+       (entitlement_got_entitlement(proc_getentitlements(_proc), kPEEntitlementProcessSpawn) ||
+        entitlement_got_entitlement(proc_getentitlements(_proc), kPEEntitlementProcessSpawnSignedOnly)))
     {
         NSMutableDictionary *mutableItems = [[NSMutableDictionary alloc] initWithDictionary:@{
             @"PEExecutablePath": path,

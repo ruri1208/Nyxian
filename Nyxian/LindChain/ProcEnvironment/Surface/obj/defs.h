@@ -30,7 +30,7 @@
 #include <mach/mach.h>
 #include <os/lock.h>
 
-#define DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(name) int64_t kvobject_event_handler_##name##_main(kvobject_t **kvarr, kvobject_event_type_t type)
+#define DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(name) int64_t kvobject_event_handler_##name##_main(kvobject_t **kvarr, kvobject_event_type_t type, uint64_t value)
 #define GET_KVOBJECT_MAIN_EVENT_HANDLER(name) kvobject_event_handler_##name##_main
 
 #define KVOBJECT_EVENT_MAX 128
@@ -50,17 +50,6 @@ enum kvObjEvent: uint32_t {
     kvObjEventSnapshot = 1ull << 3,                 /* object snapshots into snapshotted object     MARK: important for main event handler */
     kvObjEventInvalidate = 1ull << 4,               /* object becomes invalidated */
     kvObjEventUnregister = 1ull << 5,               /* object event handler gets unregistered, only called on the affected handler */
-    kvObjEventCustom0 = 1ull << 6,                  /* custom object events */
-    kvObjEventCustom1 = 1ull << 7,
-    kvObjEventCustom2 = 1ull << 8,
-    kvObjEventCustom3 = 1ull << 9,
-    kvObjEventCustom4 = 1ull << 10,
-    kvObjEventCustom5 = 1ull << 11,
-    kvObjEventCustom6 = 1ull << 12,
-    kvObjEventCustom7 = 1ull << 13,
-    kvObjEventCustom8 = 1ull << 14,
-    kvObjEventCustom9 = 1ull << 15,
-    kvObjEventCustom10 = 1ull << 16
 };
 
 /* enumeration of kernel virt object states */
@@ -89,7 +78,7 @@ typedef enum kvObjEvent     kvobject_event_type_t;
 typedef enum kvObjState     kvobject_state_t;
 typedef enum kvObjSnap      kvobject_snapshot_options_t;
 
-typedef int64_t (*kvobject_main_event_handler_t)(kvobject_t**, kvobject_event_type_t);
+typedef int64_t (*kvobject_main_event_handler_t)(kvobject_t**, kvobject_event_type_t, uint64_t);
 typedef bool (*kvobject_event_handler_t)(kvobject_event_type_t, uint64_t, kvobject_event_t*);
 
 struct kvevent {

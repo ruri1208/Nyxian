@@ -159,10 +159,6 @@
     assert([NSThread isMainThread]);
     
     /* destroy existing window if there is one already */
-    if(_scene != nil)
-    {
-        [self.windowScene _unregisterSettingsDiffActionArrayForKey:_scene.identifier];
-    }
     if(self.scenePresenter)
     {
         [self.scenePresenter invalidate];
@@ -256,9 +252,6 @@
         [self.scene updateSettingsWithBlock:updateSceneSettings];
     }
     
-    /* register that shit */
-    [self.windowScene _registerSettingsDiffActionArray:@[self] forKey:self.scene.identifier];
-    
     /* FIXME: no way to update client settings so far */
     
     return YES;
@@ -282,7 +275,6 @@
     {
         /* bye bye presenter */
         [_scenePresenter invalidate];
-        [self.windowScene _unregisterSettingsDiffActionArrayForKey:self.scene.identifier];
         [[PrivClass(FBSceneManager) sharedInstance] destroyScene:self.scene withTransitionContext:nil];
     }
     [_process terminate];
@@ -326,35 +318,6 @@
     [_scenePresenter deactivate];
     
     return YES;
-}
-
-- (void)_performActionsForUIScene:(UIScene *)scene
-              withUpdatedFBSScene:(id)fbsScene
-                     settingsDiff:(FBSSceneSettingsDiff *)diff
-                     fromSettings:(id)settings
-                transitionContext:(id)context
-              lifecycleActionType:(uint32_t)actionType
-{
-    assert([NSThread isMainThread]);
-    
-    if(diff == nil || _scene == nil || !self.process.process.running || self.process.isSuspended || !diff)
-    {
-        return;
-    }
-    
-    UIMutableApplicationSceneSettings *baseSettings = [diff settingsByApplyingToMutableCopyOfSettings:settings];
-    if(baseSettings.userInterfaceStyle == _scene.settings.userInterfaceStyle)
-    {
-        return;
-    }
-    
-    UIMutableApplicationSceneSettings *newSettings = [_scene.settings mutableCopy];
-    newSettings.userInterfaceStyle = baseSettings.userInterfaceStyle;
-    
-    UIApplicationSceneTransitionContext *newContext = [context copy];
-    newContext.actions = nil;
-    
-    [_scene updateSettings:newSettings withTransitionContext:newContext completion:nil];
 }
 
 - (BOOL)shouldUpdateFocusInContext:(nonnull UIFocusUpdateContext *)context

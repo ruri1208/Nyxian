@@ -39,15 +39,16 @@ typedef enum: UInt8 {
 
 @interface PEUserspaceManager : NSObject
 
+@property (atomic,readonly) BOOL isBooted;
+@property (atomic,readonly) BOOL isLaunchServiceManagerStable;
 @property (readonly) PEUserspaceMode mode;
 
 + (instancetype)shared;
 
-- (void)boot;
-- (void)rebootUserspaceWithType:(PEUserspaceRebootType)type;
-- (void)rebootUserspace;
+- (BOOL)rebootUserspaceWithType:(PEUserspaceRebootType)type;
+- (BOOL)rebootUserspace;
 - (BOOL)restore;
-- (void)reloadDaemons;
+- (BOOL)reloadDaemons;
 - (BOOL)clearApplicationCaches;
 
 @end

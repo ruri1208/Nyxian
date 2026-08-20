@@ -57,7 +57,7 @@
 
 - (BOOL)openWindow
 {
-    return (self.windowScene != nil);
+    return YES;
 }
 
 - (BOOL)closeWindow
@@ -108,26 +108,6 @@
     {
         window.windowName = windowName;
     }
-}
-
-- (void)movedWindowToScene:(UIWindowScene*)windowScene
-            withIdentifier:(id_t)identifier
-{
-    self.windowIdentifier = identifier;
-    
-    /*
-     * not changing the windowScene doesnt mean strictly
-     * that changing the windowIdentifier shall be
-     * prohibited.
-     */
-    if(windowScene == nil)
-    {
-        return;
-    }
-    
-    self.windowScene = windowScene;
-    
-    return;
 }
 
 - (void)beginInteractiveResize

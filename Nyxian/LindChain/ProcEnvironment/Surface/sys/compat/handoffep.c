@@ -69,6 +69,6 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     sys_proc_->task = returnedTask;
     
     kvo_unlock(sys_proc_);
-    kvo_event_trigger(sys_proc_, kvObjEventCustom1, 0);
+    kvo_event_trigger(sys_proc_, kProcEventTypeWaitTask, 0);
     sys_return;
 }

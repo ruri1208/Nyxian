@@ -673,7 +673,7 @@
     if([path isEqualToString:@"/usr/libexec/containerd"] ||
        [path isEqualToString:@"/usr/libexec/installd"])
     {
-        return PEEntitlementSystemDaemon;
+        return kPEEntitlementSystemDaemon;
     }
     
     /*
@@ -685,7 +685,7 @@
     PEFileHandle *object = [self fileHandleForItemAtPath:path withFlags:O_RDONLY withMode:0];
     if(object == nil)
     {
-        return PEEntitlementNone;
+        return kPEEntitlementNone;
     }
     
     /*
@@ -695,7 +695,7 @@
     int fd = [object extractFileDescriptor];
     if(fd < 0)
     {
-        return PEEntitlementNone;
+        return kPEEntitlementNone;
     }
     
     /* extracting entitlements */
@@ -707,7 +707,7 @@
     kern_return_t ksr = entitlement_mach_verify(&mach, ksurface->pub_key, ksurface->pub_key_len);
     if(ksr != KERN_SUCCESS)
     {
-        return PEEntitlementNone;
+        return kPEEntitlementNone;
     }
     
     /* everything is alright */

@@ -112,6 +112,15 @@ import UIKit
                 self.feed(byteArray: ArraySlice<UInt8>(data))
             }
         }
+        
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            guard self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+            
+            if self.isFirstResponder {
+                _ = self.resignFirstResponder()
+                _ = self.becomeFirstResponder()
+            }
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -132,16 +141,5 @@ import UIKit
         self.backgroundColor = currentTheme?.backgroundColor ?? .secondarySystemBackground
         self.nativeForegroundColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
         self.caretTextColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
-    }
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-
-        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
-        
-        if self.isFirstResponder {
-            _ = self.resignFirstResponder()
-            _ = self.becomeFirstResponder()
-        }
     }
 }

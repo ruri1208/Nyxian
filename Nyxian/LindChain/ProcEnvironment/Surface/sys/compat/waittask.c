@@ -27,7 +27,7 @@ typedef struct waittask_payload {
     recv_buffer_t *buffer;
 } waittask_payload_t;
 
-bool waittask_proc_event_handler(kvobject_event_type_t type,
+bool waittask_proc_event_handler(uint32_t type,
                                  uint64_t val,
                                  kvobject_event_t *event)
 {
@@ -36,7 +36,7 @@ bool waittask_proc_event_handler(kvobject_event_type_t type,
     switch(type)
     {
         case kvObjEventDeinit:
-        case kvObjEventCustom1: /* task port available */
+        case kProcEventTypeWaitTask:    /* task port available */
             errno = 0;
             send_reply(&(payload->buffer->header), 0, NULL, 0, true);
             return true;
@@ -116,7 +116,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     payload->buffer = *recv_buffer;
     
     /* register event */
-    ksr = kvo_event_register(target, kvObjEventCustom1, waittask_proc_event_handler, payload, NULL);
+    ksr = kvo_event_register(target, kProcEventTypeWaitTask, waittask_proc_event_handler, payload, NULL);
     if(ksr != KERN_SUCCESS)
     {
         mach_port_deallocate(mach_task_self(), sys_task_);  /* drop the reference, created prior */

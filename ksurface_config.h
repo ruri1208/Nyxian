@@ -34,7 +34,7 @@
 
 /* kernel process properties */
 #define KSURFACE_EMIT_KERNEL_TASK   1   /* adds kernel task entry, instead of Nyxian entry */
-#define KSURFACE_EMIT_LAUNCHD       0   /* adds a launchd entry */
+#define KSURFACE_EMIT_LAUNCHD       1   /* adds a launchd entry */
 
 /* syscalling coverage */
 #define KSURFACE_SYS_IO_ENABLED     0   /* very early in development */
@@ -43,6 +43,9 @@
 #define KSURFACE_SYS_TASK_ENABLED   1
 #define KSURFACE_SYS_UCRED_ENABLED  1
 #define KSURFACE_SYS_PROC_ENABLED   1
+
+/* security features */
+#define KSURFACE_SEC_SANITIZE_ENTITLEMENTS  1   /* strips unecessary entitlements at launch time */
 
 /* additional nyxian syscalls for now */
 #define SYS_proctb      750     /* MARK: noop */

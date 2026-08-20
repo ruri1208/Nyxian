@@ -19,16 +19,17 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROC_FORK_H
-#define PROC_FORK_H
+#ifndef PROC_SPAWN_H
+#define PROC_SPAWN_H
 
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 
-kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent, ksurface_proc_t **child, pid_t child_pid, const char *path);
+kern_return_t proc_spawn(ksurface_proc_t *parent, ksurface_proc_t **child, pid_t child_pid, const char *path);
+kern_return_t proc_kill(ksurface_proc_t *child, int sig);
 
 kern_return_t proc_reap(ksurface_proc_t *child);
 kern_return_t proc_zombify(ksurface_proc_t *child);
 
 kern_return_t proc_state_change(ksurface_proc_t *proc, int64_t status);
 
-#endif /* PROC_FORK_H */
+#endif /* PROC_SPAWN_H */

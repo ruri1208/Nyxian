@@ -21,6 +21,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
+#include <ksurface_config.h>
 
 DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
 {
@@ -45,6 +46,10 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
             proc->bsd.kp_proc.p_usrpri = PUSER;
             proc->bsd.kp_eproc.e_tdev = -1;
             proc->bsd.kp_eproc.e_flag = 2;
+            
+#if !KSURFACE_SYS_UCRED_ENABLED
+            proc_setmobilecred(proc);
+#endif /* !KSURFACE_SYS_UCRED_ENABLED */
             
             goto mutual_init;
         }

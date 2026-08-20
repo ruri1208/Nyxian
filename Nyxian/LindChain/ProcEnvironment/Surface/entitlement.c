@@ -28,6 +28,7 @@
 #include <OpenSSL/ec.h>
 #include <OpenSSL/pem.h>
 #include <assert.h>
+#include <ksurface_config.h>
 
 kern_return_t entitlement_token_mach_gen(ksurface_ent_blob_t *blob,
                                          const char *cdhash,
@@ -146,7 +147,7 @@ PEEntitlement entitlement_get_path(const char *path,
     int fd = open(path, O_RDONLY);
     if(fd < 0)
     {
-        return PEEntitlementNone;
+        return kPEEntitlementNone;
     }
     
     ksurface_ent_result_t mach;
@@ -177,32 +178,32 @@ bool entitlement_set_path(const char *path,
 
 PEEntitlement entitlement_sanitize(PEEntitlement base)
 {
-    base &= PEEntitlementAll;   /* making sure no unused bit fields are enabled */
+#if KSURFACE_SEC_SANITIZE_ENTITLEMENTS
+    base &= kPEEntitlementAll;  /* making sure no unused bit fields are enabled */
     
     /* can it see a other process ever? */
-    if(!entitlement_got_entitlement(base, PEEntitlementProcessSpawn) &&
-       !entitlement_got_entitlement(base, PEEntitlementProcessSpawnSignedOnly) &&
-       !entitlement_got_entitlement(base, PEEntitlementProcessEnumeration))
+    if(!entitlement_got_entitlement(base, kPEEntitlementProcessSpawn) &&
+       !entitlement_got_entitlement(base, kPEEntitlementProcessSpawnSignedOnly) &&
+       !entitlement_got_entitlement(base, kPEEntitlementProcessEnumeration))
     {
         /* you cannot do much when you cannot see the target */
-        entitlement_strip(base, PEEntitlementTaskForPid);
-        entitlement_strip(base, PEEntitlementProcessKill);
+        entitlement_strip(base, kPEEntitlementTaskForPid | kPEEntitlementProcessKill);
     }
     
     /* can it spawn a other process ever? */
-    if(!entitlement_got_entitlement(base, PEEntitlementProcessSpawn) &&
-       !entitlement_got_entitlement(base, PEEntitlementProcessSpawnSignedOnly))
+    if(!entitlement_got_entitlement(base, kPEEntitlementProcessSpawn) &&
+       !entitlement_got_entitlement(base, kPEEntitlementProcessSpawnSignedOnly))
     {
-        entitlement_strip(base, PEEntitlementProcessSpawnInheriteEntitlements);
+        entitlement_strip(base, kPEEntitlementProcessSpawnInheriteEntitlements);
     }
     
     /* can it be platform root? */
-    if(entitlement_got_entitlement(base, PEEntitlementPlatformRoot) &&
-       !entitlement_got_entitlement(base, PEEntitlementPlatform))
+    if(entitlement_got_entitlement(base, kPEEntitlementPlatformRoot) &&
+       !entitlement_got_entitlement(base, kPEEntitlementPlatform))
     {
         /* you cannot be platformized as root user if you're not platform */
-        entitlement_strip(base, PEEntitlementPlatformRoot);
+        entitlement_strip(base, kPEEntitlementPlatformRoot);
     }
-    
+#endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
     return base;
 }

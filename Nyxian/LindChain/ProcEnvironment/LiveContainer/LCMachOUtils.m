@@ -493,35 +493,9 @@ struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
     return result;
 }
 
-#if TARGET_OS_SIMULATOR
-// Make it init first on simulator to find dyld_sim
-__attribute__((constructor))
-#endif
 void *getDyldBase(void)
 {
-    void *dyldBase = (void *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
-#if !TARGET_OS_SIMULATOR
-    return dyldBase;
-#else
-    static void *dyldSimBase = NULL;
-    if(!dyldSimBase) {
-        __block size_t textSize = 0;
-        LCParseMachO("/usr/lib/dyld", true, ^(const char *path, struct mach_header_64 *header, int fd, void *filePtr) {
-            if(header->cputype != CPU_TYPE_ARM64) return;
-            getsegmentdata(header, SEG_TEXT, &textSize);
-        });
-        NSArray *callStack = [NSThread callStackReturnAddresses];
-        for(NSNumber *addr in callStack.reverseObjectEnumerator) {
-            // the first addresss outside of dyld's text is dyld_sim
-            uintptr_t addrValue = addr.unsignedLongLongValue;
-            if(addrValue < (uintptr_t)dyldBase || addrValue >= (uintptr_t)dyldBase + textSize) {
-                dyldSimBase = (void *)(addrValue & ~PAGE_MASK);
-                break;
-            }
-        }
-    }
-    return dyldSimBase;
-#endif
+    return (void *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
 }
 
 uintptr_t LCFindSymbolOffsetUnsafe(const char *basePath, const char *symbol)

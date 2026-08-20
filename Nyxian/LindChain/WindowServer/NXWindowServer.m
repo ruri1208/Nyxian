@@ -361,7 +361,7 @@
         static id_t nextWindowIdentifier = 0;
         windowIdentifier = nextWindowIdentifier++;
         
-        [session movedWindowToScene:self.windowScene withIdentifier:windowIdentifier];
+        session.windowIdentifier = windowIdentifier;
         
         if(![session openWindow])
         {

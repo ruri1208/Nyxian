@@ -36,7 +36,10 @@ void environment_panic_internal(const char *reason,
     va_start(args, line);
     
     /* handing all the parsing work to apple */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
     NSString *msg = [[NSString alloc] initWithFormat:[NSString stringWithCString:reason encoding:NSUTF8StringEncoding] arguments:args];
+#pragma clang diagnostic pop
     
     /* ending parse */
     va_end(args);

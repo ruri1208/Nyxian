@@ -28,8 +28,6 @@
 
 @interface PELaunchServiceManager : NSObject
 
-@property (atomic,readonly) BOOL isBooted;
-
 - (instancetype)init;
 + (instancetype)shared;
 

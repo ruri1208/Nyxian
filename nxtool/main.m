@@ -136,7 +136,7 @@ static void printUsage(const char *prog)
 
 static PEEntitlement parseEntitlementFlags(int argc, const char *argv[], int startIdx)
 {
-    PEEntitlement result = PEEntitlementNone;
+    PEEntitlement result = kPEEntitlementNone;
     BOOL gotAny = NO;
 
     for(int i = startIdx; i < argc; i++)
@@ -160,28 +160,28 @@ static PEEntitlement parseEntitlementFlags(int argc, const char *argv[], int sta
             result |= (PEEntitlement)val;
             gotAny = YES;
         }
-        else if(strcmp(arg, "--get-task-allowed")       == 0) { result |= PEEntitlementGetTaskAllowed;                   gotAny = YES; }
-        else if(strcmp(arg, "--task-for-pid")           == 0) { result |= PEEntitlementTaskForPid;                       gotAny = YES; }
-        else if(strcmp(arg, "--proc-enum")              == 0) { result |= PEEntitlementProcessEnumeration;               gotAny = YES; }
-        else if(strcmp(arg, "--proc-kill")              == 0) { result |= PEEntitlementProcessKill;                      gotAny = YES; }
-        else if(strcmp(arg, "--proc-spawn")             == 0) { result |= PEEntitlementProcessSpawn;                     gotAny = YES; }
-        else if(strcmp(arg, "--proc-spawn-signed")      == 0) { result |= PEEntitlementProcessSpawnSignedOnly;           gotAny = YES; }
-        else if(strcmp(arg, "--proc-elevate")           == 0) { result |= PEEntitlementProcessElevate;                   gotAny = YES; }
-        else if(strcmp(arg, "--proc-inherit")           == 0) { result |= PEEntitlementProcessSpawnInheriteEntitlements; gotAny = YES; }
-        else if(strcmp(arg, "--host-manager")           == 0) { result |= PEEntitlementHostManager;                      gotAny = YES; }
-        else if(strcmp(arg, "--credentials-manager")    == 0) { result |= PEEntitlementCredentialsManager;               gotAny = YES; }
-        else if(strcmp(arg, "--ls-start")               == 0) { result |= PEEntitlementLaunchServicesStart;              gotAny = YES; }
-        else if(strcmp(arg, "--ls-stop")                == 0) { result |= PEEntitlementLaunchServicesStop;               gotAny = YES; }
-        else if(strcmp(arg, "--ls-toggle")              == 0) { result |= PEEntitlementLaunchServicesToggle;             gotAny = YES; }
-        else if(strcmp(arg, "--ls-get-endpoint")        == 0) { result |= PEEntitlementLaunchServicesGetEndpoint;        gotAny = YES; }
-        else if(strcmp(arg, "--ls-set-endpoint")        == 0) { result |= PEEntitlementLaunchServicesSetEndpoint;        gotAny = YES; }
-        else if(strcmp(arg, "--ls-manager")             == 0) { result |= PEEntitlementLaunchServicesManager;            gotAny = YES; }
-        else if(strcmp(arg, "--dyld-hide")              == 0) { result |= PEEntitlementDyldHideLiveProcess;              gotAny = YES; }
-        else if(strcmp(arg, "--platform")               == 0) { result |= PEEntitlementPlatform;                         gotAny = YES; }
-        else if(strcmp(arg, "--platform-root")          == 0) { result |= PEEntitlementPlatformRoot;                     gotAny = YES; }
-        else if(strcmp(arg, "--preset-user")            == 0) { result |= PEEntitlementUserApplication;      gotAny = YES; }
-        else if(strcmp(arg, "--preset-system-app")      == 0) { result |= PEEntitlementSystemApplication;    gotAny = YES; }
-        else if(strcmp(arg, "--preset-system-daemon")   == 0) { result |= PEEntitlementSystemDaemon;         gotAny = YES; }
+        else if(strcmp(arg, "--get-task-allowed")       == 0) { result |= kPEEntitlementGetTaskAllowed;                     gotAny = YES; }
+        else if(strcmp(arg, "--task-for-pid")           == 0) { result |= kPEEntitlementTaskForPid;                         gotAny = YES; }
+        else if(strcmp(arg, "--proc-enum")              == 0) { result |= kPEEntitlementProcessEnumeration;                 gotAny = YES; }
+        else if(strcmp(arg, "--proc-kill")              == 0) { result |= kPEEntitlementProcessKill;                        gotAny = YES; }
+        else if(strcmp(arg, "--proc-spawn")             == 0) { result |= kPEEntitlementProcessSpawn;                       gotAny = YES; }
+        else if(strcmp(arg, "--proc-spawn-signed")      == 0) { result |= kPEEntitlementProcessSpawnSignedOnly;             gotAny = YES; }
+        else if(strcmp(arg, "--proc-elevate")           == 0) { result |= kPEEntitlementProcessElevate;                     gotAny = YES; }
+        else if(strcmp(arg, "--proc-inherit")           == 0) { result |= kPEEntitlementProcessSpawnInheriteEntitlements;   gotAny = YES; }
+        else if(strcmp(arg, "--host-manager")           == 0) { result |= kPEEntitlementHostManager;                        gotAny = YES; }
+        else if(strcmp(arg, "--credentials-manager")    == 0) { result |= kPEEntitlementCredentialsManager;                 gotAny = YES; }
+        else if(strcmp(arg, "--ls-start")               == 0) { result |= kPEEntitlementLaunchServicesStart;                gotAny = YES; }
+        else if(strcmp(arg, "--ls-stop")                == 0) { result |= kPEEntitlementLaunchServicesStop;                 gotAny = YES; }
+        else if(strcmp(arg, "--ls-toggle")              == 0) { result |= kPEEntitlementLaunchServicesToggle;               gotAny = YES; }
+        else if(strcmp(arg, "--ls-get-endpoint")        == 0) { result |= kPEEntitlementLaunchServicesGetEndpoint;          gotAny = YES; }
+        else if(strcmp(arg, "--ls-set-endpoint")        == 0) { result |= kPEEntitlementLaunchServicesSetEndpoint;          gotAny = YES; }
+        else if(strcmp(arg, "--ls-manager")             == 0) { result |= kPEEntitlementLaunchServicesManager;              gotAny = YES; }
+        else if(strcmp(arg, "--dyld-hide")              == 0) { result |= kPEEntitlementDyldHideLiveProcess;                gotAny = YES; }
+        else if(strcmp(arg, "--platform")               == 0) { result |= kPEEntitlementPlatform;                           gotAny = YES; }
+        else if(strcmp(arg, "--platform-root")          == 0) { result |= kPEEntitlementPlatformRoot;                       gotAny = YES; }
+        else if(strcmp(arg, "--preset-user")            == 0) { result |= kPEEntitlementUserApplication;                    gotAny = YES; }
+        else if(strcmp(arg, "--preset-system-app")      == 0) { result |= kPEEntitlementSystemApplication;                  gotAny = YES; }
+        else if(strcmp(arg, "--preset-system-daemon")   == 0) { result |= kPEEntitlementSystemDaemon;                       gotAny = YES; }
         else
         {
             fprintf(stderr, "error: unknown flag '%s'\n", arg);

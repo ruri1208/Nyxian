@@ -20,13 +20,12 @@
 */
 
 #import <LindChain/ProcEnvironment/PEProcess.h>
-#import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/ProcEnvironment/PEExtension.h>
-#import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
+#import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proctil.h>
@@ -36,8 +35,6 @@
     NSHashTable<id<PEProcessObserver>> *_observers;
     os_unfair_lock _lock;
 }
-
-@dynamic pid;
 
 - (instancetype)initWithItems:(NSDictionary*)items
      withKernelSurfaceProcess:(ksurface_proc_t*)proc
@@ -65,13 +62,12 @@
             return nil;
         }
         
+        /* assigning potential bundle information */
         LDEApplicationObject *applicationObject = nil;
-        
-        if(PELaunchServiceManager.shared.isBooted)
+        if(PEUserspaceManager.shared.isLaunchServiceManagerStable)
         {
             applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
         }
-        
         self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
         self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
         
@@ -82,6 +78,7 @@
             proctil(kProctilActionUnlock);
             return nil;
         }
+        _pid = self.process.pid;
         
         [self.process addObserver:self];
         if(!self.process.running)
@@ -97,7 +94,7 @@
         }
         
         ksurface_proc_t *child = NULL;
-        kern_return_t kr = proc_fork_plus_exec(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
+        kern_return_t kr = proc_spawn(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
         if(kr != KERN_SUCCESS)
         {
             [self terminate];
@@ -135,14 +132,18 @@
         signal = SIGSTOP;
     }
     
-    if(signal == SIGSTOP)
-    {
-        _isSuspended = YES;
-    }
-    else if(signal == SIGCONT)
-    {
-        _isSuspended = NO;
-    }
+    /*
+     * TODO: this is okay, but we need to use a boolean flag
+     *
+     * if(signal == SIGSTOP)
+     * {
+     *     _isSuspended = YES;
+     * }
+     * else if(signal == SIGCONT)
+     * {
+     *     _isSuspended = NO;
+     * }
+     */
     
     [self.process.nsExtension _kill:signal];
     
@@ -190,15 +191,14 @@
         
 - (void)processDidExit:(FBProcess *)arg1
 {
-    
-    if(self.proc != NULL)
+    if(_proc != NULL)
     {
         /* yep writing official wait4 code~~ */
-        proc_state_change(self.proc, arg1.exitContext.underlyingContext.legacyCode);
-        kern_return_t error = proc_zombify(self.proc);
+        proc_state_change(_proc, arg1.exitContext.underlyingContext.legacyCode);
+        kern_return_t error = proc_zombify(_proc);
         if(error != KERN_SUCCESS)
         {
-            klog_log("LDEProcess", "failed to remove pid %d", self.pid);
+            klog_log("PEProcess:processDidExit", "failed to remove pid %d", _pid);
         }
     }
     
@@ -206,8 +206,6 @@
     [self enumerateObservers:^(id<PEProcessObserver> observer) {
         [observer process:self didExitWithWait4Code:arg1.exitContext.underlyingContext.legacyCode];
     }];
-    
-    [[PEProcessManager shared] unregisterProcessWithProcessIdentifier:self.pid];
 }
 
 - (void)processWillExit:(FBProcess *)arg1
@@ -220,23 +218,13 @@
     /* stub for when ever */
 }
 
-- (id)forwardingTargetForSelector:(SEL)sel
-{
-    /* redirecting for pid */
-    if([self.process respondsToSelector:sel])
-    {
-        return self.process;
-    }
-    return [super forwardingTargetForSelector:sel];
-}
-
 - (void)enumerateObservers:(void (^)(id<PEProcessObserver> observer))block
 {
     os_unfair_lock_lock(&_lock);
     NSArray<id<PEProcessObserver>> *snapshot = _observers.allObjects;
     os_unfair_lock_unlock(&_lock);
-
-    for (id<PEProcessObserver> observer in snapshot) {
+    for(id<PEProcessObserver> observer in snapshot)
+    {
         block(observer);
     }
 }
@@ -263,6 +251,9 @@
         kvo_release(_proc);
     }
     proctil(kProctilActionUncount);
+#if DEBUG
+    NSLog(@"deallocated %@", self);
+#endif /* DEBUG */
 }
 
 @end

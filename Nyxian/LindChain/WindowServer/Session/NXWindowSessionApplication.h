@@ -26,7 +26,7 @@
 #import <LindChain/WindowServer/Window/NXWindowSession.h>
 #import <LindChain/Private/UIKitPrivate.h>
 
-@interface NXWindowSessionApplication : NXWindowSession <_UISceneSettingsDiffAction,PEProcessObserver>
+@interface NXWindowSessionApplication : NXWindowSession <PEProcessObserver>
 
 @property (nonatomic, strong) PEProcess *process;
 @property (nonatomic, strong) NSTimer *backgroundEnforcementTimer;
