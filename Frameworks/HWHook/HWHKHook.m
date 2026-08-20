@@ -24,6 +24,10 @@
 
 @implementation HWHKHook
 
+@dynamic disableContextHooksInFrame;
+@dynamic symbolPtr;
+@dynamic replacementPtr;
+
 + (void)load
 {
     _CFRuntimeBridgeClasses(HWHookGetTypeID(), "HWHKHook");
@@ -43,6 +47,16 @@
 - (void*)replacementPtr
 {
     return HWHookGetReplacementPtr((__bridge HWHookRef)self);
+}
+
+- (BOOL)disableContextHooksInFrame
+{
+    return HWHookGetDisableContextHooksInFrame((__bridge HWHookRef)self);
+}
+
+- (void)setDisableContextHooksInFrame:(BOOL)disableContextHooksInFrame
+{
+    HWHookSetDisableContextHooksInFrame((__bridge HWHookRef)self, disableContextHooksInFrame);
 }
 
 @end

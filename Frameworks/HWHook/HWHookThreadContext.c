@@ -82,6 +82,7 @@ typedef struct {
     
     bool post_debug_set;
     bool teardown;
+    uint64_t original_lr;
     
     mach_port_t exceptionPort;
     
@@ -102,9 +103,37 @@ typedef struct {
     };
 } __Request__exception_raise_large_t;
 
+__attribute__((used)) static void __HWHookReenableImpl(void)
+{
+    HWHookThreadContextEnableHooks(HWHookThreadContextGetCurrent());
+}
+
+__attribute__((naked))
+static void __HWHookThreadContextClientTrampolineReenableHooks(void)
+{
+    __asm__ volatile(
+        "stp q0, q1, [sp, #-32]!\n"
+        "stp x0, x1, [sp, #-16]!\n"
+        "bl  ___HWHookReenableImpl\n"
+        "ldp x0, x1, [sp], #16\n"
+        "ldp q0, q1, [sp], #32\n"
+        "ldr lr, [sp], #16\n"
+        "ret\n"
+    );
+}
+
+static void __HWHookThreadContextServerTrampolineReenableHooks(arm_thread_state64_t *state,
+                                                               uint64_t addr)
+{
+    state->__sp -= 16;
+    *(uint64_t*)(state->__sp) = state->__lr;
+    state->__lr = (uint64_t)&__HWHookThreadContextClientTrampolineReenableHooks;
+    state->__pc = addr;
+}
+
 _Thread_local HWHookThreadContextRef tCurrentContext = NULL; /* retained */
 _Thread_local hwhook_server_ctx_t tCurrentServerContext;
-void *__HWHookThreadContextServer(void *ctxp)
+static void *__HWHookThreadContextServer(void *ctxp)
 {
     hwhook_server_ctx_t *ctx = ctxp;
     
@@ -242,7 +271,22 @@ void *__HWHookThreadContextServer(void *ctxp)
             }
             
             /* now call the replacement */
-            state.__pc = (uint64_t)HWHookGetReplacementPtr(matchingHook);
+            if(HWHookGetDisableContextHooksInFrame(matchingHook))
+            {
+                arm_debug_state64_t clear;
+                memset(&clear, 0, sizeof(clear));
+                kern_return_t kr = thread_set_state(request.v.thread.name, ARM_DEBUG_STATE64, (thread_state_t)&clear, ARM_DEBUG_STATE64_COUNT);
+                if(kr != KERN_SUCCESS)
+                {
+                    printf("[!] failed to clear debug state\n");
+                }
+                
+                __HWHookThreadContextServerTrampolineReenableHooks(&state, (uint64_t)HWHookGetReplacementPtr(matchingHook));
+            }
+            else
+            {
+                state.__pc = (uint64_t)HWHookGetReplacementPtr(matchingHook);
+            }
             kr = thread_set_state(request.v.thread.name, ARM_THREAD_STATE64, (thread_state_t)&state, count);
             if(kr != KERN_SUCCESS)
             {

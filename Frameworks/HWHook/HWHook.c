@@ -28,6 +28,7 @@ struct __HWHook {
     CFRuntimeBase _base;
     void *symbol;
     void *replacement;
+    Boolean disableContextHooksInFrame;
 };
 
 static const CFRuntimeClass gHWHook = {
@@ -66,6 +67,7 @@ HWHookRef HWHookCreateWithPointerToSymbol(CFAllocatorRef allocator,
     
     hook->symbol = symbol;
     hook->replacement = replacement;
+    hook->disableContextHooksInFrame = false;
     
     return hook;
 }
@@ -88,3 +90,21 @@ void *HWHookGetReplacementPtr(HWHookRef hook)
     return hook->replacement;
 }
 
+Boolean HWHookGetDisableContextHooksInFrame(HWHookRef hook)
+{
+    if(hook == NULL)
+    {
+        return false;
+    }
+    return hook->disableContextHooksInFrame;
+}
+
+void HWHookSetDisableContextHooksInFrame(HWHookRef hook,
+                                         Boolean disableContextHooksInFrame)
+{
+    if(hook == NULL)
+    {
+        return;
+    }
+    hook->disableContextHooksInFrame = disableContextHooksInFrame;
+}

@@ -24,14 +24,11 @@
 #import <mach-o/dyld_images.h>
 
 /* skidded from LiveContainer */
-extern void* __mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
-extern int __fcntl(int fildes, int cmd, void* param);
-
 static const char mmapSig[] = {0xB0, 0x18, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 static const char fcntlSig[] = {0x90, 0x0B, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char syscallSig[] = {0x01, 0x10, 0x00, 0xD4};
+
 static int (*orig_dyld_fcntl)(int fildes, int cmd, void *param);
-static int (*orig_dyld_mmap)(int fildes, int cmd, void *param);
+static void *(*orig_dyld_mmap)(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
 
 static struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
 {
@@ -75,13 +72,10 @@ static int hook_fcntl(int fildes,
                       int cmd,
                       void *param)
 {
-    HWHKHookThreadContext *context = [HWHKHookThreadContext context];
-    [context disableHooks];
-    
     printf("[hook_fcntl:args] (fildes = %d, cmd: %d, param: %p)\n", fildes, cmd, param);
-    int ret = __fcntl(fildes, cmd, param);
+    int ret = orig_dyld_fcntl(fildes, cmd, param);
     char path[PATH_MAX];
-    if(__fcntl(fildes, F_GETPATH, path) != -1)
+    if(orig_dyld_fcntl(fildes, F_GETPATH, path) != -1)
     {
         printf("[hook_fcntl:return] (ret = %d, path: %s)\n", ret, path);
     }
@@ -90,7 +84,6 @@ static int hook_fcntl(int fildes,
         printf("[hook_fcntl:return] (ret = %d)\n", ret);
     }
     
-    [context enableHooks];
     return ret;
 }
 
@@ -101,13 +94,10 @@ static void *hook_mmap(void *addr,
                        int fd,
                        off_t offset)
 {
-    HWHKHookThreadContext *context = [HWHKHookThreadContext context];
-    [context disableHooks];
-    
     printf("[hook_mmap:args] (addr = %p, len = %zu, prot = %d, flags = %d, fd = %d, offset = %lld)\n", addr, len, prot, flags, fd, offset);
-    void *ret = __mmap(addr, len, prot, flags, fd, offset);
+    void *ret = orig_dyld_mmap(addr, len, prot, flags, fd, offset);
     char path[PATH_MAX];
-    if(__fcntl(fd, F_GETPATH, path) != -1)
+    if(orig_dyld_fcntl(fd, F_GETPATH, path) != -1)
     {
         printf("[hook_mmap:return] (ret = %p, path: %s)\n", ret, path);
     }
@@ -115,23 +105,35 @@ static void *hook_mmap(void *addr,
     {
         printf("[hook_mmap:return] (ret = %p)\n", ret);
     }
-    
-    [context enableHooks];
     return ret;
 }
 
 static HWHKHookThreadContext *HWHKHookDlopenThreadContext(void)
 {
-    static HWHKHookThreadContext *context = NULL;
+    static HWHKHookThreadContext *context = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         char *dyldBase = (char *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
         orig_dyld_fcntl = (void *)searchDyldFunction(dyldBase, (char*)fcntlSig, sizeof(fcntlSig));
         orig_dyld_mmap = (void *)searchDyldFunction(dyldBase, (char*)mmapSig, sizeof(mmapSig));
         
+        HWHKHook *fcntlHook = [HWHKHook hookWithPointerToSymbol:orig_dyld_fcntl withReplacementSymbol:hook_fcntl];
+        HWHKHook *mmapHook = [HWHKHook hookWithPointerToSymbol:orig_dyld_mmap withReplacementSymbol:hook_mmap];
+        if(fcntlHook == nil || mmapHook == nil)
+        {
+            return;
+        }
+        fcntlHook.disableContextHooksInFrame = YES;
+        mmapHook.disableContextHooksInFrame = YES;
+        
         context = [HWHKHookThreadContext context];
-        [context addHook:[HWHKHook hookWithPointerToSymbol:orig_dyld_fcntl withReplacementSymbol:hook_fcntl]];
-        [context addHook:[HWHKHook hookWithPointerToSymbol:orig_dyld_mmap withReplacementSymbol:hook_mmap]];
+        if(context == nil ||
+           ![context addHook:fcntlHook] ||
+           ![context addHook:mmapHook])
+        {
+            context = nil;
+            return;
+        }
     });
     return context;
 }
@@ -146,7 +148,7 @@ void *hook_dlopen(const char *path, int mode)
     printf("[hook_dlopen] %s\n", path);
     
     HWHKHookThreadContext *context = HWHKHookDlopenThreadContext();
-    [context enter];
+    [context enter];    /* is nil safe, so it shall work anyways */
     void *ret = darwin_dlopen(path, mode);
     [context exit];
     return ret;
