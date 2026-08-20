@@ -283,7 +283,7 @@ int sysctl_kernhostname(sysctl_req_t *req)
     
     if(req->newp && req->newlen)
     {
-        if(!entitlement_got_entitlement(proc_getentitlements(req->proc_snapshot), PEEntitlementHostManager))
+        if(!entitlement_got_entitlement(proc_getentitlements(req->proc_snapshot), kPEEntitlementHostManager))
         {
             req->err = EPERM;
             return -1;
@@ -466,6 +466,7 @@ int sysctl_kernargmax(sysctl_req_t *req)
 /* sysctl map entries */
 static const sysctl_map_entry_t sysctl_map[] = {
     { { CTL_KERN, KERN_HOSTNAME                 }, 2, sysctl_kernhostname },
+#if KSURFACE_SYS_PROC_ENABLED
     { { CTL_KERN, KERN_MAXPROC                  }, 2, sysctl_kernmaxproc },
     { { CTL_KERN, KERN_PROC, KERN_PROC_ALL      }, 3, sysctl_kernproc },
     { { CTL_KERN, KERN_ARGMAX                   }, 2, sysctl_kernargmax },
@@ -474,13 +475,16 @@ static const sysctl_map_entry_t sysctl_map[] = {
     { { CTL_KERN, KERN_PROC, KERN_PROC_UID      }, 3, sysctl_kernproc },
     { { CTL_KERN, KERN_PROC, KERN_PROC_RUID     }, 3, sysctl_kernproc },
     { { CTL_KERN, KERN_PROCARGS2                }, 2, sysctl_kernprocargs2 }
+#endif /* KSURFACE_SYS_PROC_ENABLED */
 };
 
 static const sysctl_name_map_entry_t sysctl_name_map[] = {
     { "kern.hostname",          &sysctl_map[0] },
+#if KSURFACE_SYS_PROC_ENABLED
     { "kern.maxproc",           &sysctl_map[1] },
     { "kern.proc.all",          &sysctl_map[2] },
     { "kern.argmax",            &sysctl_map[3] },
+#endif /* KSURFACE_SYS_PROC_ENABLED */
 };
 
 /* lookup symbol */

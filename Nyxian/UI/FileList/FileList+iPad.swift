@@ -633,6 +633,13 @@ class SplitScreenDetailViewController: UIViewController, PEProcessObserver {
         self.navigationItem.rightBarButtonItems = barButtons
         
         childVC = nil
+        
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            if let vc = self.childVCMaster {
+                vc.view.layer.borderColor = currentTheme?.backgroundColor.cgColor ?? UIColor.white.withAlphaComponent(0.2).cgColor
+            }
+            self.logView?.layer.borderColor = currentTheme?.backgroundColor.cgColor ?? UIColor.white.withAlphaComponent(0.2).cgColor
+        }
     }
     
     @objc private func handleResizePan(_ gesture: UIPanGestureRecognizer) {
@@ -703,14 +710,6 @@ class SplitScreenDetailViewController: UIViewController, PEProcessObserver {
         if let childButton = self.childButton {
             childButton.closeAction(childButton)
         }
-    }
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if let vc = childVCMaster {
-            vc.view.layer.borderColor = currentTheme?.backgroundColor.cgColor ?? UIColor.white.withAlphaComponent(0.2).cgColor
-        }
-        logView?.layer.borderColor = currentTheme?.backgroundColor.cgColor ?? UIColor.white.withAlphaComponent(0.2).cgColor
     }
     
     func process(_ process: PEProcess!, didExitWithWait4Code code: Int32) {

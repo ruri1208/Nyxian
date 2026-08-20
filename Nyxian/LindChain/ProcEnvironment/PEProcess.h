@@ -43,8 +43,6 @@
 
 @property (nonatomic) pid_t pid;
 
-@property (nonatomic) BOOL isSuspended;
-
 - (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc;
 
 - (void)sendSignal:(int)signal;

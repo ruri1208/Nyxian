@@ -31,11 +31,21 @@
 
 @implementation PEUserspaceManager {
     os_unfair_lock _lock;
+    atomic_flag _bootOnceFlag;
+    atomic_bool _bootSuccessful;
+    atomic_bool _launchServiceManagerStable;
 }
+
+@dynamic isBooted;
+@dynamic isLaunchServiceManagerStable;
 
 + (void)load
 {
-    [[PEUserspaceManager shared] boot];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
+        @autoreleasepool {
+            [[PEUserspaceManager shared] boot];
+        }
+    });
 }
 
 + (instancetype)shared
@@ -48,12 +58,31 @@
     return shared;
 }
 
+- (BOOL)isBooted
+{
+    return atomic_load_explicit(&_bootSuccessful, memory_order_acquire);
+}
+
+- (BOOL)isLaunchServiceManagerStable
+{
+    return atomic_load_explicit(&_launchServiceManagerStable, memory_order_acquire);
+}
+
 - (instancetype)init
 {
+    static atomic_flag once = ATOMIC_FLAG_INIT;
+    if(atomic_flag_test_and_set(&once))
+    {
+        environment_panic("This class may only be initilized once");
+    }
+    
     self = [super init];
     if(self)
     {
         _lock = OS_UNFAIR_LOCK_INIT;
+        atomic_flag_clear(&_bootOnceFlag);
+        atomic_store_explicit(&_bootSuccessful, false, memory_order_release);
+        atomic_store_explicit(&_launchServiceManagerStable, false, memory_order_release);
         _mode = kPEUserspaceModeDefault;
     }
     return self;
@@ -61,53 +90,66 @@
 
 - (void)boot
 {
-    static atomic_flag flag = ATOMIC_FLAG_INIT;
-    assert(!atomic_flag_test_and_set(&flag));
-    
     const char *domain = "PEUserspaceManager:boot";
-    if(PEGetLiveProcessBundle() != NULL && PEExtensionHasGetTaskAllowed())
+    
+    /* boot shall only happen once */
+    if(atomic_flag_test_and_set(&_bootOnceFlag))
     {
-        klog_log(domain, "spinning up micro kernel");
-        ksurface_kinit();
-        
-        klog_log(domain, "spinning up userspace management subsystems");
-        PEProcessManager *processManager = [PEProcessManager shared];
-        if(processManager == nil)
-        {
-            environment_panic(domain, "PEProcessManager didn't spin up");
-        }
-        else
-        {
-            klog_log(domain, "PEProcessManager [ok]");
-        }
-        
-        PEBootstrapRegistry *bootstrapRegistry = [PEBootstrapRegistry shared];
-        if(bootstrapRegistry == nil)
-        {
-            environment_panic(domain, "PEBootstrapRegistry didn't spin up");
-        }
-        else
-        {
-            klog_log(domain, "PEBootstrapRegistry [ok]");
-        }
-        
-        PELaunchServiceManager *launchServiceManager = [PELaunchServiceManager shared];
-        if(launchServiceManager == nil)
-        {
-            environment_panic(domain, "PELaunchServiceManager didn't spin up");
-        }
-        else
-        {
-            klog_log(domain, "PELaunchServiceManager [ok]");
-        }
-        
-        klog_log(domain, "spinning up userspace launch services");
-        [launchServiceManager reloadAllEntries];
+        environment_panic("boot called twice");
     }
+    
+    os_unfair_lock_lock(&_lock);
+    
+    /* extension must be available */
+    if(PEGetLiveProcessBundle() == NULL ||
+       !PEExtensionHasGetTaskAllowed())
+    {
+        klog_log(domain, "Cannot spin up anything, extension is malformed");
+        os_unfair_lock_unlock(&_lock);
+        return;
+    }
+    
+    /* now we can spin up that baby (micro kernel) =3 */
+    ksurface_kinit();
+    
+    /* now the actual userspace */
+    Class UserspaceBootChain[] = {
+        [PEProcessManager class],
+        [PEBootstrapRegistry class],
+        [PELaunchServiceManager class],
+    };
+    
+    for(size_t index = 0; index < sizeof(UserspaceBootChain) / sizeof(Class); index++)
+    {
+        Class class = UserspaceBootChain[index];
+        if([class shared] != nil)
+        {
+            klog_log(domain, "%@ [ok]", class);
+        }
+        else
+        {
+            environment_panic("%@ [failed]", class);
+        }
+    }
+    klog_log(domain, "%@ [ok]", [self class]);
+    
+    /* spinning up the launch services */
+    [[PELaunchServiceManager shared] reloadAllEntries];
+    
+    /* mark current boot as successful */
+    atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
+    atomic_store_explicit(&_bootSuccessful, true, memory_order_release);
+    
+    os_unfair_lock_unlock(&_lock);
 }
 
-- (void)rebootUserspaceWithType_nolock:(PEUserspaceRebootType)type
+- (BOOL)rebootUserspaceWithType_nolock:(PEUserspaceRebootType)type
 {
+    if(!atomic_load_explicit(&_bootSuccessful, memory_order_acquire))
+    {
+        return NO;
+    }
+    
     const char *domain = "PEUserspaceManager:reboot";
     
     /* TODO: prevent spawns from happening, deny any new spawns too */
@@ -115,7 +157,7 @@
     if(proctil(kProctilActionLock) != KERN_SUCCESS)
     {
         klog_log(domain, "userspace reboot failed, lock couldn't be claimed");
-        return;
+        return NO;
     }
     
     klog_log(domain, "invalidating all launch service entries in registry");
@@ -143,22 +185,32 @@
     [self reloadDaemons_nolock];
     
     klog_log(domain, "userspace rebooted successfully");
+    return YES;
 }
 
-- (void)rebootUserspaceWithType:(PEUserspaceRebootType)type
+- (BOOL)rebootUserspaceWithType:(PEUserspaceRebootType)type
 {
     os_unfair_lock_lock(&_lock);
-    [self rebootUserspaceWithType_nolock:type];
+    BOOL success = [self rebootUserspaceWithType_nolock:type];
     os_unfair_lock_unlock(&_lock);
+    return success;
 }
 
-- (void)rebootUserspace
+- (BOOL)rebootUserspace
 {
-    [self rebootUserspaceWithType:kPEUserspaceRebootTypeDefault];
+    os_unfair_lock_lock(&_lock);
+    BOOL success = [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeDefault];
+    os_unfair_lock_unlock(&_lock);
+    return success;
 }
 
 - (BOOL)restore
 {
+    if(!atomic_load_explicit(&_bootSuccessful, memory_order_acquire))
+    {
+        return NO;
+    }
+    
     const char *domain = "PEUserspaceManager:restore";
     
     os_unfair_lock_lock(&_lock);
@@ -289,8 +341,14 @@ first:
     return YES;
 }
 
-- (void)reloadDaemons_nolock
+- (BOOL)reloadDaemons_nolock
 {
+    if(!atomic_load_explicit(&_bootSuccessful, memory_order_acquire))
+    {
+        return NO;
+    }
+    
+    atomic_store_explicit(&_launchServiceManagerStable, false, memory_order_release);
     [[PELaunchServiceManager shared] invalidateAllEntries];
     if(_mode == kPEUserspaceModeDefault)
     {
@@ -300,17 +358,30 @@ first:
     {
         [[PELaunchServiceManager shared] loadEntryWithFileName:@"org.emexlabs.containerd.plist"];
     }
+    else
+    {
+        return NO;
+    }
+    atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
+    
+    return YES;
 }
 
-- (void)reloadDaemons
+- (BOOL)reloadDaemons
 {
     os_unfair_lock_lock(&_lock);
-    [self reloadDaemons_nolock];
+    BOOL success = [self reloadDaemons_nolock];
     os_unfair_lock_unlock(&_lock);
+    return success;
 }
 
 - (BOOL)clearApplicationCaches
 {
+    if(!atomic_load_explicit(&_bootSuccessful, memory_order_acquire))
+    {
+        return NO;
+    }
+    
     const char *domain = "PEUserspaceManager:clearApplicationCaches";
     
     os_unfair_lock_lock(&_lock);

@@ -38,7 +38,6 @@
             return nil;
         }
         _lock = OS_UNFAIR_LOCK_INIT;
-        _isBooted = NO;
     }
     return self;
 }
@@ -101,7 +100,6 @@
 - (void)invalidateAllEntries
 {
     os_unfair_lock_lock(&_lock);
-    _isBooted = NO;
     [_launchServices removeAllObjects];
     os_unfair_lock_unlock(&_lock);
 }
@@ -109,7 +107,6 @@
 - (void)reloadAllEntries
 {
     os_unfair_lock_lock(&_lock);
-    _isBooted = NO;
     [_launchServices removeAllObjects];
     NSString *plistPath = [[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Shared"] stringByAppendingPathComponent:@"LaunchServices"];
     NSArray<NSString*> *plists = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:plistPath error:nil];
@@ -121,7 +118,6 @@
             [_launchServices addObject:launchService];
         }
     }
-    _isBooted = YES;
     os_unfair_lock_unlock(&_lock);
 }
 

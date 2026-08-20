@@ -367,7 +367,7 @@ static BOOL ProvisionContainsCertificate(NSData *prov,
     
     if(errorOut)
     {
-        *errorOut = @"The provisioning profile does not include this certificate.";
+        *errorOut = @"The provisioning profile Nyxian was signed with does not include this certificate, make sure you use the same certificate Nyxian was signed with.";
     }
     
     return NO;
@@ -450,7 +450,6 @@ int checkCert(NSData *prov,
     OCSP_request_add0_id(req, cert_id);  // Ownership transferred to request
     cert_id = OCSP_cert_to_id(nullptr, (X509*)cert, issuer);
     unsigned char* der = 0;
-    int len = i2d_OCSP_REQUEST(req, &der);
     
     OPENSSL_free(der);
     if (aia) {

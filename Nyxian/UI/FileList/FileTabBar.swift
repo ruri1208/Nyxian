@@ -183,6 +183,10 @@ class FileTabBar: UIVisualEffectView, UIScrollViewDelegate {
             super.init(effect: nil)
         }
         setupView()
+        
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            self.updateShadowApparance()
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -279,11 +283,6 @@ class FileTabBar: UIVisualEffectView, UIScrollViewDelegate {
     
     override var intrinsicContentSize: CGSize {
         return CGSize(width: UIView.noIntrinsicMetric, height: 44)
-    }
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        updateShadowApparance()
     }
     
     func updateShadowApparance() {

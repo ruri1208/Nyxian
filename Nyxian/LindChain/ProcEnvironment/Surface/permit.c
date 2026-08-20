@@ -79,8 +79,8 @@ bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * and therefore can only be decided at by a other process
      * that is platformised
      */
-    if(entitlement_got_entitlement(proc_getmaxentitlements(targetProc), PEEntitlementPlatform) &&
-       !entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform))
+    if(entitlement_got_entitlement(proc_getmaxentitlements(targetProc), kPEEntitlementPlatform) &&
+       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatform))
     {
         goto out_eperm_no;
     }
@@ -122,14 +122,14 @@ bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * doesnt meet any bypassing requirements or
      * bypassing might be NO on all types.
      */
-    if(targetEntitlementsNeeded != PEEntitlementNone &&
-       !entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform) &&
+    if(targetEntitlementsNeeded != kPEEntitlementNone &&
+       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatform) &&
        !entitlement_got_entitlement(proc_getentitlements(targetProc), targetEntitlementsNeeded))
     {
         goto out_eperm_no;
     }
     
-    if(entitlementsNeeded != PEEntitlementNone &&
+    if(entitlementsNeeded != kPEEntitlementNone &&
        !entitlement_got_entitlement(proc_getentitlements(proc), entitlementsNeeded))
     {
         goto out_eperm_no;

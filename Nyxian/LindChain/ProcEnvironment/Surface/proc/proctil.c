@@ -42,7 +42,7 @@ kern_return_t proctil(ProctilAction action)
         case kProctilActionUncount:
             if(atomic_fetch_sub(&counter, 1) == 0)
             {
-                environment_panic("proctil:uncount", "process count did underflow");
+                environment_panic("process count did underflow");
             }
             return KERN_SUCCESS;
         case kProctilActionLock:

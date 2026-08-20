@@ -20,18 +20,20 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/proc/fork.h>
+#import <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #import <LindChain/ProcEnvironment/Surface/proc/insert.h>
 #import <LindChain/ProcEnvironment/Surface/proc/def.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/Surface/proc/remove.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
+#import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/Services/containerd/PEContainer.h>
+#include <ksurface_config.h>
 
-kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
-                                  ksurface_proc_t **child,
-                                  pid_t child_pid,
-                                  const char *path)
+kern_return_t proc_spawn(ksurface_proc_t *parent,
+                         ksurface_proc_t **child,
+                         pid_t child_pid,
+                         const char *path)
 {
     assert(parent != NULL && child != NULL && path != NULL);
     
@@ -63,7 +65,7 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
      * will return the entitlements of
      * sayed executable.
      */
-    PEEntitlement entitlement = PEEntitlementNone;
+    PEEntitlement entitlement = kPEEntitlementNone;
     PEEntitlement currentEntitlement = proc_getentitlements(child_new);
     PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
     
@@ -72,7 +74,7 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
        [nsPath isEqualToString:@"/usr/libexec/containerd"] ||
        [nsPath isEqualToString:@"/usr/libexec/installd"])
     {
-        entitlement = PEEntitlementSystemDaemon;
+        entitlement = kPEEntitlementSystemDaemon;
     }
     else if([[PEContainer shared] entitlementBlobForExecutableAtPath:nsPath withResult:&resultBlob])
     {
@@ -96,7 +98,7 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
      * have in case it is non platform and setting
      * currentEntitlement to entitlement.
      */
-    if(!entitlement_got_entitlement(currentMaxEntitlement, PEEntitlementPlatform))
+    if(!entitlement_got_entitlement(currentMaxEntitlement, kPEEntitlementPlatform))
     {
         /*
          * child gets nothing extra, removing
@@ -118,11 +120,11 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
          * this code here, but iOS doesn't allow JIT so that would make
          * Nyxian and ksurface crash immediately.
          */
-        currentEntitlement = PEEntitlementNone;
+        currentEntitlement = kPEEntitlementNone;
         proc_setmobilecred(child_new);
         proc_setsid(child_new, child_pid);
     }
-    else if(entitlement_got_entitlement(currentEntitlement, PEEntitlementProcessSpawnInheriteEntitlements))
+    else if(entitlement_got_entitlement(currentEntitlement, kPEEntitlementProcessSpawnInheriteEntitlements))
     {
         /*
          * entitlements which shall be stripped regardless
@@ -131,17 +133,17 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
          * wants to debug they need to spawn the child process
          * or debug a process in the same session.
          */
-        entitlement_strip(currentEntitlement, PEEntitlementPlatform | PEEntitlementPlatformRoot | PEEntitlementTaskForPid | PEEntitlementProcessElevate);
+        entitlement_strip(currentEntitlement, kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementTaskForPid | kPEEntitlementProcessElevate);
     }
     else
     {
         /* inherites nothing */
-        currentEntitlement = PEEntitlementNone;
+        currentEntitlement = kPEEntitlementNone;
     }
     
     /* checking for special platform root credentials */
-    if(entitlement_got_entitlement(entitlement, PEEntitlementPlatformRoot) &&
-       entitlement_got_entitlement(entitlement, PEEntitlementPlatform))
+    if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatformRoot) &&
+       entitlement_got_entitlement(entitlement, kPEEntitlementPlatform))
     {
         /*
          * child process exeuctable is platform binary and has
@@ -219,6 +221,51 @@ kern_return_t proc_fork_plus_exec(ksurface_proc_t *parent,
     *child = child_new;
     
     /* child stays retained for the caller */
+    return KERN_SUCCESS;
+}
+
+kern_return_t proc_kill(ksurface_proc_t *child,
+                        int sig)
+{
+    if(child == NULL)
+    {
+        return KERN_INVALID_ADDRESS;
+    }
+    
+    /* only valid signals shall be played with lol */
+    if(sig <= 0 || sig >= NSIG)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    /* getting the processes high level structure */
+    kvo_rdlock(child);  /* locking so we can safely read the pid field */
+#if KSURFACE_EMIT_LAUNCHD
+    if(proc_getpid(child) == 1)
+    {
+        kvo_unlock(child);
+        if(sig == SIGKILL ||
+           sig == SIGTERM)
+        {
+            @autoreleasepool {
+                [[PEUserspaceManager shared] rebootUserspace];
+            }
+        }
+        return KERN_SUCCESS;
+    }
+#endif /* KSURFACE_EMIT_LAUNCHD */
+    PEProcess *process = [[PEProcessManager shared] processForProcessIdentifier:proc_getpid(child)];
+    kvo_unlock(child);
+    if(!process)
+    {
+        /*
+         * returns the same value as normal failure to prevent deterministic exploitation,
+         * of process reference counting.
+         */
+        return KERN_NOT_FOUND;
+    }
+    
+    [process sendSignal:sig];
     return KERN_SUCCESS;
 }
 
@@ -389,7 +436,7 @@ kern_return_t proc_zombify(ksurface_proc_t *proc)
     kern_return_t ksr = proc_parent_for_proc(proc, &parent);
     if(ksr == KERN_SUCCESS)
     {
-        kvo_event_trigger(parent, kvObjEventCustom0, (uintptr_t)proc);
+        kvo_event_trigger(parent, kProcEventTypeWait4, (uintptr_t)proc);
         
         PEProcess *process = [[PEProcessManager shared] processForProcessIdentifier:proc_getpid(parent)];
         if(process != nil)
@@ -419,7 +466,7 @@ kern_return_t proc_state_change(ksurface_proc_t *proc,
     proc->nyx.p_status = status;
     pthread_mutex_unlock(&(parent->children.mutex));
     
-    kvo_event_trigger(parent, kvObjEventCustom0, (uintptr_t)proc);
+    kvo_event_trigger(parent, kProcEventTypeWait4, (uintptr_t)proc);
     
     PEProcess *process = [[PEProcessManager shared] processForProcessIdentifier:proc_getpid(parent)];
     kvo_release(parent);

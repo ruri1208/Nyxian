@@ -384,7 +384,7 @@ void DyldHooksInit(void)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         PEEntitlement ownEntitlements = liveshim_syscall(SYS_getent);
-        if(entitlement_got_entitlement(ownEntitlements, PEEntitlementDyldHideLiveProcess))
+        if(entitlement_got_entitlement(ownEntitlements, kPEEntitlementDyldHideLiveProcess))
         {
             int imageCount = _dyld_image_count();
             for(int i = 0; i < imageCount; ++i)

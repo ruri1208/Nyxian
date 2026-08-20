@@ -201,6 +201,7 @@ static void* syscall_worker_thread(void *ctx)
         }
         
         /* getting request from receive buffer */
+        ksurface_proc_snapshot_t *proc_snapshot = NULL;
         syscall_request_t *req = (syscall_request_t *)&(buffer->header);
         
         /* validating message header */
@@ -228,7 +229,7 @@ static void* syscall_worker_thread(void *ctx)
          * by just letting it send some pid, that would be
          * fragile and unsecure.
          */
-        ksurface_proc_snapshot_t *proc_snapshot = get_caller_proc_snapshot(&(buffer->header));
+        proc_snapshot = get_caller_proc_snapshot(&(buffer->header));
         if(proc_snapshot == NULL)
         {
             /* checking if proc copy is null */

@@ -234,7 +234,6 @@
 				LindChain/ProcEnvironment/Shims/attrstrnilfix.m,
 				LindChain/ProcEnvironment/Shims/environment.m,
 				LindChain/ProcEnvironment/Shims/libproc.m,
-				LindChain/ProcEnvironment/Shims/panic.m,
 				LindChain/ProcEnvironment/Shims/posix_spawn.m,
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,
@@ -1564,7 +1563,6 @@
 				INFOPLIST_KEY_OSBundleUsageDescription = "The guest app is requesting for this permission.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportsDocumentBrowser = NO;
@@ -1682,7 +1680,6 @@
 				INFOPLIST_KEY_OSBundleUsageDescription = "The guest app is requesting for this permission.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportsDocumentBrowser = NO;

@@ -77,6 +77,7 @@
     }
     
     /* inserting process */
+    [process addObserver:self];
     os_unfair_lock_lock(&_lock);
     [_processes setObject:process forKey:@(pid)];
     os_unfair_lock_unlock(&_lock);
@@ -150,6 +151,7 @@
     }
     
     /* setting process */
+    [process addObserver:self];
     os_unfair_lock_lock(&_lock);
     [_processes setObject:process forKey:@(pid)];
     os_unfair_lock_unlock(&_lock);
@@ -181,10 +183,11 @@
     return nil;
 }
 
-- (void)unregisterProcessWithProcessIdentifier:(pid_t)pid
+- (void)process:(PEProcess *)process didExitWithWait4Code:(int)code
 {
+    [process removeObserver:self];
     os_unfair_lock_lock(&_lock);
-    [_processes removeObjectForKey:@(pid)];
+    [_processes removeObjectForKey:@(process.pid)];
     os_unfair_lock_unlock(&_lock);
 }
 

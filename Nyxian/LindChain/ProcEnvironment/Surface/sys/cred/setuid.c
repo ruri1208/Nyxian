@@ -58,13 +58,13 @@ void proc_set_sugid_if_applicable(ksurface_proc_t *proc,
 bool proc_is_privileged(ksurface_proc_t *proc)
 {
     /* Checking if process is entitled to elevate. */
-    if(entitlement_got_entitlement(proc_getentitlements(proc), PEEntitlementProcessElevate))
+    if(entitlement_got_entitlement(proc_getentitlements(proc), kPEEntitlementProcessElevate))
     {
         return true;
     }
     
-    if(entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatform) &&
-       entitlement_got_entitlement(proc_getmaxentitlements(proc), PEEntitlementPlatformRoot))
+    if(entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatform) &&
+       entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatformRoot))
     {
         return true;
     }

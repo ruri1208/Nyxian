@@ -31,7 +31,7 @@ static inline kvobject_t *__kvobject_alloc(kvobject_main_event_handler_t handler
                                            kvobject_base_type_t base_type)
 {
     /* get object size first */
-    size_t size = (size_t)handler(NULL, kvObjEventInit);
+    size_t size = (size_t)handler(NULL, kvObjEventInit, 0);
     
     /*
      * first we gotta check if the size
@@ -84,7 +84,7 @@ kvobject_t *kvobject_alloc(kvobject_main_event_handler_t handler)
     }
     
     /* checking init handler and executing if nonnull */
-    if(kvo->main_handler(&kvo, kvObjEventInit) != 0)
+    if(kvo->main_handler(&kvo, kvObjEventInit, 0) != 0)
     {
         pthread_rwlock_destroy(&(kvo->rwlock));
         pthread_rwlock_destroy(&(kvo->event_rwlock));
@@ -112,7 +112,7 @@ kvobject_t *kvobject_copy(kvobject_t *kvo)
     
     /* checking init handler and executing if nonnull */
     kvobject_t *kvoarr[2] = { kvo_dup, kvo };
-    if(kvo_dup->main_handler(kvoarr, kvObjEventCopy) != 0)
+    if(kvo_dup->main_handler(kvoarr, kvObjEventCopy, 0) != 0)
     {
         pthread_rwlock_destroy(&(kvo_dup->rwlock));
         pthread_rwlock_destroy(&(kvo_dup->event_rwlock));
@@ -155,7 +155,7 @@ kvobject_snapshot_t *kvobject_snapshot(kvobject_t *kvo,
     
     /* preparing stack array */
     kvobject_t *kvoarr[2] = { kvo_snap, kvo };
-    if(kvo_snap->main_handler(kvoarr, kvObjEventSnapshot) != 0)
+    if(kvo_snap->main_handler(kvoarr, kvObjEventSnapshot, 0) != 0)
     {
         free(kvo_snap);
         kvo_snap = NULL;

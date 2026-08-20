@@ -22,7 +22,6 @@
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Surface/permit.h>
-#import <LindChain/ProcEnvironment/PEProcessManager.h>
 
 DEFINE_SYSCALL_HANDLER(kill)
 {    
@@ -39,26 +38,27 @@ DEFINE_SYSCALL_HANDLER(kill)
     /*
      * checking if the caller process that makes the call is the same process,
      * also checks if the caller process has the entitlement to kill
-     * and checks if the process has permitive over the other process.
+     * and checks if the process has primitive over the other process.
      */
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, PEEntitlementProcessKill, PEEntitlementNone))
+    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, kPEEntitlementProcessKill, kPEEntitlementNone))
     {
         sys_return_failure(errno);
     }
-
-    /* getting the processes high level structure */
-    PEProcess *process = [[PEProcessManager shared] processForProcessIdentifier:pid];
-    if(!process)
+    
+    ksurface_proc_t *target;
+    kern_return_t kr = proc_for_pid(pid, &target);
+    if(kr != KERN_SUCCESS)
     {
-        /*
-         * returns the same value as normal failure to prevent deterministic exploitation,
-         * of process reference counting.
-         */
         sys_return_failure(ESRCH);
     }
     
-    /* signaling the process */
-    [process sendSignal:signal];
+    kr = proc_kill(target, signal);
+    kvo_release(target);
+    if(kr != KERN_SUCCESS)
+    {
+        /* shall never happen */
+        sys_return_failure(EINVAL);
+    }
     
     sys_return;
 }

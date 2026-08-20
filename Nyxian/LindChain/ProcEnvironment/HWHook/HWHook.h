@@ -19,18 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROC_PROC_H
-#define PROC_PROC_H
+#ifndef HWHOOK_H
+#define HWHOOK_H
 
-#include <LindChain/ProcEnvironment/Surface/proc/spawn.h>
-#include <LindChain/ProcEnvironment/Surface/proc/def.h>
-#include <LindChain/ProcEnvironment/Surface/proc/insert.h>
-#include <LindChain/ProcEnvironment/Surface/proc/list.h>
-#include <LindChain/ProcEnvironment/Surface/proc/lookup.h>
-#include <LindChain/ProcEnvironment/Surface/proc/proc.h>
-#include <LindChain/ProcEnvironment/Surface/proc/remove.h>
-#include <LindChain/ProcEnvironment/Surface/proc/proctil.h>
+#include <CoreFoundation/CoreFoundation.h>
 
-DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc);
+typedef struct __HWHook *HWHookRef;
 
-#endif /* PROC_PROC_H */
+CF_EXPORT CFTypeID HWHookGetTypeID(void);
+
+CF_EXPORT HWHookRef HWHookCreateWithPointerToSymbol(CFAllocatorRef allocator, void *symbol, void *replacement);
+
+CF_EXPORT void *HWHookGetSymbolPtr(HWHookRef hook);
+CF_EXPORT void *HWHookGetReplacementPtr(HWHookRef hook);
+
+#endif /* HWHOOK_H */

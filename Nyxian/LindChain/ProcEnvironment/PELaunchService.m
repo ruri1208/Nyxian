@@ -140,7 +140,9 @@
 
 - (void)dealloc
 {
+    [_process removeObserver:self];
     [_process sendSignal:SIGKILL];
+    _process = nil;
 }
 
 @end

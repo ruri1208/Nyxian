@@ -149,10 +149,25 @@
     return entitlement;
 }
 
+- (PEEntitlement)maxEntitlement
+{
+    kvo_rdlock(_rawProc);
+    PEEntitlement entitlement = proc_getmaxentitlements(_rawProc);
+    kvo_unlock(_rawProc);
+    return entitlement;
+}
+
 - (void)setEntitlement:(PEEntitlement)entitlement
 {
     kvo_wrlock(_rawProc);
     proc_setentitlements(_rawProc, entitlement);
+    kvo_unlock(_rawProc);
+}
+
+- (void)setMaxEntitlement:(PEEntitlement)maxEntitlement
+{
+    kvo_wrlock(_rawProc);
+    proc_setmaxentitlements(_rawProc, maxEntitlement);
     kvo_unlock(_rawProc);
 }
 

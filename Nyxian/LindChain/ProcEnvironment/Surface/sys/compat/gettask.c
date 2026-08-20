@@ -42,7 +42,7 @@ DEFINE_SYSCALL_HANDLER(gettask)
      * in the first place and if the process allows for it except if the
      * caller is a special process.
      */
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, name_only ? PEEntitlementNone : PEEntitlementTaskForPid, name_only ? PEEntitlementNone : PEEntitlementGetTaskAllowed))
+    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, name_only ? kPEEntitlementNone : kPEEntitlementTaskForPid, name_only ? kPEEntitlementNone : kPEEntitlementGetTaskAllowed))
     {
         kvo_release(target);
         sys_return_failure(errno);

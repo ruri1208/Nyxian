@@ -128,6 +128,9 @@ class UIThemedSwitch: UISwitch {
             object: nil
         )
         applyTheme()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            self.applyTheme()
+        }
     }
     
     deinit {
@@ -142,11 +145,6 @@ class UIThemedSwitch: UISwitch {
     private func applyTheme() {
         onTintColor = currentTheme?.appLabel
         thumbTintColor = currentTheme?.appTableCell
-    }
-    
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
-        applyTheme()
     }
     
     @objc private func handleThemeChange() {

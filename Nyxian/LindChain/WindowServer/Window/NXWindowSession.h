@@ -29,7 +29,6 @@
 
 @interface NXWindowSession : UIViewController
 
-@property (nonatomic,weak) UIWindowScene *windowScene;
 @property (nonatomic,weak) NXWindow *window;
 @property (nonatomic) id_t windowIdentifier;
 
@@ -50,8 +49,6 @@
 - (BOOL)unfocusWindow;
 
 - (UIImage*)snapshotWindow;
-
-- (void)movedWindowToScene:(UIWindowScene*)windowScene withIdentifier:(id_t)identifier;
 
 - (void)beginInteractiveResize;
 - (void)commitInteractiveResize;

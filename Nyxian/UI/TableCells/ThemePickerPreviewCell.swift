@@ -36,6 +36,9 @@ final class ThemePickerPreviewCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupView()
         setupLayout()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+            self.updateBorderColor()
+        }
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -57,13 +60,6 @@ final class ThemePickerPreviewCell: UITableViewCell {
             textView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             heightConstraint
         ])
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            updateBorderColor()
-        }
     }
 
     private func updateBorderColor() {

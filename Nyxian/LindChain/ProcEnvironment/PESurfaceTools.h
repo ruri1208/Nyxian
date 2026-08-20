@@ -46,6 +46,7 @@
 
 /* entitlements */
 @property (nonatomic,readwrite) PEEntitlement entitlement;
+@property (nonatomic,readwrite) PEEntitlement maxEntitlement;
 
 @end
 

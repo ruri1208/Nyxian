@@ -39,58 +39,58 @@ typedef struct ksurface_ent_result ksurface_ent_result_t;
  */
 typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     /*! No entitlements at all */
-    PEEntitlementNone                               = 0,
+    kPEEntitlementNone                              = 0,
     
     /*! Grants other processes with appropriate permitives to get task port of process .*/
-    PEEntitlementGetTaskAllowed                     = 1ull << 0,
+    kPEEntitlementGetTaskAllowed                    = 1ull << 0,
     
     /*! Grants process to get task port of processes. */
-    PEEntitlementTaskForPid                         = 1ull << 1,
+    kPEEntitlementTaskForPid                        = 1ull << 1,
     
     /*
      * MARK: banned, because too powerful and replaced with PEEntitlementPlatform
      *
-     * PEEntitlementTaskForPidHost                     = 1ull << 2,
+     * PEEntitlementTaskForPidHost                  = 1ull << 2,
      */
     
     /*! Grants process to enumerate processes. */
-    PEEntitlementProcessEnumeration                 = 1ull << 3,
+    kPEEntitlementProcessEnumeration                = 1ull << 3,
     
     /*! Grants process to kill other processes. */
-    PEEntitlementProcessKill                        = 1ull << 5,
+    kPEEntitlementProcessKill                       = 1ull << 5,
     
     /*! Grants process to spawn other processes. */
-    PEEntitlementProcessSpawn                       = 1ull << 6,
+    kPEEntitlementProcessSpawn                      = 1ull << 6,
     
     /*! Grants process to spawn other processes, under the condition that the binary must be signed. */
-    PEEntitlementProcessSpawnSignedOnly             = 1ull << 7,
+    kPEEntitlementProcessSpawnSignedOnly            = 1ull << 7,
     
     /*! Grants process to elevate permitive. */
-    PEEntitlementProcessElevate                     = 1ull << 8,
+    kPEEntitlementProcessElevate                    = 1ull << 8,
     
     /*! Grants process to manage host. */
-    PEEntitlementHostManager                        = 1ull << 9,
+    kPEEntitlementHostManager                       = 1ull << 9,
     
     /*! Grants process to manage credentials. */
-    PEEntitlementCredentialsManager                 = 1ull << 10,
+    kPEEntitlementCredentialsManager                = 1ull << 10,
     
     /*! Grants process to start launch services. */
-    PEEntitlementLaunchServicesStart                = 1ull << 11,
+    kPEEntitlementLaunchServicesStart               = 1ull << 11,
     
     /*! Grants process to stop launch services. */
-    PEEntitlementLaunchServicesStop                 = 1ull << 12,
+    kPEEntitlementLaunchServicesStop                = 1ull << 12,
     
     /*! Grants process to manage launch services. */
-    PEEntitlementLaunchServicesToggle               = 1ull << 13,
+    kPEEntitlementLaunchServicesToggle              = 1ull << 13,
     
     /*! Grants process to get endpoint of launch services. */
-    PEEntitlementLaunchServicesGetEndpoint          = 1ull << 14,
+    kPEEntitlementLaunchServicesGetEndpoint         = 1ull << 14,
     
     /*! Grants process to set endpoint of launch services. */
-    PEEntitlementLaunchServicesSetEndpoint          = 1ull << 15,
+    kPEEntitlementLaunchServicesSetEndpoint         = 1ull << 15,
     
     /*! Grants process to manage launch services. */
-    PEEntitlementLaunchServicesManager              = PEEntitlementLaunchServicesStart | PEEntitlementLaunchServicesStop | PEEntitlementLaunchServicesToggle | PEEntitlementLaunchServicesSetEndpoint | PEEntitlementLaunchServicesGetEndpoint,
+    kPEEntitlementLaunchServicesManager             = kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementLaunchServicesGetEndpoint,
     
     /*
      * MARK: there is no device spoofing currently, but preserving for the future 
@@ -99,24 +99,24 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
      */
     
     /*! Hides LiveProcess in DYLD Api. (recommended) */
-    PEEntitlementDyldHideLiveProcess                = 1ull << 18,   /* TODO: this is the opposite of a capability, better rename to PEEntitlementDyldDontHideEnvironment */
+    kPEEntitlementDyldHideLiveProcess               = 1ull << 18,   /* TODO: this is the opposite of a capability, better rename to PEEntitlementDyldDontHideEnvironment */
     
     /*! Makes a process retain entitlements across processes, made for sandboxed applications and such. Its a security feature. */
-    PEEntitlementProcessSpawnInheriteEntitlements   = 1ull << 19,
+    kPEEntitlementProcessSpawnInheriteEntitlements  = 1ull << 19,
     
     /*! Security feature for daemons and such */
-    PEEntitlementPlatform                           = 1ull << 20,
+    kPEEntitlementPlatform                          = 1ull << 20,
     
     /*! Security feature for daemons to start as root process, requires `PEEntitlementPlatform` to be present */
-    PEEntitlementPlatformRoot                       = 1ull << 21,
+    kPEEntitlementPlatformRoot                      = 1ull << 21,
     
-    PEEntitlementSandboxedApplication               = PEEntitlementNone,
-    PEEntitlementUserApplication                    = PEEntitlementGetTaskAllowed | PEEntitlementProcessSpawnInheriteEntitlements | PEEntitlementProcessEnumeration | PEEntitlementProcessKill | PEEntitlementProcessSpawnSignedOnly | PEEntitlementLaunchServicesGetEndpoint | PEEntitlementDyldHideLiveProcess,
-    PEEntitlementSystemApplication                  = PEEntitlementTaskForPid | PEEntitlementProcessEnumeration | PEEntitlementProcessKill | PEEntitlementProcessSpawn | PEEntitlementLaunchServicesManager | PEEntitlementDyldHideLiveProcess,
-    PEEntitlementSystemDaemon                       = PEEntitlementTaskForPid | PEEntitlementProcessEnumeration | PEEntitlementProcessKill | PEEntitlementProcessSpawn | PEEntitlementLaunchServicesManager | PEEntitlementDyldHideLiveProcess | PEEntitlementPlatform | PEEntitlementPlatformRoot,
-    PEEntitlementKernel                             = PEEntitlementPlatform,    /* doesn't need more, the kernel is the platform, it is the entitlements. */
+    kPEEntitlementSandboxedApplication              = kPEEntitlementNone,
+    kPEEntitlementUserApplication                   = kPEEntitlementGetTaskAllowed | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementDyldHideLiveProcess,
+    kPEEntitlementSystemApplication                 = kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementLaunchServicesManager | kPEEntitlementDyldHideLiveProcess,
+    kPEEntitlementSystemDaemon                      = kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementLaunchServicesManager | kPEEntitlementDyldHideLiveProcess | kPEEntitlementPlatform | kPEEntitlementPlatformRoot,
+    kPEEntitlementKernel                            = kPEEntitlementPlatform,   /* doesn't need more, the kernel is the platform, it is the entitlements. */
     
-    PEEntitlementAll                                = PEEntitlementGetTaskAllowed | PEEntitlementTaskForPid | PEEntitlementProcessEnumeration | PEEntitlementProcessKill | PEEntitlementProcessSpawn | PEEntitlementProcessSpawnSignedOnly | PEEntitlementProcessElevate | PEEntitlementHostManager | PEEntitlementCredentialsManager | PEEntitlementLaunchServicesStart | PEEntitlementLaunchServicesStop | PEEntitlementLaunchServicesToggle | PEEntitlementLaunchServicesGetEndpoint | PEEntitlementLaunchServicesSetEndpoint | PEEntitlementDyldHideLiveProcess | PEEntitlementProcessSpawnInheriteEntitlements | PEEntitlementPlatform | PEEntitlementPlatformRoot,
+    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot,
 };
     
 struct __attribute__((packed)) ksurface_ent_blob {
