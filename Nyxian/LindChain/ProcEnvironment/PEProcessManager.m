@@ -28,6 +28,7 @@
 #import <os/lock.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 
 @implementation PEProcessManager {
     NSMutableDictionary<NSNumber*,PEProcess*> *_processes;
@@ -134,7 +135,18 @@
             @"CFFIXED_USER_HOME": applicationObject.containerPath,
             @"TMPDIR": [applicationObject.containerPath stringByAppendingPathComponent:@"/Tmp"]
         },
-        @"PEWorkingDirectory": [applicationObject.containerPath stringByAppendingPathComponent:@"/Documents"]
+        @"PEWorkingDirectory": [applicationObject.containerPath stringByAppendingPathComponent:@"/Documents"],
+        @"PEFilePermissions": @[
+            /* bundle */
+            [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.executablePath] readWrite:YES],
+            [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.bundlePath] readWrite:NO],
+            
+            /* container */
+            [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.containerPath] readWrite:NO],
+            [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Documents"] readWrite:YES],
+            [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Library"] readWrite:YES],
+            [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Tmp"] readWrite:YES],
+        ]
     }];
     
     PEProcess *process = [[PEProcess alloc] initWithItems:mutableItems withKernelSurfaceProcess:proc ?: kernel_proc_];

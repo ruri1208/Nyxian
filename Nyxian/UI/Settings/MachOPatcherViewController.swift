@@ -66,6 +66,11 @@ class MachOPatcherViewController: UIThemedTableViewController {
             EntitlementRow(title: "Platform Root", detail: "Starts a process that is platformized as root user, meant as a security feature to prevent privelege escalations.", flag: .platformRoot),
             EntitlementRow(title: "DYLD Hide LiveProcess", detail: "Hides the PEProcesses trampoline process loader.", flag: .dyldHideLiveProcess),
         ]),
+        EntitlementSection(title: "FileSystem", rows: [
+            EntitlementRow(title: "Root Read-Write", detail: "Allows a application to read and write through ksurface rootfs.", flag: .fileRootRW),
+            EntitlementRow(title: "Bundle Read-Write", detail: "Allows a application to read and write to it's own bundle.", flag: .fileBundleRW),
+            EntitlementRow(title: "Container Read-Write", detail: "Allows a application to read and write through it's entire container.", flag: .fileContainerRW),
+        ]),
     ]
 
     init(machOPath path: String, applyHandler: @escaping () -> Void) {

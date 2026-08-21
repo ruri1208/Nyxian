@@ -59,4 +59,4 @@ The only current limitation is that we cannot intercept a arm64 supervisor call,
   - [x] NSBundle think it is loaded **as a binary**
   - [x] Actually make iOS apps and binaries use the version as DYLD version they have been made for
   - [ ] Find NSExtension spawn limit
-  - [ ] File permissions in guest file system (probably by delegating all requests to the host file system or any kind of apple trickery)
+  - [x] File permissions in guest file system (using sandbox file extensions)

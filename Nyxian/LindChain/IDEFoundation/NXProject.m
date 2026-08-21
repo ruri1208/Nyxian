@@ -161,6 +161,9 @@
         if([self.dictionary booleanForKey:@"com.nyxian.pe.process_spawn_inherite_entitlements" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessSpawnInheriteEntitlements;
         if([self.dictionary booleanForKey:@"com.nyxian.pe.platform" withDefaultValue:NO]) _entitlement |= kPEEntitlementPlatform;
         if([self.dictionary booleanForKey:@"com.nyxian.pe.platform_root" withDefaultValue:NO]) _entitlement |= kPEEntitlementPlatformRoot;
+        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_root.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileRootRW;
+        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_bundle.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileBundleRW;
+        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_container.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileContainerRW;
     }
     return reloaded;
 }

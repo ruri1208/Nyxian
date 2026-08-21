@@ -110,13 +110,18 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     /*! Security feature for daemons to start as root process, requires `PEEntitlementPlatform` to be present */
     kPEEntitlementPlatformRoot                      = 1ull << 21,
     
+    /*! New experimentation flags   */
+    kPEEntitlementFileRootRW                        = 1ull << 22,
+    kPEEntitlementFileBundleRW                      = 1ull << 23,
+    kPEEntitlementFileContainerRW                   = 1ull << 24,
+    
     kPEEntitlementSandboxedApplication              = kPEEntitlementNone,
     kPEEntitlementUserApplication                   = kPEEntitlementGetTaskAllowed | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementDyldHideLiveProcess,
     kPEEntitlementSystemApplication                 = kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementLaunchServicesManager | kPEEntitlementDyldHideLiveProcess,
     kPEEntitlementSystemDaemon                      = kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementLaunchServicesManager | kPEEntitlementDyldHideLiveProcess | kPEEntitlementPlatform | kPEEntitlementPlatformRoot,
     kPEEntitlementKernel                            = kPEEntitlementPlatform,   /* doesn't need more, the kernel is the platform, it is the entitlements. */
     
-    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot,
+    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
 };
     
 struct __attribute__((packed)) ksurface_ent_blob {

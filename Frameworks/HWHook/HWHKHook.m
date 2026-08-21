@@ -45,4 +45,14 @@
     return HWHookGetReplacementPtr((__bridge HWHookRef)self);
 }
 
+- (BOOL)disableContextHooksInFrame
+{
+    return HWHookGetDisableContextHooksInFrame((__bridge HWHookRef)self);
+}
+
+- (void)setDisableContextHooksInFrame:(BOOL)disableContextHooksInFrame
+{
+    HWHookSetDisableContextHooksInFrame((__bridge HWHookRef)self, disableContextHooksInFrame);
+}
+
 @end

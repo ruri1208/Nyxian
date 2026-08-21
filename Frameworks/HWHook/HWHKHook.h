@@ -30,6 +30,7 @@
 
 @property (nonatomic,readonly) void *symbolPtr;
 @property (nonatomic,readonly) void *replacementPtr;
+@property (nonatomic,readwrite) BOOL disableContextHooksInFrame;
 
 + (instancetype)hookWithPointerToSymbol:(void*)symbol withReplacementSymbol:(void*)replacement;
 

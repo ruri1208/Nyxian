@@ -24,9 +24,10 @@
 #import <LindChain/ProcEnvironment/PEMachPort.h>
 #import <LindChain/ProcEnvironment/Syscall/mach_syscall_server.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
-#import <objc/runtime.h>
 #import <LindChain/ProcEnvironment/Shims/environment.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <objc/runtime.h>
 
 NSBundle *PEGetLiveProcessBundle(void)
 {
@@ -140,6 +141,30 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
     NSMutableDictionary *mutableItems = [items mutableCopy];
     mutableItems[@"PESyscallPort"] = [PEMachPort portWithPortName:syscall_server_get_port(ksurface->sys_server)];
     mutableItems[@"PEEndpoint"] = [Server getTicket];   /* MARK: deprecated and soon replaced with the syscall server entirely */
+    if(mutableItems[@"PEFilePermissions"] == nil)
+    {
+        mutableItems[@"PEFilePermissions"] = @[
+            [NXBootstrap issueSandboxFileExtensionForURL:[[NXBootstrap shared] rootfsURL] readWrite:YES],   /* full rootfs access */
+        ];
+    }
+    NSMutableDictionary *env = [mutableItems[@"PEEnvironment"] mutableCopy];
+    if(env == nil)
+    {
+        env = [NSMutableDictionary dictionary];
+    }
+    NSDictionary *defaults = @{
+        @"HOME": [[[NXBootstrap shared] rootfsURL] path],
+        @"CFFIXED_USER_HOME": [[[NXBootstrap shared] rootfsURL] path],
+        @"TMPDIR": [[[[NXBootstrap shared] rootfsURL] URLByAppendingPathComponent:@"tmp"] path],
+    };
+    for(NSString *key in defaults)
+    {
+        if(env[key] == nil)
+        {
+            env[key] = defaults[key];
+        }
+    }
+    mutableItems[@"PEEnvironment"] = env;
     
     NSExtensionItem *item = [NSExtensionItem new];
     item.userInfo = mutableItems;

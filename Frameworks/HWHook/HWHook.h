@@ -33,4 +33,13 @@ CF_EXPORT HWHookRef HWHookCreateWithPointerToSymbol(CFAllocatorRef allocator, vo
 CF_EXPORT void *HWHookGetSymbolPtr(HWHookRef hook);
 CF_EXPORT void *HWHookGetReplacementPtr(HWHookRef hook);
 
+/*
+ * makes you able to call original symbols without manually
+ * fiddling around, the hooking server will disable automatically
+ * all hooks in the context and add a new stack frame which calls a
+ * symbol that reenables all hooks in the context.
+ */
+CF_EXPORT Boolean HWHookGetDisableContextHooksInFrame(HWHookRef hook);
+CF_EXPORT void HWHookSetDisableContextHooksInFrame(HWHookRef hook, Boolean disableContextHooksInFrame);
+
 #endif /* HWHOOK_H */
