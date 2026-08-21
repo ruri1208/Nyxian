@@ -39,7 +39,6 @@
 #include <mach-o/ldsyms.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCBootstrap.h>
 #import <malloc/malloc.h>
 #import <LindChain/Utils/CFTools.h>

@@ -19,11 +19,9 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_GETENT_H
-#define SURFACE_SYS_GETENT_H
+#ifndef __VNODE_H
+#define __VNODE_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
+bool vnode_refresh_at_path(const char* path);
 
-DEFINE_SYSCALL_HANDLER(getent);
-
-#endif /* SURFACE_SYS_GETENT_H */
+#endif /* __VNODE_H */

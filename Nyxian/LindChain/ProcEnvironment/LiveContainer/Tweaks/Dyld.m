@@ -113,7 +113,6 @@ DEFINE_HOOK(_dyld_get_image_name, const char*, (uint32_t image_index))
     __attribute__((musttail)) return ORIG_FUNC(_dyld_get_image_name)(translateImageIndex(image_index));
 }
 
-void refreshFile(const char* path);
 DEFINE_HOOK(dlopen, void *, (const char * __path,
                              int __mode))
 {
@@ -130,10 +129,7 @@ DEFINE_HOOK(dlopen, void *, (const char * __path,
     if(!cs_valid)
     {
         /* sign if invalid */
-        if((int)liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, __path, NULL, MACH_PORT_NULL) == 0)
-        {
-            refreshFile(__path);
-        }
+        liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, __path, NULL, MACH_PORT_NULL);
     }
     
 just_try:
@@ -384,7 +380,7 @@ void DyldHooksInit(void)
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        PEEntitlement ownEntitlements = liveshim_syscall(SYS_getent);
+        PEEntitlement ownEntitlements = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetEntitlements, NULL, NULL, MACH_PORT_NULL);
         if(entitlement_got_entitlement(ownEntitlements, kPEEntitlementDyldHideLiveProcess))
         {
             int imageCount = _dyld_image_count();

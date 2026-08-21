@@ -19,10 +19,19 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/sys/compat/getent.h>
-#include <LindChain/ProcEnvironment/Surface/proc/def.h>
+#import <Foundation/Foundation.h>
+#include <copyfile.h>
 
-DEFINE_SYSCALL_HANDLER(getent)
+bool vnode_refresh_at_path(const char* path)
 {
-    return proc_getentitlements(sys_proc_snapshot_);
+    NSString* objcPath = @(path);
+    NSString* newPath = [NSString stringWithFormat:@"%s.tmp", path];
+    if(![NSFileManager.defaultManager fileExistsAtPath:objcPath] ||
+       ![NSFileManager.defaultManager copyItemAtPath:objcPath toPath:newPath error:nil] ||
+       ![NSFileManager.defaultManager removeItemAtPath:objcPath error:nil] ||
+       ![NSFileManager.defaultManager moveItemAtPath:newPath toPath:objcPath error:nil])
+    {
+        return false;
+    }
+    return true;
 }

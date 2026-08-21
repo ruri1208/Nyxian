@@ -27,8 +27,9 @@
  * -------------------------------------------------------------------- */
 #import <LindChain/ProcEnvironment/Surface/entitlement.h>
 
-int macho_after_sign(const char *path, PEEntitlement entitlement);
-int macho_after_sign_fd(int fd, PEEntitlement entitlement);
-int macho_read_token(int fd, ksurface_ent_result_t *mach);
+kern_return_t nxtr_sign(const char *path, PEEntitlement entitlement);
+kern_return_t nxtr_sign_fd(int fd, PEEntitlement entitlement);
+kern_return_t nxtr_read(const char *path, ksurface_nxtr_result_t *result);
+kern_return_t nxtr_read_fd(int fd, ksurface_nxtr_result_t *result);
 
 #endif /* SIGNING_TRUST_H */

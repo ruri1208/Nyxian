@@ -26,7 +26,6 @@
 #import <LindChain/Private/UIKitPrivate.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LindChain/ProcEnvironment/Shims/posix_spawn.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 

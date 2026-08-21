@@ -28,6 +28,7 @@
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceProtocol.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LiveShim/dyld.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
 
 @interface LDEApplicationWorkspaceInternal ()
 
@@ -590,8 +591,6 @@ create_home:
 {
     NSString *fastPath = [[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name];
     [object writeOut:[[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name]];
-    void refreshFile(const char* path);
-    refreshFile(fastPath.fileSystemRepresentation);
     bool cs_valid = false;
     LCMachO *machO = LCMapMachO(fastPath.fileSystemRepresentation, true);
     if(machO != nil)
@@ -602,6 +601,10 @@ create_home:
     if(!cs_valid)
     {
         [[NSFileManager defaultManager] removeItemAtPath:fastPath error:nil];
+    }
+    else
+    {
+        vnode_refresh_at_path([fastPath UTF8String]);
     }
     reply(fastPath, cs_valid);
 }

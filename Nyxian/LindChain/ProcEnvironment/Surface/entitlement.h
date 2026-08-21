@@ -28,10 +28,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <ksurface_config.h>
 
 typedef struct ksurface_proc ksurface_proc_t;
-typedef struct ksurface_ent_blob ksurface_ent_blob_t;
-typedef struct ksurface_ent_result ksurface_ent_result_t;
+typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
+typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
 
 /*!
  @enum PEEntitlement
@@ -121,10 +122,10 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     kPEEntitlementSystemDaemon                      = kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementLaunchServicesManager | kPEEntitlementDyldHideLiveProcess | kPEEntitlementPlatform | kPEEntitlementPlatformRoot,
     kPEEntitlementKernel                            = kPEEntitlementPlatform,   /* doesn't need more, the kernel is the platform, it is the entitlements. */
     
-    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
+    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
 };
     
-struct __attribute__((packed)) ksurface_ent_blob {
+struct __attribute__((packed)) ksurface_nxtr_blob {
     PEEntitlement entitlement;
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     uint64_t nonce;
@@ -132,8 +133,25 @@ struct __attribute__((packed)) ksurface_ent_blob {
     size_t mac_len;
 };
 
-struct ksurface_ent_result {
-    struct ksurface_ent_blob blob;
+/* new better plist base entitlement format */
+struct __attribute__((packed)) ksurface_nxt2_blob {
+    char cdhash[USER_FSIGNATURES_CDHASH_LEN];
+    uint64_t nonce;
+    uint8_t mac[72];
+    size_t mac_len;
+    size_t plist_len;
+    const char plist_str[];
+};
+
+struct ksurface_nxt2 {
+    bool cdhash_valid;
+    bool blob_valid;
+    char cdhash[USER_FSIGNATURES_CDHASH_LEN];
+    CFDictionaryRef entitlements;
+};
+
+struct ksurface_nxtr_result {
+    struct ksurface_nxtr_blob blob;
     bool cdhash_valid;
     bool blob_valid;
 };
@@ -141,10 +159,15 @@ struct ksurface_ent_result {
 #define entitlement_got_entitlement(present,needed) (((present) & (needed)) == (needed))
 #define entitlement_strip(present,strip) (present) &= ~(strip)
 
-kern_return_t entitlement_token_mach_gen(ksurface_ent_blob_t *blob, const char *cdhash, PEEntitlement entitlement);
-kern_return_t entitlement_mach_verify(ksurface_ent_result_t *mach, uint8_t *pub_key, size_t pub_key_len);
+kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob, const char *cdhash, PEEntitlement entitlement);
+kern_return_t entitlement_mach_verify(ksurface_nxtr_result_t *mach, uint8_t *pub_key, size_t pub_key_len);
 PEEntitlement entitlement_get_path(const char *path, bool *wasLocallySigned);
 bool entitlement_set_path(const char *path, PEEntitlement entitlement);
+
+#if KSURFACE_SEC_SANITIZE_ENTITLEMENTS
 PEEntitlement entitlement_sanitize(PEEntitlement base);
+#else
+#define entitlement_sanitize(base) (base)
+#endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
 
 #endif /* PROC_ENTITLEMENT_H */

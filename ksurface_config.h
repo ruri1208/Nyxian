@@ -51,15 +51,15 @@
 #define KSURFACE_DYLD_HOOK_LOGGING_ENABLED  0   /* enables logging from the hooks */
 
 /* additional nyxian syscalls for now */
-#define SYS_proctb      750     /* MARK: noop */
-#define SYS_getent      751     /* getting processes entitlements */
-#define SYS_gethostname 752     /* MARK: noop */
-#define SYS_sethostname 753     /* MARK: noop */
+#define SYS_proctb      750     /* MARK: deprecated, use SYS_sysctl instead */
+#define SYS_getent      751     /* MARK: deprecated, use SYS_pectl instead */
+#define SYS_gethostname 752     /* MARK: deprecated, use SYS_sysctl instead */
+#define SYS_sethostname 753     /* MARK: deprecated, use SYS_sysctl instead */
 #define SYS_gettask     754     /* gets task port */
 #define SYS_procpath    755     /* gets process path of a pid */
-#define SYS_procbsd     756     /* MARK: noop */
+#define SYS_procbsd     756     /* MARK: deprecated, use SYS_sysctl instead */
 #define SYS_handoffep   757     /* handoff exception port to kvirt */
-#define SYS_setent      758     /* sets entitlements (sanitized ofc) */
+#define SYS_setent      758     /* MARK: deprecated, use SYS_pectl instead */
 #define SYS_waittask    759     /* waits till task port of a task is available */
 #define SYS_pectl       760     /* utility for many proc environment operations */
 

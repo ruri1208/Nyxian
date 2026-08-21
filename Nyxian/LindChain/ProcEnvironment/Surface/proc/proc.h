@@ -30,6 +30,7 @@
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Surface/proc/remove.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proctil.h>
+#include <LindChain/ProcEnvironment/Surface/proc/permit.h>
 
 DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc);
 

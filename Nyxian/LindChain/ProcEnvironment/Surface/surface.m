@@ -33,8 +33,6 @@ syscall_list_item_t sys_list[] = {
     /* necessary for basic function */
     { .name = "SYS_handoffep",      .sysnum = SYS_handoffep,    .hndl = GET_SYSCALL_HANDLER(handoffep)      },
     { .name = "SYS_pectl",          .sysnum = SYS_pectl,        .hndl = GET_SYSCALL_HANDLER(pectl)          },
-    { .name = "SYS_setent",         .sysnum = SYS_setent,       .hndl = GET_SYSCALL_HANDLER(setent)         },
-    { .name = "SYS_getent",         .sysnum = SYS_getent,       .hndl = GET_SYSCALL_HANDLER(getent)         },
     { .name = "sys_getppid",        .sysnum = SYS_getppid,      .hndl = GET_SYSCALL_HANDLER(getppid)        },
     
 #if KSURFACE_SYS_IO_ENABLED

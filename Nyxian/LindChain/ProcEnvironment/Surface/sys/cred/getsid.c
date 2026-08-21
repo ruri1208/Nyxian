@@ -22,42 +22,33 @@
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getsid.h>
 #include <LindChain/ProcEnvironment/Surface/proc/lookup.h>
 #include <LindChain/ProcEnvironment/Surface/proc/list.h>
-#include <LindChain/ProcEnvironment/Surface/permit.h>
+#include <LindChain/ProcEnvironment/Surface/proc/permit.h>
 
 DEFINE_SYSCALL_HANDLER(getsid)
 {
     pid_t pid = (pid_t)args[0];
     
     /* getting process */
-    ksurface_proc_t *proc = NULL;
-    kern_return_t ret = proc_for_pid(pid, &proc);
-    
-    /* sanity check */
-    if(ret != KERN_SUCCESS ||
-       proc == NULL)
+    ksurface_proc_t *target = NULL;
+    kern_return_t kr = proc_for_pid(pid, &target);
+    if(kr != KERN_SUCCESS || target == NULL)
     {
-        sys_return_failure(EINVAL);
+        sys_return_failure(ESRCH);
     }
     
-    /* getting visibility */
+    /* visibility check  */
     proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
-    
-    /* permission check */
-    if(!proc_can_see_proc(sys_proc_snapshot_, proc, vis))
+    if(!proc_can_see_proc(sys_proc_snapshot_, target, vis))
     {
-        kvo_release(proc);
-        sys_return_failure(EINVAL);
+        kvo_release(target);
+        sys_return_failure(ESRCH);
     }
-    
-    /* locking process read */
-    kvo_rdlock(proc);
     
     /* getting sid */
-    pid_t sid = proc->nyx.sid;
-    
-    /* doneee x3 */
-    kvo_unlock(proc);
-    kvo_release(proc);
+    kvo_rdlock(target);
+    pid_t sid = target->nyx.sid;
+    kvo_unlock(target);
+    kvo_release(target);
     
     return sid;
 }

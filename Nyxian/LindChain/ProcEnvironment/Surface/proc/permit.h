@@ -19,11 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_SETENT_H
-#define SURFACE_SYS_SETENT_H
+#ifndef PROC_PERMIT_H
+#define PROC_PERMIT_H
 
 #include <LindChain/ProcEnvironment/Surface/surface.h>
+#include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
-DEFINE_SYSCALL_HANDLER(setent);
+bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlement entitlementsNeeded, PEEntitlement targetEntitlementsNeeded);
 
-#endif /* SURFACE_SYS_SETENT_H */
+#endif /* PROC_PERMIT_H */

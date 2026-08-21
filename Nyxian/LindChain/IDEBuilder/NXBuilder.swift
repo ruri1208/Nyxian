@@ -172,7 +172,7 @@ final class NXBuilder: NSObject {
                     guard let self = self else { return }
                     
                     if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                        macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
+                        nxtr_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
                     }
                     
                     guard result else {
@@ -195,9 +195,9 @@ final class NXBuilder: NSObject {
                     throw nsError
                 }
             } else if self.project.projectConfig.schemeKind == .utility {
-                MachOObject.signBinary(atPath: self.project.machoURL.path)
+                LCUtils.signMachO(at: self.project.machoURL)
                 if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                    macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
+                    nxtr_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
                 }
                 
                 let path: String? = LDEApplicationWorkspace.shared().fastpathUtility(self.project.machoURL.path)
@@ -208,7 +208,7 @@ final class NXBuilder: NSObject {
             }
         } else {
             if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                macho_after_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
+                nxtr_sign(self.project.machoURL.path, self.project.entitlementsConfig.entitlement)
             }
             if self.project.projectConfig.schemeKind == .app {
                 try self.package()

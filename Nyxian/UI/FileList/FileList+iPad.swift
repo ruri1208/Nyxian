@@ -203,11 +203,13 @@ class MainSplitViewController: UISplitViewController, UISplitViewControllerDeleg
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         NotificationCenter.default.addObserver(self, selector: #selector(invokeBuild), name: Notification.Name("RunAct"), object: nil)
+        NXApplicationState.fileListRequiresToSendRequests = true
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         NotificationCenter.default.removeObserver(self)
+        NXApplicationState.fileListRequiresToSendRequests = false
     }
     
     override var keyCommands: [UIKeyCommand]? {
