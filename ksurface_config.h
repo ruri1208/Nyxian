@@ -47,6 +47,9 @@
 /* security features */
 #define KSURFACE_SEC_SANITIZE_ENTITLEMENTS  1   /* strips unecessary entitlements at launch time */
 
+/* dyld debugging features */
+#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED  0   /* enables logging from the hooks */
+
 /* additional nyxian syscalls for now */
 #define SYS_proctb      750     /* MARK: noop */
 #define SYS_getent      751     /* getting processes entitlements */

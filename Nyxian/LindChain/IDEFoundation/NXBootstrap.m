@@ -118,8 +118,6 @@ static BOOL urlIsContainedIn(NSURL *candidate,
 {
     NSURL *rootfsURL = [self.rootURL URLByAppendingPathComponent:@"/rootfs"];
     [[NSFileManager defaultManager] createDirectoryAtURL:rootfsURL withIntermediateDirectories:NO attributes:nil error:nil];
-    [[NSFileManager defaultManager] createDirectoryAtURL:[rootfsURL URLByAppendingPathComponent:@"Documents"] withIntermediateDirectories:NO attributes:nil error:nil];
-    [[NSFileManager defaultManager] createDirectoryAtURL:[rootfsURL URLByAppendingPathComponent:@"tmp"] withIntermediateDirectories:NO attributes:nil error:nil];
     return rootfsURL;
 }
 

@@ -255,7 +255,6 @@
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,
 				LindChain/ProcEnvironment/Shims/vfork.c,
-				LindChain/ProcEnvironment/Surface/cdhash.m,
 				LindChain/ProcEnvironment/Surface/extra/relax.c,
 				LindChain/ProcEnvironment/Utils/fd.c,
 				LindChain/ProcEnvironment/Utils/ktfp.c,
@@ -347,7 +346,10 @@
 				LiveShim/LiveShimSyscall.h,
 				LiveShim/mach/fileport.h,
 				LiveShim/mach/fileport.m,
+				LiveShim/private/cdhash.h,
+				LiveShim/private/cdhash.m,
 				LiveShim/shims/dyld.c,
+				LiveShim/shims/dyld.h,
 				LiveShim/shims/io.c,
 				LiveShim/shims/ioctl.c,
 				LiveShim/shims/shim.h,
@@ -357,11 +359,13 @@
 			);
 			privateHeaders = (
 				LiveShim/mach/fileport.h,
+				LiveShim/private/cdhash.h,
 				LiveShim/shims/shim.h,
 			);
 			publicHeaders = (
 				LiveShim/LiveShim.h,
 				LiveShim/LiveShimSyscall.h,
+				LiveShim/shims/dyld.h,
 			);
 			target = 8FB3BADA302FFBAA00DB3ABC /* LiveShim */;
 		};
