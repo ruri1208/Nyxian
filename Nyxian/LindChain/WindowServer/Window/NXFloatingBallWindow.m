@@ -74,7 +74,7 @@
 
 - (void)setupBallView {
    
-    _ballView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 60, 60)];
+    _ballView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 44, 44)];
     _ballView.layer.cornerRadius = 16;
     _ballView.layer.masksToBounds = YES;
     
@@ -83,7 +83,7 @@
     blurView.userInteractionEnabled = NO;
     [_ballView addSubview:blurView];
     
-    UIView *innerCircle = [[UIView alloc] initWithFrame:CGRectMake(15, 15, 30, 30)];
+    UIView *innerCircle = [[UIView alloc] initWithFrame:CGRectMake(11, 11, 22, 22)];
     innerCircle.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.8];
     innerCircle.layer.cornerRadius = 15;
     innerCircle.userInteractionEnabled = NO;
@@ -201,12 +201,12 @@
     
     
     UIEdgeInsets insets = self.view.safeAreaInsets;
-    CGFloat ballRadius = 30.0;
+    CGFloat ballRadius = 22.0;
     
-    CGFloat minX = insets.left + ballRadius + 10;
-    CGFloat maxX = self.view.bounds.size.width - insets.right - ballRadius - 10;
-    CGFloat minY = insets.top + ballRadius + 10;
-    CGFloat maxY = self.view.bounds.size.height - insets.bottom - ballRadius - 10;
+    CGFloat minX = insets.left + ballRadius;
+    CGFloat maxX = self.view.bounds.size.width - insets.right - ballRadius;
+    CGFloat minY = insets.top + ballRadius;
+    CGFloat maxY = self.view.bounds.size.height - insets.bottom - ballRadius;
     
     newCenter.x = MAX(minX, MIN(maxX, newCenter.x));
     newCenter.y = MAX(minY, MIN(maxY, newCenter.y));
@@ -228,15 +228,15 @@
 
 - (void)updateBallToBottomRightAnimated:(BOOL)animated {
     UIEdgeInsets insets = self.view.safeAreaInsets;
-    CGFloat ballRadius = 30.0;
+    CGFloat ballRadius = 22.0;
     
     
-    CGFloat targetX = self.view.bounds.size.width - insets.right - ballRadius - 40.0;
-    CGFloat targetY = self.view.bounds.size.height - insets.bottom - ballRadius - 40.0;
+    CGFloat targetX = self.view.bounds.size.width - insets.right - ballRadius;
+    CGFloat targetY = self.view.bounds.size.height - insets.bottom - ballRadius;
     
    
-    CGFloat minX = insets.left + ballRadius + 10;
-    CGFloat minY = insets.top + ballRadius + 10;
+    CGFloat minX = insets.left + ballRadius;
+    CGFloat minY = insets.top + ballRadius;
     targetX = MAX(minX, targetX);
     targetY = MAX(minY, targetY);
     
