@@ -24,10 +24,11 @@
 #include <mach-o/dyld_images.h>
 #include <sys/mman.h>
 
-/* skidded from LiveContainer */
+static const char openSig[] = {0xB0, 0x00, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 static const char mmapSig[] = {0xB0, 0x18, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 static const char fcntlSig[] = {0x90, 0x0B, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 
+static int (*orig_dyld_open)(const char *path, int flags, mode_t mode);
 static int (*orig_dyld_fcntl)(int fildes, int cmd, void *param);
 static void *(*orig_dyld_mmap)(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
 
@@ -67,7 +68,6 @@ static char *searchDyldFunction(char *base,
     }
     return patchAddr;
 }
-/* skidded end */
 
 static int hook_fcntl(int fildes,
                       int cmd,
@@ -131,6 +131,34 @@ log_return:
     return ret;
 }
 
+static int hook_open(const char *path,
+                     int flags,
+                     mode_t mode)
+{
+    printf("[hook_open:args] (path = %s, flags = %d, mode = %d)\n", path, flags, mode);
+    int fd = orig_dyld_open(path, flags, mode);
+    
+    char actualPath[PATH_MAX];
+    if(orig_dyld_fcntl(fd, F_GETPATH, actualPath) != -1)
+    {
+        printf("[hook_open:path] %s\n", actualPath);
+        
+        const char prefix[] = "/private/var/mobile/Containers";
+        if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
+        {
+            /* need to get cdhash and then reset it's position */
+            
+            /* TODO: do it actually */
+            
+            /* reset position */
+            lseek(fd, 0, SEEK_SET);
+        }
+    }
+    
+    printf("[hook_open:return] (ret = %d)\n", fd);
+    return fd;
+}
+
 static HWHookThreadContextRef HWHookDlopenThreadContext(void)
 {
     static HWHookThreadContextRef context = nil;
@@ -139,7 +167,8 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
         char *dyldBase = (char *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
         orig_dyld_fcntl = (void *)searchDyldFunction(dyldBase, (char*)fcntlSig, sizeof(fcntlSig));
         orig_dyld_mmap = (void *)searchDyldFunction(dyldBase, (char*)mmapSig, sizeof(mmapSig));
-        if(orig_dyld_mmap == NULL || orig_dyld_fcntl == NULL)
+        orig_dyld_open = (void *)searchDyldFunction(dyldBase, (char*)openSig, sizeof(openSig));
+        if(orig_dyld_mmap == NULL || orig_dyld_fcntl == NULL || orig_dyld_open == NULL)
         {
             return;
         }
@@ -153,12 +182,21 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
         HWHookRef mmapHook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_mmap, hook_mmap);
         if(mmapHook == NULL)
         {
+            CFRelease(fcntlHook);
+            return;
+        }
+        
+        HWHookRef openHook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_open, hook_open);
+        if(openHook == NULL)
+        {
+            CFRelease(fcntlHook);
             CFRelease(mmapHook);
             return;
         }
         
         HWHookSetDisableContextHooksInFrame(fcntlHook, true);
         HWHookSetDisableContextHooksInFrame(mmapHook, true);
+        HWHookSetDisableContextHooksInFrame(openHook, true);
         
         context = HWHookThreadContextCreate(kCFAllocatorDefault);
         if(context == NULL)
@@ -167,12 +205,14 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
         }
         
         if(!HWHookThreadContextAppendHook(context, fcntlHook) ||
-           !HWHookThreadContextAppendHook(context, mmapHook))
+           !HWHookThreadContextAppendHook(context, mmapHook) ||
+           !HWHookThreadContextAppendHook(context, openHook))
         {
             CFRelease(context);
         release_hooks:
             CFRelease(fcntlHook);
             CFRelease(mmapHook);
+            CFRelease(openHook);
             return;
         }
     });

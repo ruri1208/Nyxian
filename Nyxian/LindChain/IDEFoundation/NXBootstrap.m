@@ -430,4 +430,9 @@ static BOOL urlIsContainedIn(NSURL *candidate,
     return data;
 }
 
++ (NSData * _Nullable)issueSandboxFileExtensionForURL:(NSURL * _Nullable)url
+{
+    return [self issueSandboxFileExtensionForURL:url readWrite:NO];
+}
+
 @end

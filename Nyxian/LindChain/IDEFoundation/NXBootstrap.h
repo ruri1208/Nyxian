@@ -54,6 +54,7 @@
 - (BOOL)isNewest;
 
 + (NSData * _Nullable)issueSandboxFileExtensionForURL:(NSURL * _Nullable)url readWrite:(BOOL)readOnly;
++ (NSData * _Nullable)issueSandboxFileExtensionForURL:(NSURL * _Nullable)url;
 
 @end
 
