@@ -46,119 +46,122 @@
     }
     
     self = [super init];
-    if(self)
+    if(self == nil)
     {
-        _observers = [[NSHashTable alloc] initWithOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPointerPersonality capacity:0];
-        _lock = OS_UNFAIR_LOCK_INIT;
-        
-        if(proctil(kProctilActionLock) != KERN_SUCCESS)
+        proctil(kProctilActionUncount);
+        return nil;
+    }
+    
+    _observers = [[NSHashTable alloc] initWithOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPointerPersonality capacity:0];
+    _lock = OS_UNFAIR_LOCK_INIT;
+    
+    if(proctil(kProctilActionLock) != KERN_SUCCESS)
+    {
+        return nil;
+    }
+    
+    self.executablePath = items[@"PEExecutablePath"];
+    if(![[PEContainer shared] isReadableFileAtPath:self.executablePath])
+    {
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    
+    /* assigning potential bundle information */
+    LDEApplicationObject *applicationObject = nil;
+    if(PEUserspaceManager.shared.isLaunchServiceManagerStable)
+    {
+        applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
+        if(applicationObject && applicationObject.bundlePath && applicationObject.containerPath)
         {
-            return nil;
-        }
-        
-        self.executablePath = items[@"PEExecutablePath"];
-        if(![[PEContainer shared] isReadableFileAtPath:self.executablePath])
-        {
-            proctil(kProctilActionUnlock);
-            return nil;
-        }
-        
-        /* assigning potential bundle information */
-        LDEApplicationObject *applicationObject = nil;
-        if(PEUserspaceManager.shared.isLaunchServiceManagerStable)
-        {
-            applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
-            if(applicationObject && applicationObject.bundlePath && applicationObject.containerPath)
+            bool wasLocallySigned;
+            PEEntitlement entitlement = entitlement_get_path([applicationObject.executablePath UTF8String], &wasLocallySigned);
+            if(!wasLocallySigned)
             {
-                bool wasLocallySigned;
-                PEEntitlement entitlement = entitlement_get_path([applicationObject.executablePath UTF8String], &wasLocallySigned);
-                if(!wasLocallySigned)
-                {
-                    goto continue_assigning;
-                }
-                
-                /* this will override the existing permissions */
-                NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
-                
-                if(entitlement_got_entitlement(entitlement, kPEEntitlementFileRootRW))
-                {
-                    [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[[NXBootstrap shared] rootfsURL] readWrite:YES]];
-                    goto overwrite_file_permissions;
-                }
-                
-                /*if(entitlement_got_entitlement(entitlement, kPEEntitlementFileBundleRW))
-                {*/
-                    [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.bundlePath] readWrite:YES]];
-                /*}
-                else
-                {
-                    [filePermissions addObject:[NXBootstrap issueSandboxFileExtension:[NSURL fileURLWithPath:applicationObject.executablePath] readOnly:NO]];
-                    [filePermissions addObject:[NXBootstrap issueSandboxFileExtension:[NSURL fileURLWithPath:applicationObject.bundlePath] readOnly:YES]];
-                }*/
-                
-                if(entitlement_got_entitlement(entitlement, kPEEntitlementFileContainerRW))
-                {
-                    [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.containerPath] readWrite:YES]];
-                }
-                else
-                {
-                    [filePermissions addObjectsFromArray:@[
-                        [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.containerPath] readWrite:NO],
-                        [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Documents"] readWrite:YES],
-                        [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Library"] readWrite:YES],
-                        [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Tmp"] readWrite:YES],
-                    ]];
-                }
-                
-            overwrite_file_permissions:
-                {
-                    NSMutableDictionary *mutableItems = [items mutableCopy];
-                    [mutableItems setObject:filePermissions forKey:@"PEFilePermissions"];
-                    items = mutableItems;
-                }
+                goto continue_assigning;
+            }
+            
+            /* this will override the existing permissions */
+            NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
+            
+            if(entitlement_got_entitlement(entitlement, kPEEntitlementFileRootRW))
+            {
+                [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[[NXBootstrap shared] rootfsURL] readWrite:YES]];
+                goto overwrite_file_permissions;
+            }
+            
+            /*if(entitlement_got_entitlement(entitlement, kPEEntitlementFileBundleRW))
+             {*/
+            [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.bundlePath] readWrite:YES]];
+            /*}
+             else
+             {
+             [filePermissions addObject:[NXBootstrap issueSandboxFileExtension:[NSURL fileURLWithPath:applicationObject.executablePath] readOnly:NO]];
+             [filePermissions addObject:[NXBootstrap issueSandboxFileExtension:[NSURL fileURLWithPath:applicationObject.bundlePath] readOnly:YES]];
+             }*/
+            
+            if(entitlement_got_entitlement(entitlement, kPEEntitlementFileContainerRW))
+            {
+                [filePermissions addObject:[NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.containerPath] readWrite:YES]];
+            }
+            else
+            {
+                [filePermissions addObjectsFromArray:@[
+                    [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:applicationObject.containerPath] readWrite:NO],
+                    [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Documents"] readWrite:YES],
+                    [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Library"] readWrite:YES],
+                    [NXBootstrap issueSandboxFileExtensionForURL:[[NSURL fileURLWithPath:applicationObject.containerPath] URLByAppendingPathComponent:@"Tmp"] readWrite:YES],
+                ]];
+            }
+            
+        overwrite_file_permissions:
+            {
+                NSMutableDictionary *mutableItems = [items mutableCopy];
+                [mutableItems setObject:filePermissions forKey:@"PEFilePermissions"];
+                items = mutableItems;
             }
         }
-    continue_assigning:
-        self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
-        self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
-        
-        /* spawning process */
-        self.process = PESpawnFBProcess(items);
-        if(self.process == nil)
-        {
-            proctil(kProctilActionUnlock);
-            return nil;
-        }
-        _pid = self.process.pid;
-        
-        [self.process addObserver:self];
-        if(!self.process.running)
-        {
-            /*
-             * prevents a race condition, when we add a observer
-             * and it already died then we shall handle the exit.
-             */
-            FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];
-            [manager _removeProcess:self.process];
-            proctil(kProctilActionUnlock);
-            return nil;
-        }
-        
-        ksurface_proc_t *child = NULL;
-        kern_return_t kr = proc_spawn(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
-        if(kr != KERN_SUCCESS)
-        {
-            [self terminate];
-            proctil(kProctilActionUnlock);
-            return nil;
-        }
-        else
-        {
-            self.proc = child;
-        }
-        
-        proctil(kProctilActionUnlock);
     }
+continue_assigning:
+    self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
+    self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
+    
+    /* spawning process */
+    self.process = PESpawnFBProcess(items);
+    if(self.process == nil)
+    {
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    _pid = self.process.pid;
+    
+    [self.process addObserver:self];
+    if(!self.process.running)
+    {
+        /*
+         * prevents a race condition, when we add a observer
+         * and it already died then we shall handle the exit.
+         */
+        FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];
+        [manager _removeProcess:self.process];
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    
+    ksurface_proc_t *child = NULL;
+    kern_return_t kr = proc_spawn(proc ?: kernel_proc_, &child, self.pid, [self.executablePath UTF8String]);
+    if(kr != KERN_SUCCESS)
+    {
+        [self terminate];
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    else
+    {
+        self.proc = child;
+    }
+    
+    proctil(kProctilActionUnlock);
     return self;
 }
 

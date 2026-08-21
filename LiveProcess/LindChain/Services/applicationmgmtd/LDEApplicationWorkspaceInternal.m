@@ -27,6 +27,8 @@
 #import <LindChain/ProcEnvironment/PEFileTable.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceProtocol.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#import <LiveShim/dyld.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
 
 @interface LDEApplicationWorkspaceInternal ()
 
@@ -34,29 +36,91 @@
 @property (nonatomic,strong) NSURL *containersURL;
 @property (nonatomic,strong) NSURL *binaryURL;
 @property (nonatomic,strong) NSURL *homeURL;
-@property (nonatomic, strong) dispatch_queue_t workspaceQueue;
+@property (nonatomic,strong) NSURL *tmpURL;
+@property (nonatomic,strong) NSURL *bootstrapPlistURL;
+@property (nonatomic,strong) dispatch_queue_t workspaceQueue;
+@property (atomic,readwrite) UInt64 version;
+@property (atomic,readonly) BOOL isInstalled;
 
 @end
 
 @implementation LDEApplicationWorkspaceInternal
+
+- (BOOL)isInstalled
+{
+    return self.version > 0;
+}
+
+- (UInt64)version
+{
+    NSDictionary *bootstrapPlist = [NSDictionary dictionaryWithContentsOfURL:self.bootstrapPlistURL];
+    if(bootstrapPlist == nil)
+    {
+        /* plist doesn't exist or is malformed? */
+        return 0;
+    }
+    
+    NSNumber *versionNumber = bootstrapPlist[@"PEBootstrapVersion"];
+    if(![versionNumber isKindOfClass:NSNumber.class])
+    {
+        /* illegal object */
+        return 0;
+    }
+    
+    return [versionNumber unsignedLongValue];
+}
+
+- (void)setVersion:(UInt64)version
+{
+    [@{ @"PEBootstrapVersion":[NSNumber numberWithUnsignedLong:version] } writeToURL:self.bootstrapPlistURL error:nil];
+}
 
 - (instancetype)init
 {
     self = [super init];
     
     // Setting up paths
-    NSString *documentsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    self.applicationsURL = [NSURL fileURLWithPath:[documentsDir stringByAppendingPathComponent:@"Bundle/Application"]];
-    self.containersURL = [NSURL fileURLWithPath:[documentsDir stringByAppendingPathComponent:@"Data/Application"]];
-    self.binaryURL = [NSURL fileURLWithPath:[documentsDir stringByAppendingPathComponent:@"usr/bin"]];
-    self.homeURL = [NSURL fileURLWithPath:[documentsDir stringByAppendingPathComponent:@"var/mobile"]];
+    NSString *homeDir = NSHomeDirectory();
+    self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"Bundle/Application"]];
+    self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"Data/Application"]];
+    self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"usr/bin"]];
+    self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/mobile"]];
+    self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"tmp"]];
+    self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"kstrapped.plist"]];
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    /* check if installed */
+    if(!self.isInstalled)
+    {
+        NSLog(@"[kupdate:1] kstrapped.plist missing, recovering directories from older Nyxian versions");
+        NSArray<NSString*> *containerHomeDirectories = [fileManager contentsOfDirectoryAtPath:homeDir error:nil];
+        for(NSString *dir in containerHomeDirectories)
+        {
+            [fileManager removeItemAtPath:dir error:nil];
+        }
+        
+        NSString *path = [NSString stringWithFormat:@"%s/Documents", dyld_get_mmap_sandbox_map_exec_allowed_path()];
+        NSError *error;
+        NSArray<NSString*> *pkContainerHomeDirectories = [fileManager contentsOfDirectoryAtPath:path error:&error];
+        for(NSString *dir in pkContainerHomeDirectories)
+        {
+            NSString *lastPathComponent = [dir lastPathComponent];
+            NSString *newPath = [homeDir stringByAppendingPathComponent:lastPathComponent];
+            [fileManager moveItemAtPath:lastPathComponent toPath:newPath error:nil];
+        }
+        
+        NSLog(@"[kupdate:1] old PKHome rootfs recovered");
+        self.version = 2;
+    }
     
     // Creating paths if they dont exist
-    NSFileManager *fileManager = [NSFileManager defaultManager];
     [fileManager createDirectoryAtURL:self.applicationsURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.containersURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.binaryURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.homeURL withIntermediateDirectories:YES attributes:nil error:nil];
+    [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/root"]] withIntermediateDirectories:YES attributes:nil error:nil];
+    [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
     
     // Enumerating all app bundles
     NSArray<NSURL*> *uuidURLs = [fileManager contentsOfDirectoryAtURL:self.applicationsURL includingPropertiesForKeys:nil options:0 error:nil];
@@ -527,8 +591,6 @@ create_home:
 {
     NSString *fastPath = [[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name];
     [object writeOut:[[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name]];
-    void refreshFile(const char* path);
-    refreshFile(fastPath.fileSystemRepresentation);
     bool cs_valid = false;
     LCMachO *machO = LCMapMachO(fastPath.fileSystemRepresentation, true);
     if(machO != nil)
@@ -539,6 +601,10 @@ create_home:
     if(!cs_valid)
     {
         [[NSFileManager defaultManager] removeItemAtPath:fastPath error:nil];
+    }
+    else
+    {
+        vnode_refresh_at_path([fastPath UTF8String]);
     }
     reply(fastPath, cs_valid);
 }

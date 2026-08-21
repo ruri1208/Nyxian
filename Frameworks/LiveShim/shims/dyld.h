@@ -19,12 +19,15 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROCENVIRONMENT_PERMIT_H
-#define PROCENVIRONMENT_PERMIT_H
+#ifndef LIVESHIM_DYLD_H
+#define LIVESHIM_DYLD_H
 
-#import <LindChain/ProcEnvironment/Surface/surface.h>
-#import <LindChain/ProcEnvironment/Surface/proc/proc.h>
+#include <dlfcn.h>
 
-bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlement entitlementsNeeded, PEEntitlement targetEntitlementsNeeded);
+typedef void (*dlopen_cdhash_verifier_failed_callback_t)(int fd, bool *deny_open);
 
-#endif /* PROCENVIRONMENT_PERMIT_H */
+void *dlopen_cdhash_verified(const char *path, int flags, const char *cdhash, dlopen_cdhash_verifier_failed_callback_t callback);
+
+const char *dyld_get_mmap_sandbox_map_exec_allowed_path(void);
+
+#endif /* LIVESHIM_DYLD_H */

@@ -539,7 +539,7 @@ import UniformTypeIdentifiers
                     }
                 }
             } else {
-                if UIDevice.current.userInterfaceIdiom == .pad {
+                if NXApplicationState.fileListRequiresToSendRequests {
                     NotificationCenter.default.post(name: Notification.Name("FileListAct"), object: ["open",fileListEntry.path,"0","0",self.isReadOnly ? "1" : "0"])
                 } else {
                     guard let codeEditor = CodeEditorViewController(project: project, url: URL(fileURLWithPath: fileListEntry.path), isReadOnly: self.isReadOnly) else {

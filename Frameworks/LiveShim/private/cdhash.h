@@ -19,10 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/sys/compat/getent.h>
-#include <LindChain/ProcEnvironment/Surface/proc/def.h>
+#ifndef LIVESHIM_CDHASH_H
+#define LIVESHIM_CDHASH_H
 
-DEFINE_SYSCALL_HANDLER(getent)
-{
-    return proc_getentitlements(sys_proc_snapshot_);
-}
+#include <mach-o/loader.h>
+
+char *cdhash_of_hdr(const uint8_t *mach_header, size_t size);
+char *cdhash_of_fd(int fd);
+
+#endif /* LIVESHIM_CDHASH_H */

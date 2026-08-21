@@ -28,25 +28,9 @@
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LiveShim/LiveShimSyscall.h>
 #import <fcntl.h>
 #import <ksurface_config.h>
-
-// copy, remove and rename back the file to prevent crash due to kernel signature cache
-// see https://developer.apple.com/documentation/security/updating-mac-software
-void refreshFile(const char* path)
-{
-    NSString* objcPath = @(path);
-    if(![NSFileManager.defaultManager fileExistsAtPath:objcPath]) {
-        return;
-    }
-    NSString* newPath = [NSString stringWithFormat:@"%s.tmp", path];
-    NSError* error;
-    [NSFileManager.defaultManager copyItemAtPath:objcPath toPath:newPath error:&error];
-    [NSFileManager.defaultManager removeItemAtPath:objcPath error:&error];
-    [NSFileManager.defaultManager moveItemAtPath:newPath toPath:objcPath error:&error];
-}
 
 #if KSURFACE_SYS_PROC_ENABLED
 
@@ -185,9 +169,6 @@ int environment_posix_spawn(pid_t *process_identifier,
             /* errno comes from the syscall in this case */
             goto out_free_resolved;
         }
-        
-        /* for some reason we get a iOS kernel panic otherwise */
-        refreshFile([NSString stringWithCString:resolved encoding:NSUTF8StringEncoding].fileSystemRepresentation);
         
         /*
          * checking if kernel virt actually signed

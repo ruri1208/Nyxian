@@ -127,7 +127,7 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
         
         self.title = self.file.fileURL.lastPathComponent
         
-        if UIDevice.current.userInterfaceIdiom != .pad,
+        if !NXApplicationState.fileListRequiresToSendRequests,
            !self.isReadOnly {
             let saveButton: UIBarButtonItem = UIBarButtonItem()
             saveButton.tintColor = .label
@@ -137,7 +137,7 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
             self.navigationItem.setRightBarButton(saveButton, animated: true)
         }
         
-        if UIDevice.current.userInterfaceIdiom != .pad {
+        if !NXApplicationState.fileListRequiresToSendRequests {
             let closeButton: UIBarButtonItem = UIBarButtonItem()
             closeButton.tintColor = .label
             closeButton.title = "Close"

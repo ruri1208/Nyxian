@@ -51,6 +51,8 @@ struct NXApplicationState {
     static var extensionLessMode: Bool = {
         return !extensionExists || !extensionCorrectlyEntitled;
     }()
+    
+    static var fileListRequiresToSendRequests: Bool = false;
 }
 
 func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {

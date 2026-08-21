@@ -39,7 +39,6 @@
 #import <LindChain/ProcEnvironment/Shims/vfork.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
-#import <LindChain/ProcEnvironment/Surface/permit.h>
 #import <LindChain/ProcEnvironment/Surface/entitlement.h>
 
 /*!

@@ -19,8 +19,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/permit.h>
-#import <LindChain/ProcEnvironment/Surface/proc/list.h>
+#include <LindChain/ProcEnvironment/Surface/proc/permit.h>
+#include <LindChain/ProcEnvironment/Surface/proc/list.h>
 #include <assert.h>
 #include <errno.h>
 

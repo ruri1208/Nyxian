@@ -20,9 +20,23 @@
 */
 
 #include <LiveShim/shim.h>
+#include <LiveShim/dyld.h>
+#include <LiveShim/cdhash.h>
 #include <Frameworks/HWHook/HWHookThreadContext.h>
 #include <mach-o/dyld_images.h>
 #include <sys/mman.h>
+
+#if __has_include(<ksurface_config.h>)
+#include <ksurface_config.h>
+#else
+#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED 0
+#endif /* __has_include(<ksurface_config.h>) */
+
+#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
+#define dyld_hook_log(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define dyld_hook_log(fmt, ...)
+#endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
 
 static const char openSig[] = {0xB0, 0x00, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 static const char mmapSig[] = {0xB0, 0x18, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
@@ -73,17 +87,19 @@ static int hook_fcntl(int fildes,
                       int cmd,
                       void *param)
 {
-    printf("[hook_fcntl:args] (fildes = %d, cmd: %d, param: %p)\n", fildes, cmd, param);
+    dyld_hook_log("[hook_fcntl:args] (fildes = %d, cmd: %d, param: %p)\n", fildes, cmd, param);
     int ret = orig_dyld_fcntl(fildes, cmd, param);
+#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
     char path[PATH_MAX];
     if(orig_dyld_fcntl(fildes, F_GETPATH, path) != -1)
     {
-        printf("[hook_fcntl:return] (ret = %d, path: %s)\n", ret, path);
+        dyld_hook_log("[hook_fcntl:return] (ret = %d, path: %s)\n", ret, path);
     }
     else
     {
-        printf("[hook_fcntl:return] (ret = %d)\n", ret);
+        dyld_hook_log("[hook_fcntl:return] (ret = %d)\n", ret);
     }
+#endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
     
     return ret;
 }
@@ -96,7 +112,7 @@ static void *hook_mmap(void *addr,
                        int fd,
                        off_t offset)
 {
-    printf("[hook_mmap:args] (addr = %p, len = %zu, prot = %d, flags = %d, fd = %d, offset = %lld)\n", addr, len, prot, flags, fd, offset);
+    dyld_hook_log("[hook_mmap:args] (addr = %p, len = %zu, prot = %d, flags = %d, fd = %d, offset = %lld)\n", addr, len, prot, flags, fd, offset);
     void *ret = orig_dyld_mmap(addr, len, prot, flags, fd, offset);
     if(ret != MAP_FAILED || !(prot & PROT_EXEC) || fd < 0 || mmap_sandbox_map_exec_allowed_path == NULL)
     {
@@ -111,51 +127,108 @@ static void *hook_mmap(void *addr,
     char newTmpPath[PATH_MAX];
     /* very smart duy, ima be fair using ASLR as a UUID generator is finally something good you've done */
     sprintf(newTmpPath, "%s/Documents/%p.dylib", mmap_sandbox_map_exec_allowed_path, addr);
-    rename(filePath, newTmpPath);
+    rename(filePath, newTmpPath);   /* TODO: copy it instead of rename, meaning we need to do more with fcntl and fseek and what not */
     ret = orig_dyld_mmap(addr, len, prot, flags, fd, offset);
     rename(newTmpPath, filePath);
     
     /* return logging */
 log_return:
+#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
     {
         char path[PATH_MAX];
         if(orig_dyld_fcntl(fd, F_GETPATH, path) != -1)
         {
-            printf("[hook_mmap:return] (ret = %p, path: %s)\n", ret, path);
+            dyld_hook_log("[hook_mmap:return] (ret = %p, path: %s)\n", ret, path);
         }
         else
         {
-            printf("[hook_mmap:return] (ret = %p)\n", ret);
+            dyld_hook_log("[hook_mmap:return] (ret = %p)\n", ret);
         }
     }
+#endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
     return ret;
 }
 
+static _Thread_local bool cdhash_verified = false;
+static _Thread_local bool cdhash_must_valid;
+static _Thread_local bool open_hardlock;
+static _Thread_local const char *cdhash_data_container_match;
+static _Thread_local dlopen_cdhash_verifier_failed_callback_t cdhash_verifier_failed_callback;
 static int hook_open(const char *path,
                      int flags,
                      mode_t mode)
 {
-    printf("[hook_open:args] (path = %s, flags = %d, mode = %d)\n", path, flags, mode);
-    int fd = orig_dyld_open(path, flags, mode);
-    
-    char actualPath[PATH_MAX];
-    if(orig_dyld_fcntl(fd, F_GETPATH, actualPath) != -1)
+    dyld_hook_log("[hook_open:args] (path = %s, flags = %d, mode = %d)\n", path, flags, mode);
+    if(open_hardlock)
     {
-        printf("[hook_open:path] %s\n", actualPath);
-        
-        const char prefix[] = "/private/var/mobile/Containers";
-        if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
+        dyld_hook_log("[hook_open:args] [error: hard locked]\n");
+        errno = EACCES;
+        return -1;
+    }
+    
+    int fd = orig_dyld_open(path, flags, mode);
+    if(fd < 0)
+    {
+        goto just_return;
+    }
+    
+    if(cdhash_must_valid && !cdhash_verified)
+    {
+        char actualPath[PATH_MAX];
+        if(orig_dyld_fcntl(fd, F_GETPATH, actualPath) != -1)
         {
-            /* need to get cdhash and then reset it's position */
+            dyld_hook_log("[hook_open:path] %s\n", actualPath);
             
-            /* TODO: do it actually */
-            
-            /* reset position */
-            lseek(fd, 0, SEEK_SET);
+            const char prefix[] = "/private/var/mobile/Containers/Data";
+            if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
+            {
+                /* no matter what this is not reentrant */
+                cdhash_must_valid = false;
+                cdhash_verified = false;
+                
+                lseek(fd, 0, SEEK_SET);
+                /* need to get cdhash and then reset it's position */
+                
+                char *cdhash = cdhash_of_fd(fd);
+                dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
+                
+                /* match */
+                if(cdhash == NULL ||
+                   cdhash_data_container_match == NULL ||
+                   memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
+                {
+                    dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
+                    
+                    cdhash_verified = false;
+                    if(cdhash_verifier_failed_callback != NULL)
+                    {
+                        cdhash_verifier_failed_callback(fd, &open_hardlock);
+                    }
+                    
+                    /* callback can set open hardlock */
+                    if(open_hardlock)
+                    {
+                        dyld_hook_log("[hook_open:args] [error: hard locked]\n");
+                        errno = EACCES;
+                        close(fd);
+                        fd = -1;
+                    }
+                }
+                else
+                {
+                    dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] cdhash valid!\n");
+                    cdhash_verified = true;
+                    lseek(fd, 0, SEEK_SET);
+                }
+                
+                /* reset position */
+                free(cdhash);   /* free on macOS/iOS is NULL safe */
+            }
         }
     }
     
-    printf("[hook_open:return] (ret = %d)\n", fd);
+just_return:
+    dyld_hook_log("[hook_open:return] (fd = %d)\n", fd);
     return fd;
 }
 
@@ -226,12 +299,29 @@ INTERPOSE(hook_dlopen, dlopen);
 void *hook_dlopen(const char *path, int mode)
 {
     void *(*darwin_dlopen)(const char *path, int mode) = _interpose_dlopen.replacee;
-    printf("[hook_dlopen] %s\n", path);
+    dyld_hook_log("[hook_dlopen] %s\n", path);
     
+    open_hardlock = false;
     HWHookThreadContextRef context = HWHookDlopenThreadContext();
     HWHookThreadContextEnter(context);  /* is nil safe, so it shall work anyways */
     void *ret = darwin_dlopen(path, mode);
     HWHookThreadContextExit(context);
+    return ret;
+}
+
+void *dlopen_cdhash_verified(const char *path,
+                             int flags,
+                             const char *cdhash,
+                             dlopen_cdhash_verifier_failed_callback_t callback)
+{
+    cdhash_verified = false;
+    cdhash_must_valid = true;
+    cdhash_data_container_match = cdhash;
+    cdhash_verifier_failed_callback = callback;
+    void *ret = hook_dlopen(path, flags);
+    cdhash_verifier_failed_callback = NULL;
+    cdhash_data_container_match = NULL;
+    cdhash_must_valid = false;
     return ret;
 }
 
@@ -251,4 +341,9 @@ void LiveShimDlopenHookInit(void)
     }
     
     mmap_sandbox_map_exec_allowed_path = home_copy;
+}
+
+const char *dyld_get_mmap_sandbox_map_exec_allowed_path(void)
+{
+    return mmap_sandbox_map_exec_allowed_path;
 }

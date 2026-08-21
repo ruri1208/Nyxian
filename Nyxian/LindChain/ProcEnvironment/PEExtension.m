@@ -29,16 +29,6 @@
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <objc/runtime.h>
 
-NSBundle *PEGetLiveProcessBundle(void)
-{
-    static NSBundle *liveProcessBundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        liveProcessBundle = [NSBundle bundleWithPath:[NSBundle.mainBundle.builtInPlugInsPath stringByAppendingPathComponent:@"LiveProcess.appex"]];
-    });
-    return liveProcessBundle;
-}
-
 static const char kNSExtensionKey;
 static const char kIdentifierKey;
 
@@ -65,6 +55,16 @@ static const char kIdentifierKey;
 }
 
 @end
+
+NSBundle *PEGetLiveProcessBundle(void)
+{
+    static NSBundle *liveProcessBundle = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        liveProcessBundle = [NSBundle bundleWithPath:[NSBundle.mainBundle.builtInPlugInsPath stringByAppendingPathComponent:@"LiveProcess.appex"]];
+    });
+    return liveProcessBundle;
+}
 
 NSExtension *PEGetNSExtension(void)
 {
@@ -189,7 +189,7 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
      * we need its BSD process identifier.
      */
     pid_t pid = [extension pidForRequestIdentifier:identifier];
-    if(pid < 0)
+    if(pid <= 0)
     {
         [extension _kill:SIGKILL];
         return nil;

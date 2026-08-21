@@ -28,5 +28,6 @@ CF_EXPORT double LiveShimVersionNumber;
 CF_EXPORT const unsigned char LiveShimVersionString[];
 
 #include <LiveShim/LiveShimSyscall.h>
+#include <LiveShim/dyld.h>
 
 #endif /* LIVESHIM_H */

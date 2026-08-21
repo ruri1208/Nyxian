@@ -633,7 +633,7 @@
 }
 
 - (BOOL)entitlementBlobForExecutableAtPath:(NSString*)path
-                                withResult:(ksurface_ent_result_t*)result
+                                withResult:(ksurface_nxtr_result_t*)result
 {
     /*
      * get the file descriptor objet so we can get the
@@ -658,7 +658,7 @@
     }
     
     /* extracting entitlements */
-    BOOL success = macho_read_token(fd, result) == 0;
+    BOOL success = nxtr_read_fd(fd, result) == 0;
     close(fd);
     return success;
 }
@@ -699,8 +699,8 @@
     }
     
     /* extracting entitlements */
-    ksurface_ent_result_t mach;
-    macho_read_token(fd, &mach);
+    ksurface_nxtr_result_t mach;
+    nxtr_read_fd(fd, &mach);
     close(fd);
     
     /* verifying entitlement validity */
@@ -729,11 +729,10 @@
         return false;
     }
     
-    int retval = macho_after_sign_fd(fd, entitlement);
+    kern_return_t kr = nxtr_sign_fd(fd, entitlement);
     fsync(fd);
     close(fd);
-    
-    return (retval == 0);
+    return (kr == KERN_SUCCESS);
 }
 
 @end

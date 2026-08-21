@@ -59,7 +59,6 @@
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
@@ -68,5 +67,7 @@
 /* Daemon Interfaces Headers */
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/Services/containerd/PEContainer.h>
+
+void refreshFile(const char* path);
 
 #endif /* NXBRIDGE_H */

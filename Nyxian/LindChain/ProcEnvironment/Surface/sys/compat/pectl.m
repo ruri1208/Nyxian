@@ -20,7 +20,6 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/sys/compat/pectl.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
@@ -30,7 +29,9 @@
 #import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
+#import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #include <ksurface_config.h>
+#include <LindChain/ProcEnvironment/Utils/vnode.h>
 
 extern mach_port_t xpc_endpoint_copy_listener_port_4sim(NSObject<OS_xpc_object>*);
 extern NSObject<OS_xpc_object> *xpc_endpoint_create_mach_port_4sim(mach_port_t port);
@@ -233,29 +234,12 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
                 sys_return_failure(ENOMEM);
             }
             
-            /* asking containerd for a file handle */
-            PEFileHandle *fileHandle = [[PEContainer shared] fileHandleForItemAtPath:nsPath withFlags:O_RDWR withMode:0];
-            if(fileHandle == nil)
-            {
-                sys_return_failure(ENOENT);
-            }
-            
-            /*
-             * create mach object object out of the file descriptor
-             * on return the file descriptor is destroyed by default
-             * by ARC on the PEObject
-             */
-            MachOObject *machOObject = [MachOObject objectForFileHandle:fileHandle];
-            if(machOObject == NULL)
-            {
-                sys_return_failure(ENOEXEC);
-            }
-            
             /* signing that shit */
-            if(![machOObject signAndWriteBack])
+            if(![LCUtils signMachOAtURL:[NSURL fileURLWithPath:nsPath]])
             {
                 sys_return_failure(ENOEXEC);
             }
+            vnode_refresh_at_path([nsPath UTF8String]);
             
             sys_return;
         }

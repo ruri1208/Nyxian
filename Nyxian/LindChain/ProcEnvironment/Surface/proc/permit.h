@@ -19,27 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/sys/compat/setent.h>
+#ifndef PROC_PERMIT_H
+#define PROC_PERMIT_H
 
-DEFINE_SYSCALL_HANDLER(setent)
-{
-    kvo_wrlock(sys_proc_);
-    
-    /* MARK: THIS IS USER SUPPLIED */
-    PEEntitlement userPassed = (PEEntitlement)args[0];
-    
-    /* getting the added mask out of entitlements */
-    PEEntitlement added = (~proc_getentitlements(sys_proc_)) & userPassed;
-    
-    /* deny adding entitlements not present in max entitlements */
-    if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_), added))
-    {
-        kvo_unlock(sys_proc_);
-        sys_return_failure(EPERM);
-    }
-    
-    proc_setentitlements(sys_proc_, userPassed);
-    
-    kvo_unlock(sys_proc_);
-    sys_return;
-}
+#include <LindChain/ProcEnvironment/Surface/surface.h>
+#include <LindChain/ProcEnvironment/Surface/proc/proc.h>
+
+bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlement entitlementsNeeded, PEEntitlement targetEntitlementsNeeded);
+
+#endif /* PROC_PERMIT_H */

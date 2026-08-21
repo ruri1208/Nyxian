@@ -39,7 +39,6 @@
 #include <mach-o/ldsyms.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
-#import <LindChain/ProcEnvironment/Object/MachOObject.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCBootstrap.h>
 #import <malloc/malloc.h>
 #import <LindChain/Utils/CFTools.h>
@@ -150,6 +149,29 @@ static void *LCGetMachOEntryPoint(void *handle)
     return NULL;
 }
 
+static void LCInsertLibrariesIfNeeded(void)
+{
+    const char *librariesToInsert = getenv("DYLD_INSERT_LIBRARIES");
+    if(librariesToInsert == NULL)
+    {
+        return;
+    }
+    
+    NSString *nsLibrariesToInsert = [NSString stringWithCString:librariesToInsert encoding:NSUTF8StringEncoding];
+    NSArray<NSString*> *librariesToInsertArray = [nsLibrariesToInsert componentsSeparatedByString:@":"];
+    
+    for(NSString *library in librariesToInsertArray)
+    {
+        void *handle = dlopen([library UTF8String], RTLD_GLOBAL | RTLD_NOW);
+        if(handle == NULL)
+        {
+            const char *error = dlerror();
+            fprintf(stderr, "%s\n", error);
+            exit(1);
+        }
+    }
+}
+
 int LCBootstrapMain(NSString *executablePath,
                     int argc,
                     char *argv[])
@@ -191,6 +213,15 @@ int LCBootstrapMain(NSString *executablePath,
     {
         CFBundleSetBinaryType(bundle, __CFBundleDYLDExecutableBinary);
     }
+    
+    /* now applying LC hooks */
+    NUDGuestHooksInit();
+    SecItemGuestHooksInit();
+    NSFMGuestHooksInit();
+    UIKitGuestHooksInit();
+    initDead10ccFix();
+    DyldHooksInit();
+    LCInsertLibrariesIfNeeded();
     
     return entry(argc, argv);
 }

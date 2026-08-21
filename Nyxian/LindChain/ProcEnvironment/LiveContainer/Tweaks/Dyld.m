@@ -34,7 +34,8 @@
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/Tweaks.h>
 #import <LindChain/Utils/CFTools.h>
 #import <LiveShim/LiveShimSyscall.h>
-#include <ksurface_config.h>
+#import <LiveShim/dyld.h>
+#import <ksurface_config.h>
 
 typedef struct {
     uint32_t platform;
@@ -112,7 +113,6 @@ DEFINE_HOOK(_dyld_get_image_name, const char*, (uint32_t image_index))
     __attribute__((musttail)) return ORIG_FUNC(_dyld_get_image_name)(translateImageIndex(image_index));
 }
 
-void refreshFile(const char* path);
 DEFINE_HOOK(dlopen, void *, (const char * __path,
                              int __mode))
 {
@@ -129,10 +129,7 @@ DEFINE_HOOK(dlopen, void *, (const char * __path,
     if(!cs_valid)
     {
         /* sign if invalid */
-        if((int)liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, __path, NULL, MACH_PORT_NULL) == 0)
-        {
-            refreshFile(__path);
-        }
+        liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, __path, NULL, MACH_PORT_NULL);
     }
     
 just_try:
@@ -383,7 +380,7 @@ void DyldHooksInit(void)
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        PEEntitlement ownEntitlements = liveshim_syscall(SYS_getent);
+        PEEntitlement ownEntitlements = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetEntitlements, NULL, NULL, MACH_PORT_NULL);
         if(entitlement_got_entitlement(ownEntitlements, kPEEntitlementDyldHideLiveProcess))
         {
             int imageCount = _dyld_image_count();
@@ -416,111 +413,24 @@ void DyldHooksInit(void)
     });
 }
 
-static void LCInsertLibrariesIfNeeded(void)
-{
-    const char *librariesToInsert = getenv("DYLD_INSERT_LIBRARIES");
-    if(librariesToInsert == NULL)
-    {
-        return;
-    }
-    
-    NSString *nsLibrariesToInsert = [NSString stringWithCString:librariesToInsert encoding:NSUTF8StringEncoding];
-    NSArray<NSString*> *librariesToInsertArray = [nsLibrariesToInsert componentsSeparatedByString:@":"];
-    
-    for(NSString *library in librariesToInsertArray)
-    {
-        void *handle = dlopen([library UTF8String], RTLD_GLOBAL | RTLD_NOW);
-        if(handle == NULL)
-        {
-            const char *error = dlerror();
-            fprintf(stderr, "%s\n", error);
-            exit(1);
-        }
-    }
-}
-
 #pragma mark - Fix black screen
-static const char *cdhash = NULL;
-static const char *expectedPath = NULL;
-static const struct dyld_all_image_infos *g_infos;
-static BOOL dyldVerified = NO;
 
-void cache_all_image_infos(void)
+void dyld_verifier_failed_callback(int fd,
+                                   bool *deny_open)
 {
-    struct task_dyld_info info;
-    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
-    if(task_info(mach_task_self(), TASK_DYLD_INFO, (task_info_t)&info, &count) == KERN_SUCCESS)
+    /* rolling back */
+    if(liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningDropAllEntitlements, NULL, NULL, MACH_PORT_NULL) != 0 ||
+       liveshim_syscall(SYS_setgid, 501) != 0 ||
+       liveshim_syscall(SYS_setuid, 501) != 0)
     {
-        g_infos = (const struct dyld_all_image_infos *)info.all_image_info_addr;
+        /* didn't succeed in rolling back primitives, trying to make dlopen fail */
+        *deny_open = true;
     }
 }
 
 static void *lockPtrToIgnore;
-static uint32_t seenCount;
-static os_unfair_lock cdlock = OS_UNFAIR_LOCK_INIT;
 void hook_libdyld_os_unfair_recursive_lock_lock_with_options(void *ptr, void* lock, uint32_t options)
 {
-    if(os_unfair_lock_trylock(&cdlock))
-    {
-        if(g_infos)
-        {
-            uint32_t now = g_infos->infoArrayCount;
-            const struct dyld_image_info *arr = g_infos->infoArray;
-            while(seenCount < now)
-            {
-                const struct mach_header_64 *hdr = (const struct mach_header_64 *)arr[seenCount].imageLoadAddress;
-                const char *path = arr[seenCount].imageFilePath;
-                struct stat sa, sb;
-                if(stat(path, &sa) == 0 && stat(expectedPath, &sb) == 0 && sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino)
-                {
-                    if(cdhash != NULL)
-                    {
-                        char *foundCdhash = cdhash_of_hdr((const uint8_t*)hdr, 0);
-#if DEBUG
-                        printf("[DYLD:CDHash Verifier] found = %s | foundCdhash = %p | cdhash = %p\n", path, foundCdhash, cdhash);
-#endif /* DEBUG */
-                        if(foundCdhash == NULL ||
-                           cdhash == NULL ||
-                           memcmp(cdhash, foundCdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
-                        {
-#if DEBUG
-                            printf("[DYLD:CDHash Verifier] something is wrong 3:\n");
-#endif /* DEBUG */
-                            if(liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningDropAllEntitlements, NULL, NULL, MACH_PORT_NULL) != 0 ||
-                               liveshim_syscall(SYS_setgid, 501) != 0 ||
-                               liveshim_syscall(SYS_setuid, 501) != 0)
-                            {
-                                /* didn't succeed in rolling back permitives */
-                                abort();
-                            }
-                            
-#if DEBUG
-                            printf("[DYLD:CDHash Verifier] safely fell back to no entitlement's\n");
-#endif /* DEBUG */
-                        }
-                    }
-                    
-                    static dispatch_once_t onceToken;
-                    dispatch_once(&onceToken, ^{
-                        /* now applying LC hooks */
-                        NUDGuestHooksInit();
-                        SecItemGuestHooksInit();
-                        NSFMGuestHooksInit();
-                        UIKitGuestHooksInit();
-                        initDead10ccFix();
-                        DyldHooksInit();
-                        LCInsertLibrariesIfNeeded();
-                    });
-                    
-                    /* give me the cdhash please! */
-                    dyldVerified = YES;
-                }
-                seenCount++;
-            }
-        }
-        os_unfair_lock_unlock(&cdlock);
-    }
-
     if(!lockPtrToIgnore)
         lockPtrToIgnore = lock;
     if(lock != lockPtrToIgnore)
@@ -536,13 +446,6 @@ void *dlopenBypassingLockWithTrust(const char *path,
                                    int mode,
                                    const char *expectedCdhash)
 {
-    dyldVerified = expectedCdhash == NULL;
-    cdhash = expectedCdhash;
-    expectedPath = path;
-
-    cache_all_image_infos();
-    seenCount = _dyld_image_count();
-
     /* this shit made by Duy Tran costs 20~30 ms, making this faster would save those */
     const char *libdyldPath = "/usr/lib/system/libdyld.dylib";
     mach_header_u *libdyldHeader = LCGetLoadedImageHeader(0, libdyldPath);
@@ -569,8 +472,7 @@ void *dlopenBypassingLockWithTrust(const char *path,
     void *origLockPtr = lockUnlockPtr[0], *origUnlockPtr = lockUnlockPtr[1];
     lockUnlockPtr[0] = hook_libdyld_os_unfair_recursive_lock_lock_with_options;
     lockUnlockPtr[1] = hook_libdyld_os_unfair_recursive_lock_unlock;
-    void *result = dlopen(path, mode);
-    assert(dyldVerified);   /* shouldn't even be false on failure. */
+    void *result = expectedCdhash == NULL ? dlopen(path, mode) : dlopen_cdhash_verified(path, mode, expectedCdhash, dyld_verifier_failed_callback);
     ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(uintptr_t[2]), false, PROT_READ | PROT_WRITE);
     assert(ret == KERN_SUCCESS);
     lockUnlockPtr[0] = origLockPtr;

@@ -20,6 +20,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#import <LindChain/ProcEnvironment/Surface/trust.h>
+#import <LindChain/ProcEnvironment/Surface/entitlement.h>
 #import <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #import <LindChain/ProcEnvironment/Surface/proc/insert.h>
 #import <LindChain/ProcEnvironment/Surface/proc/def.h>
@@ -30,23 +32,18 @@
 #import <LindChain/Services/containerd/PEContainer.h>
 #include <ksurface_config.h>
 
+const char *trustDaemonPath[] = {
+    "/sbin/launchd",
+    "/usr/libexec/containerd",
+    "/usr/libexec/installd",
+};
+
 kern_return_t proc_spawn(ksurface_proc_t *parent,
                          ksurface_proc_t **child,
                          pid_t child_pid,
                          const char *path)
 {
     assert(parent != NULL && child != NULL && path != NULL);
-    
-    /*
-     * must convert to a nsPath, we shall not
-     * even give attackers room to play with
-     * entitlement handling failures.
-     */
-    NSString *nsPath = [NSString stringWithCString:path encoding:NSUTF8StringEncoding];
-    if(nsPath == nil)
-    {
-        return KERN_FAILURE;
-    }
     
     ksurface_proc_t *child_new = kvo_copy(parent);
     if(child_new == NULL)
@@ -59,44 +56,39 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     proc_setpid(child_new, child_pid);      /* function passed pid of child */
     
     /*
-     * getting the entitlements passed of the
-     * executables code signature blob if
-     * applicable. if signed correctly it
-     * will return the entitlements of
-     * sayed executable.
+     * temporary entitlement variables, they get merged in the end.
+     * after rules have been applied.
      */
     PEEntitlement entitlement = kPEEntitlementNone;
     PEEntitlement currentEntitlement = proc_getentitlements(child_new);
     PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
     
-    ksurface_ent_result_t resultBlob;
-    if([nsPath isEqualToString:@"/sbin/launchd"] ||
-       [nsPath isEqualToString:@"/usr/libexec/containerd"] ||
-       [nsPath isEqualToString:@"/usr/libexec/installd"])
+    /* verify nxtr signature blob if present */
+    ksurface_nxtr_result_t result = { 0 };
+    if(nxtr_read(path, &result) == KERN_SUCCESS &&
+       entitlement_mach_verify(&result, ksurface->pub_key, ksurface->pub_key_len) == KERN_SUCCESS)
     {
-        entitlement = kPEEntitlementSystemDaemon;
+        /* this was signed by us, nods head like a silly girl >< */
+        entitlement = result.blob.entitlement;
+        memcpy(child_new->nyx.cdhash, result.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+        child_new->nyx.explicit_cdhash = true;
     }
-    else if([[PEContainer shared] entitlementBlobForExecutableAtPath:nsPath withResult:&resultBlob])
+    else
     {
-        /* verifying entitlement validity */
-        kern_return_t ksr = entitlement_mach_verify(&resultBlob, ksurface->pub_key, ksurface->pub_key_len);
-        if(ksr == KERN_SUCCESS)
+        /* checking if it is a daemon controlled spawning */
+        for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
         {
-            entitlement = entitlement_sanitize(resultBlob.blob.entitlement);
-            
-            /* and copy cdhash */
-            memcpy(child_new->nyx.cdhash, resultBlob.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-            child_new->nyx.explicit_cdhash = true;
+            if(strncmp(path, trustDaemonPath[index], MAXPATHLEN - 1) == 0)
+            {
+                entitlement = kPEEntitlementSystemDaemon;
+            }
         }
     }
     
     /*
      * only a platform process, may be able to
-     * spawn a other platform process otherwise
-     * this would be exploitable. so we strip away
-     * all entitlements the parent process doesnt
-     * have in case it is non platform and setting
-     * currentEntitlement to entitlement.
+     * spawn a process with higher primitives
+     * than it it self.
      */
     if(!entitlement_got_entitlement(currentMaxEntitlement, kPEEntitlementPlatform))
     {
@@ -107,19 +99,9 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
         entitlement &= currentEntitlement;
     }
 
-    /* entitlement inheritance */
     if(parent == kernel_proc_)
     {
-        /*
-         * The kernel process shall never inherite entitlements,
-         * imagine a attacker could laverage a PUAF
-         * (very unlikely currently, but never say it's not possible,
-         * just look at where we are rn xD) in ksurface and then
-         * manipulate the kernel processes data structures to inherite
-         * entitlements, you would argue now that they could overwrite
-         * this code here, but iOS doesn't allow JIT so that would make
-         * Nyxian and ksurface crash immediately.
-         */
+        /* the kernel process shall never inherite entitlements */
         currentEntitlement = kPEEntitlementNone;
         proc_setmobilecred(child_new);
         proc_setsid(child_new, child_pid);
@@ -127,11 +109,9 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     else if(entitlement_got_entitlement(currentEntitlement, kPEEntitlementProcessSpawnInheriteEntitlements))
     {
         /*
-         * entitlements which shall be stripped regardless
-         * of who spawns the process as these entitlements
-         * are way too powerful.. if a process spawns and
-         * wants to debug they need to spawn the child process
-         * or debug a process in the same session.
+         * entitlements which shall be stripped from parent
+         * merging entitlements, because they are just too
+         * over powered.
          */
         entitlement_strip(currentEntitlement, kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementTaskForPid | kPEEntitlementProcessElevate);
     }
@@ -153,8 +133,8 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     }
     
     /*
-     * now combining the current eneitlements
-     * and the entitlements of the executable.
+     * now combining the current entitlements
+     * and the entitlements of the executable it self.
      */
     PEEntitlement combinedEntitlement = entitlement_sanitize(currentEntitlement | entitlement);
     proc_setentitlements(child_new, combinedEntitlement);

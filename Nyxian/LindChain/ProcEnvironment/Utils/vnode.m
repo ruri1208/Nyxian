@@ -19,11 +19,19 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_SETENT_H
-#define SURFACE_SYS_SETENT_H
+#import <Foundation/Foundation.h>
+#include <copyfile.h>
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
-
-DEFINE_SYSCALL_HANDLER(setent);
-
-#endif /* SURFACE_SYS_SETENT_H */
+bool vnode_refresh_at_path(const char* path)
+{
+    NSString* objcPath = @(path);
+    NSString* newPath = [NSString stringWithFormat:@"%s.tmp", path];
+    if(![NSFileManager.defaultManager fileExistsAtPath:objcPath] ||
+       ![NSFileManager.defaultManager copyItemAtPath:objcPath toPath:newPath error:nil] ||
+       ![NSFileManager.defaultManager removeItemAtPath:objcPath error:nil] ||
+       ![NSFileManager.defaultManager moveItemAtPath:newPath toPath:objcPath error:nil])
+    {
+        return false;
+    }
+    return true;
+}
