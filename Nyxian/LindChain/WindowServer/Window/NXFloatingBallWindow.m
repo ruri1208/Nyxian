@@ -74,8 +74,8 @@
 
 - (void)setupBallView {
    
-    _ballView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 44, 44)];
-    _ballView.layer.cornerRadius = 16;
+    _ballView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 60, 60)];
+    _ballView.layer.cornerRadius = 50;
     _ballView.layer.masksToBounds = YES;
     
     UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
@@ -83,9 +83,9 @@
     blurView.userInteractionEnabled = NO;
     [_ballView addSubview:blurView];
     
-    UIView *innerCircle = [[UIView alloc] initWithFrame:CGRectMake(11, 11, 22, 22)];
+    UIView *innerCircle = [[UIView alloc] initWithFrame:CGRectMake(15, 15, 30, 30)];
     innerCircle.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.8];
-    innerCircle.layer.cornerRadius = 15;
+    innerCircle.layer.cornerRadius = 50;
     innerCircle.userInteractionEnabled = NO;
     [_ballView addSubview:innerCircle];
     
@@ -99,12 +99,12 @@
 }
 
 - (void)setupMenuContainerView {
-    CGFloat menuWidth = 280;
-    CGFloat menuHeight = 280;
+    CGFloat menuWidth = 240;
+    CGFloat menuHeight = 240;
     
     _menuContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, menuWidth, menuHeight)];
     _menuContainerView.center = CGPointMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0);
-    _menuContainerView.layer.cornerRadius = 28;
+    _menuContainerView.layer.cornerRadius = 50;
     _menuContainerView.layer.masksToBounds = YES;
     _menuContainerView.alpha = 0.0;
     _menuContainerView.transform = CGAffineTransformMakeScale(0.3, 0.3);
@@ -113,7 +113,7 @@
     blurView.frame = _menuContainerView.bounds;
     [_menuContainerView addSubview:blurView];
 
-    CGFloat btnSize = 70.0;
+    CGFloat btnSize = 60.0;
     CGFloat spacing = 30.0;
     CGFloat totalWidth = (btnSize * 2) + spacing;
     CGFloat startX = (menuWidth - totalWidth) / 2.0;
@@ -201,12 +201,12 @@
     
     
     UIEdgeInsets insets = self.view.safeAreaInsets;
-    CGFloat ballRadius = 22.0;
+    CGFloat ballRadius = 30.0;
     
-    CGFloat minX = insets.left + ballRadius;
-    CGFloat maxX = self.view.bounds.size.width - insets.right - ballRadius;
-    CGFloat minY = insets.top + ballRadius;
-    CGFloat maxY = self.view.bounds.size.height - insets.bottom - ballRadius;
+    CGFloat minX = ballRadius;
+    CGFloat maxX = self.view.bounds.size.width - ballRadius;
+    CGFloat minY = ballRadius;
+    CGFloat maxY = self.view.bounds.size.height - ballRadius;
     
     newCenter.x = MAX(minX, MIN(maxX, newCenter.x));
     newCenter.y = MAX(minY, MIN(maxY, newCenter.y));
@@ -228,15 +228,15 @@
 
 - (void)updateBallToBottomRightAnimated:(BOOL)animated {
     UIEdgeInsets insets = self.view.safeAreaInsets;
-    CGFloat ballRadius = 22.0;
+    CGFloat ballRadius = 30.0;
     
     
-    CGFloat targetX = self.view.bounds.size.width - insets.right - ballRadius;
-    CGFloat targetY = self.view.bounds.size.height - insets.bottom - ballRadius;
+    CGFloat targetX = self.view.bounds.size.width - ballRadius;
+    CGFloat targetY = self.view.bounds.size.height - ballRadius;
     
    
-    CGFloat minX = insets.left + ballRadius;
-    CGFloat minY = insets.top + ballRadius;
+    CGFloat minX = ballRadius;
+    CGFloat minY = ballRadius;
     targetX = MAX(minX, targetX);
     targetY = MAX(minY, targetY);
     
