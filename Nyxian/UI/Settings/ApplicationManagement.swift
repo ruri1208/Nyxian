@@ -199,13 +199,13 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
         let importItem = UIBarButtonItem(image: UIImage(systemName: "square.and.arrow.down.fill"), style: .plain, target: self, action: #selector(plusButtonPressed))
         self.navigationItem.rightBarButtonItems = [importItem]
 
-        let hasConfiguredMode = UserDefaults.standard.bool(forKey: "HasConfiguredDisplayMode")
-        if !hasConfiguredMode {
-            UserDefaults.standard.set(true, forKey: "HasConfiguredDisplayMode")
-            setMode(multitasking: true, fullscreen: false, simulator: false)
-        } else {
-            updateMultitaskingButton()
-        }
+        //let hasConfiguredMode = UserDefaults.standard.bool(forKey: "HasConfiguredDisplayMode")
+        //if !hasConfiguredMode {
+            //UserDefaults.standard.set(true, forKey: "HasConfiguredDisplayMode")
+            setMode(multitasking: false, fullscreen: false, simulator: true)
+        //} else {
+            //updateMultitaskingButton()
+        //}
     }
  
     private func updateMultitaskingButton() {
