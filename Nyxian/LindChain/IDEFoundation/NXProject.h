@@ -50,9 +50,6 @@
 @end
 
 @interface NXEntitlementsConfig : NXPlist
-
-@property (nonatomic,readonly) PEEntitlement entitlement;
-
 @end
 
 @interface NXProject : NSObject

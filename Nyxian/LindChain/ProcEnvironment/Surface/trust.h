@@ -45,7 +45,6 @@ typedef struct {
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     CFDictionaryRef entitlements;
     PEEntitlement legacyEntitlements;
-    CFArrayRef filePermission;
 } ksurface_trust_identity_t;
 
 /* they are immutable! */

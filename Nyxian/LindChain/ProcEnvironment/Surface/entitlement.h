@@ -158,8 +158,8 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
 #define KSURFACE_NXT2_ENTITLEMENT_ID_LS_SET_ENDPOINT    CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint")
 
 /* sandbox */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_FILE_READ          CFSTR("org.emexlabs.nyxian.sandbox.file.read-only") /* type shall be CFArray */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_FILE_READ_WRITE    CFSTR("org.emexlabs.nyxian.sandbox.file.read-only") /* type shall be CFArray */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ       CFSTR("org.emexlabs.nyxian.sandbox.file.read-only") /* type shall be CFArray */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE CFSTR("org.emexlabs.nyxian.sandbox.file.read-only") /* type shall be CFArray */
     
 struct __attribute__((packed)) ksurface_nxtr_blob {
     PEEntitlement entitlement;

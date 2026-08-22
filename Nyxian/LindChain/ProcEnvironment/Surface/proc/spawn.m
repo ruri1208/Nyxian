@@ -64,14 +64,17 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
     
     /* verify nxtr signature blob if present */
-    ksurface_nxtr_result_t result = { 0 };
-    if(nxtr_read(path, &result) == KERN_SUCCESS &&
-       entitlement_mach_verify(&result, ksurface->pub_key, ksurface->pub_key_len) == KERN_SUCCESS)
+    ksurface_trust_identity_t *identity = trust_identity_create(path);
+    if(identity != NULL)
     {
-        /* this was signed by us, nods head like a silly girl >< */
-        entitlement = result.blob.entitlement;
-        memcpy(child_new->nyx.cdhash, result.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        child_new->nyx.explicit_cdhash = true;
+        if(identity->isSigned)
+        {
+            /* this was signed by us, nods head like a silly girl >< */
+            entitlement = identity->legacyEntitlements;
+            memcpy(child_new->nyx.cdhash, identity->cdhash, USER_FSIGNATURES_CDHASH_LEN);
+            child_new->nyx.explicit_cdhash = true;
+        }
+        trust_identity_destroy(identity);
     }
     else
     {
