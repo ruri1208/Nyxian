@@ -1085,11 +1085,7 @@
             NXWindow *window = self.windows[key];
             if(window != nil)
             {
-                if ([NXWindowServer isSimulatorEnabled]) {
-                    [self layoutSimulatorWindow:window];
-                } else {
-                    [window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
-                }
+                [self applyLayoutForWindow:window];
             }
         }
         [self layoutIfNeeded];
@@ -1222,21 +1218,6 @@
         [window.view setNeedsLayout];
         [window.view layoutIfNeeded];
     }
-}
-
-- (void)orientationChanged:(NSNotification*)notification
-{
-    dispatch_async(dispatch_get_main_queue(), ^{
-        for(NSNumber *key in self.windows)
-        {
-            NXWindow *window = self.windows[key];
-            if(window != nil)
-            {
-                [self applyLayoutForWindow:window];
-            }
-        }
-        [self layoutIfNeeded];
-    });
 }
 
 @end
