@@ -197,8 +197,8 @@
         if ([NXWindowServer isSimulatorEnabled]) {
             [self layoutSimulatorWindow:window]; 
         } else {
-            [self setNeedsLayout]
-            [self layoutIfNeeded]
+            [self setNeedsLayout];
+            [self layoutIfNeeded];
         }
 
         if ([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]) { 
