@@ -29,6 +29,7 @@
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #import <ksurface_config.h>
+#import <ksurface_abi.h>
 
 #if KSURFACE_SYS_PROC_ENABLED
 

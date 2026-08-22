@@ -33,7 +33,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/syscall.h>
 #include <sys/attr.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -57,6 +56,13 @@ struct interpose_pair {
     const void *replacee;
 };
 
+#if __has_include(<ksurface_abi.h>)
+#include <ksurface_abi.h>
+#else
+#include <sys/syscall.h>
+#endif /* __has_include(<ksurface_abi.h>) */
+
+
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
 #define LIVESHIM_IO_ENABLED     KSURFACE_SYS_IO_ENABLED
@@ -70,6 +76,6 @@ struct interpose_pair {
 #define LIVESHIM_SYSCTL_ENABLED 1
 #define LIVESHIM_TASK_ENABLED   1
 #define LIVESHIM_UCRED_ENABLED  1
-#endif
+#endif /* __has_include(<ksurface_config.h>) */
 
 #endif /* LIVESHIM_SHIM_H */

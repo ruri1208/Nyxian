@@ -29,6 +29,7 @@
 #import <LindChain/ProcEnvironment/Surface/sys/syscall.h>
 #import <LiveShim/LiveShimSyscall.h>
 #include <ksurface_config.h>
+#include <ksurface_abi.h>
 
 #pragma mark - Initilizer
 

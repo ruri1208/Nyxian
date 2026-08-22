@@ -39,6 +39,7 @@
 #include <OpenSSL/err.h>
 #include <OpenSSL/ec.h>
 #include <OpenSSL/pem.h>
+#include <ksurface_config.h>
 
 #define APPEND_TAG_NXTR "NXTR"
 #define APPEND_TAG_NXT2 "NXT2"
@@ -822,6 +823,7 @@ ksurface_trust_identity_t *trust_identity_create(const char *path)
         return identity;
     }
     
+#if KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR
     /* legacy */
     ksurface_nxtr_result_t result_nxtr;
     if(nxtr_read(path, &result_nxtr) == KERN_SUCCESS &&
@@ -847,6 +849,7 @@ ksurface_trust_identity_t *trust_identity_create(const char *path)
         identity->legacyEntitlements = result_nxtr.blob.entitlement;
         return identity;
     }
+#endif /* KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR */
     
     /* unknown or unsigned? */
     errno = ENOTSUP;

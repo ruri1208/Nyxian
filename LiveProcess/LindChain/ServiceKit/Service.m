@@ -23,9 +23,8 @@
 #import <LindChain/ServiceKit/Service.h>
 #include <dlfcn.h>
 #include <mach/mach.h>
-#if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
-#endif /* __has_include(<ksurface_config.h>) */
+#include <ksurface_abi.h>
 
 @interface NSXPCListenerEndpoint ()
 

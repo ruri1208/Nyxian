@@ -36,6 +36,7 @@
 #import <LiveShim/LiveShimSyscall.h>
 #import <LiveShim/dyld.h>
 #import <ksurface_config.h>
+#import <ksurface_abi.h>
 
 typedef struct {
     uint32_t platform;
