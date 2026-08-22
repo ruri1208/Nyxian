@@ -75,7 +75,7 @@
 - (void)setupBallView {
    
     _ballView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 60, 60)];
-    _ballView.layer.cornerRadius = 50;
+    _ballView.layer.cornerRadius = 16;
     _ballView.layer.masksToBounds = YES;
     
     UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
@@ -85,7 +85,7 @@
     
     UIView *innerCircle = [[UIView alloc] initWithFrame:CGRectMake(15, 15, 30, 30)];
     innerCircle.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.8];
-    innerCircle.layer.cornerRadius = 50;
+    innerCircle.layer.cornerRadius = 16;
     innerCircle.userInteractionEnabled = NO;
     [_ballView addSubview:innerCircle];
     
