@@ -92,9 +92,7 @@
         NXWindow *activeWin = self.windows[@(_activeWindowIdentifier)]; 
         if (activeWin) { 
             [self layoutSimulatorWindow:activeWin]; 
-        } else {
-            [self resetWindowFromSimulator:activeWin];
-        }
+        } 
     }
     if (self.appSwitcherView && _appSwitcherHeightConstraint) { 
         BOOL isIPad = (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad); 
@@ -198,9 +196,7 @@
         
         if ([NXWindowServer isSimulatorEnabled]) {
             [self layoutSimulatorWindow:window]; 
-        } else {
-            [self resetWindowFromSimulator:window];
-        }
+        } 
 
         if ([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]) { 
             NXFloatingBallWindow *ball = [NXFloatingBallWindow sharedInstance];
@@ -1206,20 +1202,6 @@
                                    UIViewAutoresizingFlexibleRightMargin | 
                                    UIViewAutoresizingFlexibleTopMargin | 
                                    UIViewAutoresizingFlexibleBottomMargin;
-    }
-    
-    [window.view setNeedsLayout];
-    [window.view layoutIfNeeded];
-}
-- (void)resetWindowFromSimulator:(NXWindow *)window
-{
-    if (!window || !window.view) return;
-    window.view.backgroundColor = [UIColor clearColor];
-    window.view.frame = self.bounds;
-
-    for (UIView *subview in window.view.subviews) {
-        subview.frame = window.view.bounds;
-        subview.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
     
     [window.view setNeedsLayout];
