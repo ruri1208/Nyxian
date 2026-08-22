@@ -336,8 +336,16 @@ kern_return_t nxt2_sign_fd(int fd,
             return KERN_FAILURE;
         }
         
+        if(mac_len > sizeof(blob_footer->mac))
+        {
+            free(blob_header);
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        
         /* allocate the blob footer to hold the signature */
-        footer_size = sizeof(ksurface_nxt2_blob_footer_t) + mac_len;
+        footer_size = sizeof(ksurface_nxt2_blob_footer_t);
         blob_footer = calloc(1, sizeof(ksurface_nxt2_blob_footer_t) + mac_len);
         if(blob_footer == NULL)
         {
@@ -372,19 +380,42 @@ kern_return_t nxt2_sign_fd(int fd,
         return KERN_NOT_SUPPORTED;
     }
     
-    if(write(fd, blob_header, header_size) != header_size)
+    /* write blob */
+    if(write(fd, blob_header, header_size) != (ssize_t)header_size)
     {
         free(blob_footer);
         free(blob_header);
         return KERN_FAILURE;
     }
     
-    if(write(fd, blob_footer, footer_size) != footer_size)
+    if(write(fd, blob_footer, footer_size) != (ssize_t)footer_size)
     {
         free(blob_footer);
         free(blob_header);
         return KERN_FAILURE;
     }
+    
+    free(blob_footer);
+    free(blob_header);
+    
+    /* write tag */
+    uint32_t data_len = (uint32_t)(header_size + footer_size);
+    if(header_size + footer_size > UINT32_MAX)
+    {
+        return KERN_FAILURE;
+    }
+    
+    if(write(fd, &data_len, sizeof(uint32_t)) != (ssize_t)sizeof(uint32_t))
+    {
+        return KERN_FAILURE;
+    }
+    
+    if(write(fd, APPEND_TAG_NXT2, 4) != 4)
+    {
+        return KERN_FAILURE;
+    }
+    
+    fsync(fd);
     
     return KERN_SUCCESS;
 }
@@ -406,5 +437,237 @@ kern_return_t nxt2_read(const char *path,
 kern_return_t nxt2_read_fd(int fd,
                            ksurface_nxt2_t *result)
 {
-    return KERN_NOT_SUPPORTED;
+    if(fd < 0)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    if(result == NULL)
+    {
+        return KERN_INVALID_ADDRESS;
+    }
+    
+    result->isValid = false;
+    result->isCdHashValid = false;
+    result->isSigned = false;
+    
+    /* read nxt2 tag */
+    char tag[4];
+    uint32_t len = 0;
+    
+    if(lseek(fd, -4, SEEK_END) < 0)
+    {
+        return KERN_FAILURE;
+    }
+    if(read(fd, tag, 4) != 4)
+    {
+        return KERN_FAILURE;
+    }
+    
+    if(memcmp(tag, APPEND_TAG_NXT2, 4) != 0)
+    {
+        return KERN_FAILURE;
+    }
+    
+    /* read nxt2 length */
+    if(lseek(fd, -8, SEEK_END) < 0)
+    {
+        return KERN_FAILURE;
+    }
+    if(read(fd, &len, sizeof(uint32_t)) != (ssize_t)sizeof(uint32_t))
+    {
+        return KERN_FAILURE;
+    }
+    
+    /* check sizing */
+    size_t min_blob = offsetof(ksurface_nxt2_blob_header_t, plist_data) + sizeof(ksurface_nxt2_blob_footer_t);
+    if(len < min_blob)
+    {
+        /* NXT2 blob doesn't fit */
+        return KERN_DENIED;
+    }
+    
+    if(len > PAGE_SIZE)
+    {
+        /* could be a exhaustion attack */
+        return KERN_DENIED;
+    }
+    
+    if(lseek(fd, -(off_t)(8 + len), SEEK_END) < 0)
+    {
+        return KERN_FAILURE;
+    }
+    
+    /* reading the blob */
+    uint8_t *blob_buf = malloc(len);
+    if(blob_buf == NULL)
+    {
+        return KERN_NO_SPACE;
+    }
+    
+    if(read(fd, blob_buf, len) != (ssize_t)len)
+    {
+        free(blob_buf);
+        return KERN_FAILURE;
+    }
+    
+    /* now we get the footer and validate it */
+    ksurface_nxt2_blob_footer_t *blob_footer = (ksurface_nxt2_blob_footer_t*)((blob_buf + len) - sizeof(ksurface_nxt2_blob_footer_t));
+    if(blob_footer->mac_len > sizeof(blob_footer->mac))
+    {
+        free(blob_buf);
+        return KERN_DENIED;
+    }
+    
+    /* now we get the header and validate it */
+    ksurface_nxt2_blob_header_t *blob_header = (ksurface_nxt2_blob_header_t*)blob_buf;
+    size_t plist_gap_len = len - (offsetof(ksurface_nxt2_blob_header_t, plist_data) + sizeof(ksurface_nxt2_blob_footer_t));
+    if(blob_header->plist_len > plist_gap_len)
+    {
+        free(blob_buf);
+        return KERN_DENIED;
+    }
+    
+    /* getting entitlements back */
+    CFDataRef entitlementsData = CFDataCreate(kCFAllocatorDefault, (const UInt8*)blob_header->plist_data, (CFIndex)blob_header->plist_len);
+    if(entitlementsData == NULL)
+    {
+        free(blob_buf);
+        return KERN_NO_SPACE;
+    }
+    
+    CFDictionaryRef entitlements = entitlement_plist_to_dict(entitlementsData);
+    CFRelease(entitlementsData);
+    if(entitlements == NULL)
+    {
+        free(blob_buf);
+        return KERN_NO_SPACE;
+    }
+    
+    result->isValid = true; /* everything parsed successfully */
+    
+    memcpy(result->cdhash, blob_header->cdhash, USER_FSIGNATURES_CDHASH_LEN);
+    LCMachO *machO = LCMapMachOFromFDRO(fd);
+    if(machO != NULL)
+    {
+        char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
+        if(cdhash != NULL && memcmp(cdhash, result->cdhash, USER_FSIGNATURES_CDHASH_LEN) == 0)
+        {
+            result->isCdHashValid = true;
+        }
+        LCUnmapMachO(machO);
+    }
+    
+    if(result->isCdHashValid && result->isValid)
+    {
+        /* cdhash and blob must be valid for signature check, some checks are not performed twice */
+        const uint8_t *p = ksurface->pub_key;
+        EVP_PKEY *pub = d2i_PUBKEY(NULL, &p, ksurface->pub_key_len);
+        if(!pub)
+        {
+            goto signature_invalid;
+        }
+        
+        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+        if(!mdctx)
+        {
+            EVP_PKEY_free(pub);
+            goto signature_invalid;
+        }
+        
+        if(EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pub) != 1)
+        {
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(pub);
+            goto signature_invalid;
+        }
+        
+        if(EVP_DigestVerify(mdctx, blob_footer->mac, blob_footer->mac_len, (unsigned char *)blob_header, offsetof(ksurface_nxt2_blob_header_t, plist_data) + blob_header->plist_len) == 1)
+        {
+            result->isSigned = true;
+        }
+        
+        EVP_MD_CTX_free(mdctx);
+        EVP_PKEY_free(pub);
+    }
+    
+signature_invalid:
+    
+    free(blob_buf);
+    
+    result->entitlements = entitlements;
+    return KERN_SUCCESS;
+}
+
+ksurface_trust_identity_t *trust_identity_create(const char *path)
+{
+    if(path == NULL)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+    
+    /* modern */
+    ksurface_nxt2_t result_nxt2;
+    if(nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
+    {
+        ksurface_trust_identity_t *identity = malloc(sizeof(ksurface_trust_identity_t));
+        if(identity == NULL)
+        {
+            errno = ENOMEM;
+            return NULL;
+        }
+        
+        memcpy(identity->cdhash, result_nxt2.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+        identity->entitlements = result_nxt2.entitlements;
+        identity->isValid = result_nxt2.isValid;
+        identity->isSigned = result_nxt2.isSigned;
+        identity->isCdHashValid = result_nxt2.isCdHashValid;
+        //identity->legacyEntitlements  TODO: need to convert them
+        //identity->filePermission      TODO: need to assign them
+        return identity;
+    }
+    
+    /* legacy */
+    ksurface_nxtr_result_t result_nxtr;
+    if(nxtr_read(path, &result_nxtr) == KERN_SUCCESS)
+    {
+        ksurface_trust_identity_t *identity = malloc(sizeof(ksurface_trust_identity_t));
+        if(identity == NULL)
+        {
+            errno = ENOMEM;
+            return NULL;
+        }
+        
+        memcpy(identity->cdhash, result_nxtr.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+        //identity->entitlements    TODO: need to convert them
+        identity->isValid = result_nxtr.blob_valid;
+        identity->isSigned = result_nxtr.blob_valid;    /* the same thing on nxtr */
+        identity->isCdHashValid = result_nxtr.cdhash_valid;
+        identity->legacyEntitlements = result_nxtr.blob.entitlement;
+        //identity->filePermission  TODO: need to convert them
+        return identity;
+    }
+    
+    /* unknown or unsigned? */
+    errno = ENOTSUP;
+    return NULL;
+}
+
+void trust_identity_destroy(ksurface_trust_identity_t *identity)
+{
+    if(identity == NULL)
+    {
+        return;
+    }
+    
+    if(identity->entitlements != NULL)
+    {
+        CFRelease(identity->entitlements);
+    }
+    if(identity->filePermission != NULL)
+    {
+        CFRelease(identity->filePermission);
+    }
+    free(identity);
 }

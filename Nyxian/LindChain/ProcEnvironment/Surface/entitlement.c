@@ -219,3 +219,31 @@ CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict)
     }
     return data;
 }
+
+CFDictionaryRef entitlement_plist_to_dict(CFDataRef data)
+{
+    if(!data)
+    {
+        return NULL;
+    }
+    
+    CFErrorRef err = NULL;
+    CFPropertyListFormat fmt;
+    CFPropertyListRef plist = CFPropertyListCreateWithData(kCFAllocatorDefault, data, kCFPropertyListImmutable, &fmt, &err);
+    
+    if(!plist)
+    {
+        if(err)
+        {
+            CFRelease(err);
+        }
+        return NULL;
+    }
+    
+    if(CFGetTypeID(plist) != CFDictionaryGetTypeID())
+    {
+        CFRelease(plist);
+        return NULL;
+    }
+    return (CFDictionaryRef)plist;
+}
