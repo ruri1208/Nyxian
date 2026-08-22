@@ -43,6 +43,7 @@
 #define KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR  1
 
 /* dyld debugging feature configuration */
-#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED  0   /* enables logging from the hooks */
+#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED      0   /* enables logging from the hooks */
+#define KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER  1   /* hardlocks open on failed cdhash verification (recommended to be enabled as it closes a huge security risk otherwise) */
 
 #endif /* KSURFACE_CONFIG_H */
