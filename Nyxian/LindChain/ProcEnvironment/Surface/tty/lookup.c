@@ -31,40 +31,42 @@ kern_return_t tty_for_port(fileport_t port,
     
     /* getting file descriptor */
     int fd = fileport_makefd(port);
-    
-    /* validating file descriptor */
     if(fd < 0)
     {
-        return KERN_FAILURE;
+        return KERN_INVALID_RIGHT;
     }
     
     /* getting unique object pointer */
     struct socket_fdinfo si;
-    
-    if(proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &si, sizeof(si)) <= 0)
+    int ret = proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &si, sizeof(si));
+    close(fd);
+    if(ret <= 0)
     {
-        close(fd);
         return KERN_FAILURE;
     }
     
-    /* disposing that fd, not needed rn */
-    close(fd);
-    
     /* tty tree lookup */
     tty_table_rdlock();
-    *tty = radix_lookup(&(ksurface->tty_info.tty), si.psi.soi_proto.pri_kern_ctl.kcsi_id);
-    tty_table_unlock();
+    ksurface_tty_t *found = radix_lookup(&(ksurface->tty_info.tty), si.psi.soi_proto.pri_kern_ctl.kcsi_id);
+    if(found == NULL)
+    {
+        tty_table_unlock();
+        return KERN_NOT_FOUND;
+    }
     
     /*
      * caller expects retained tty object, so
      * attempting to retain it and if it doesnt work
      * returning with an error.
      */
-    if(*tty == NULL ||
-       !kvo_retain(*tty))
+    bool retained = kvo_retain(found);
+    tty_table_unlock();
+    if(!retained)
     {
         return KERN_FAILURE;
     }
+    
+    *tty = found;
     
     return KERN_SUCCESS;
 }

@@ -30,8 +30,9 @@
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
-#include <ksurface_config.h>
 #include <LindChain/ProcEnvironment/Utils/vnode.h>
+#import <ksurface_config.h>
+#import <ksurface_abi.h>
 
 extern mach_port_t xpc_endpoint_copy_listener_port_4sim(NSObject<OS_xpc_object>*);
 extern NSObject<OS_xpc_object> *xpc_endpoint_create_mach_port_4sim(mach_port_t port);

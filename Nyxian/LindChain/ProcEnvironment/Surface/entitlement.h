@@ -33,6 +33,9 @@
 typedef struct ksurface_proc ksurface_proc_t;
 typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
 typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
+typedef struct ksurface_nxt2_blob_header ksurface_nxt2_blob_header_t;
+typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
+typedef struct ksurface_nxt2 ksurface_nxt2_t;
 
 /*!
  @enum PEEntitlement
@@ -124,6 +127,39 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     
     kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
 };
+
+/* foundational */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM           CFSTR("org.emexlabs.nyxian.platform")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT      CFSTR("org.emexlabs.nyxian.platform-root")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW     CFSTR("org.emexlabs.nyxian.get-task-allow")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID       CFSTR("org.emexlabs.nyxian.task-for-pid")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_SUGID              CFSTR("org.emexlabs.nyxian.sugid")
+
+/* dyld */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_DYLD_HIDE_LP       CFSTR("org.emexlabs.nyxian.dyld.hide-live-process")
+
+/* process */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM          CFSTR("org.emexlabs.nyxian.process.enumeration")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL          CFSTR("org.emexlabs.nyxian.process.kill")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN         CFSTR("org.emexlabs.nyxian.process.spawn")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED  CFSTR("org.emexlabs.nyxian.process.spawn.signed-only")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT  CFSTR("org.emexlabs.nyxian.process.inherite-entitlements")
+
+/* management */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST          CFSTR("org.emexlabs.nyxian.management.host")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_CREDENTIALS   CFSTR("org.emexlabs.nyxian.management.credentials")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE CFSTR("org.emexlabs.nyxian.management.launch-services")
+
+/* launch services */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_START           CFSTR("org.emexlabs.nyxian.launch-services.start")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_STOP            CFSTR("org.emexlabs.nyxian.launch-services.stop")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_TOGGLE          CFSTR("org.emexlabs.nyxian.launch-services.toggle")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_GET_ENDPOINT    CFSTR("org.emexlabs.nyxian.launch-services.get-endpoint")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_SET_ENDPOINT    CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint")
+
+/* sandbox */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ       CFSTR("org.emexlabs.nyxian.sandbox.file.read")          /* type shall be CFArray */
+#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE CFSTR("org.emexlabs.nyxian.sandbox.file.read-write")    /* type shall be CFArray */
     
 struct __attribute__((packed)) ksurface_nxtr_blob {
     PEEntitlement entitlement;
@@ -133,19 +169,24 @@ struct __attribute__((packed)) ksurface_nxtr_blob {
     size_t mac_len;
 };
 
-/* new better plist base entitlement format */
-struct __attribute__((packed)) ksurface_nxt2_blob {
+/* header contains everything signed  */
+struct __attribute__((packed)) ksurface_nxt2_blob_header {
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     uint64_t nonce;
-    uint8_t mac[72];
-    size_t mac_len;
     size_t plist_len;
-    const char plist_str[];
+    const char plist_data[];
+};
+
+/* footer remains unsigned, it contains the signing identity */
+struct __attribute__((packed))ksurface_nxt2_blob_footer {
+    size_t mac_len;
+    uint8_t mac[72];
 };
 
 struct ksurface_nxt2 {
-    bool cdhash_valid;
-    bool blob_valid;
+    bool isValid;       /* unlike in nxtr a valid blob in nxt2 means it passes sanity checks! */
+    bool isSigned;      /* means the blob is signed */
+    bool isCdHashValid;
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     CFDictionaryRef entitlements;
 };
@@ -169,5 +210,8 @@ PEEntitlement entitlement_sanitize(PEEntitlement base);
 #else
 #define entitlement_sanitize(base) (base)
 #endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
+
+CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict);
+CFDictionaryRef entitlement_plist_to_dict(CFDataRef data);
 
 #endif /* PROC_ENTITLEMENT_H */

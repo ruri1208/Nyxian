@@ -44,6 +44,7 @@
 #import <LindChain/Utils/CFTools.h>
 #import <LiveShim/LiveShimSyscall.h>
 #include <ksurface_config.h>
+#include <ksurface_abi.h>
 
 int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char* newPath, uint32_t* bufsize)
 {

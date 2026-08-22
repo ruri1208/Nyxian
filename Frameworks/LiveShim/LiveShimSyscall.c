@@ -36,6 +36,9 @@
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
 #endif /* __has_include(<ksurface_config.h>) */
+#if __has_include(<ksurface_abi.h>)
+#include <ksurface_abi.h>
+#endif /* __has_include(<ksurface_abi.h>) */
 
 syscall_client_t *syscallProxy = NULL;
 

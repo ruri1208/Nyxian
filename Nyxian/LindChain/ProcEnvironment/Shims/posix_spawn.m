@@ -31,6 +31,7 @@
 #import <LiveShim/LiveShimSyscall.h>
 #import <fcntl.h>
 #import <ksurface_config.h>
+#include <ksurface_abi.h>
 
 #if KSURFACE_SYS_PROC_ENABLED
 

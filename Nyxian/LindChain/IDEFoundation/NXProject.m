@@ -135,39 +135,6 @@
 @end
 
 @implementation NXEntitlementsConfig
-
-- (BOOL)reloadIfNeeded
-{
-    BOOL reloaded = [super reloadIfNeeded];
-    if(reloaded)
-    {
-        _entitlement = kPEEntitlementNone;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.get_task_allowed" withDefaultValue:YES]) _entitlement |= kPEEntitlementGetTaskAllowed;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.task_for_pid" withDefaultValue:NO]) _entitlement |= kPEEntitlementTaskForPid;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_enumeration" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessEnumeration;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_kill" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessKill;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_spawn" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessSpawn;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_spawn_signed_only" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessSpawnSignedOnly;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_elevate" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessElevate;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.host_manager" withDefaultValue:NO]) _entitlement |= kPEEntitlementHostManager;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.credentials_manager" withDefaultValue:NO]) _entitlement |= kPEEntitlementCredentialsManager;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_start" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesStart;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_stop" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesStop;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_toggle" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesToggle;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_get_endpoint" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesGetEndpoint;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_set_endpoint" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesSetEndpoint;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.launch_services_manager" withDefaultValue:NO]) _entitlement |= kPEEntitlementLaunchServicesManager;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.dyld_hide_liveprocess" withDefaultValue:NO]) _entitlement |= kPEEntitlementDyldHideLiveProcess;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.process_spawn_inherite_entitlements" withDefaultValue:NO]) _entitlement |= kPEEntitlementProcessSpawnInheriteEntitlements;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.platform" withDefaultValue:NO]) _entitlement |= kPEEntitlementPlatform;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.platform_root" withDefaultValue:NO]) _entitlement |= kPEEntitlementPlatformRoot;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_root.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileRootRW;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_bundle.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileBundleRW;
-        if([self.dictionary booleanForKey:@"com.nyxian.pe.file_container.read_write" withDefaultValue:NO]) _entitlement |= kPEEntitlementFileContainerRW;
-    }
-    return reloaded;
-}
-
 @end
 
 @implementation NXProject

@@ -176,6 +176,7 @@
 		8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiveShim.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FB3C1EA3031450500DB3ABC /* ksurface_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ksurface_config.h; sourceTree = "<group>"; };
 		8FF32DED3036F59E00C46FE4 /* libHWHook.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libHWHook.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FF346DD3039AA7000C46FE4 /* ksurface_abi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ksurface_abi.h; sourceTree = "<group>"; };
 		AF99171F2DC8EA3C00DDF895 /* Shared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Shared; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -637,6 +638,7 @@
 		AF9916D02DC8C42200DDF895 = {
 			isa = PBXGroup;
 			children = (
+				8FF346DD3039AA7000C46FE4 /* ksurface_abi.h */,
 				8FB3C1EA3031450500DB3ABC /* ksurface_config.h */,
 				79277DC62EE8761000F18B30 /* version.sh */,
 				79277DC02EE8752800F18B30 /* Config.xcconfig */,
