@@ -27,6 +27,7 @@
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
 #import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -234,71 +235,25 @@ retry_fail: /* a retry shall not happen, happens tho if something goes wrong */
 first:
     {
         /* needs to be in minimal userspace boot mode to safely begin restoring the container through containerd */
-        klog_log(domain, "rebooting userspace into minimal mode");
-        [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeMinimal];
-        
-        /* waiting till containerd is back */
-        sleep(1);
-        
-        /* getting all directories needed */
-        klog_log(domain, "gathering path intel");
-        NSURL *containerRoot = [[PEContainer shared] getContainerRoot];
-        if(containerRoot == NULL)
-        {
-            goto recoverable_fail;
-        }
-        
-        NSURL *containerData = [containerRoot URLByAppendingPathComponent:@"Documents"];
-        NSURL *containerTmp = [containerRoot URLByAppendingPathComponent:@"tmp"];
-        NSURL *containerLibrary = [containerRoot URLByAppendingPathComponent:@"Library"];
-        if(containerData == NULL || containerTmp == NULL || containerLibrary == NULL)
-        {
-            goto recoverable_fail;
-        }
-        
-        /* getting contents of each */
-        NSArray<NSString*> *containerHomeDirectories = [[PEContainer shared] contentsOfDirectoryAtPath:[containerData path] error:nil];
-        NSArray<NSString*> *containerTmpDirectories = [[PEContainer shared] contentsOfDirectoryAtPath:[containerTmp path] error:nil];
-        NSArray<NSString*> *containerLibraryDirectories = [[PEContainer shared] contentsOfDirectoryAtPath:[containerLibrary path] error:nil];
-        klog_log(domain, "directories to tear down \ninside of %@: %@\ninside of %@: %@\ninside of %@: %@", containerData, containerHomeDirectories, containerTmp, containerTmpDirectories, containerLibrary, containerLibraryDirectories);
-        if(containerHomeDirectories == NULL || containerTmpDirectories == NULL || containerLibraryDirectories == NULL)
-        {
-            goto recoverable_fail;
-        }
-        
-        /* deleting everything */
-        klog_log(domain, "restoring container file system");
-        for(NSString *pathComponent in containerHomeDirectories)
-        {
-            NSURL *itemURL = [containerData URLByAppendingPathComponent:pathComponent];
-            if(![[PEContainer shared] removeItemAtURL:itemURL error:nil])
-            {
-                klog_log(domain, "tearing down %@ failed", itemURL);
-                goto retry_fail;
-            }
-        }
-        for(NSString *pathComponent in containerTmpDirectories)
-        {
-            NSURL *itemURL = [containerTmp URLByAppendingPathComponent:pathComponent];
-            if(![[PEContainer shared] removeItemAtURL:itemURL error:nil])
-            {
-                klog_log(domain, "tearing down %@ failed", itemURL);
-                goto retry_fail;
-            }
-        }
-        for(NSString *pathComponent in containerLibraryDirectories)
-        {
-            NSURL *itemURL = [containerLibrary URLByAppendingPathComponent:pathComponent];
-            if(![[PEContainer shared] removeItemAtURL:itemURL error:nil])
-            {
-                /* allowed to fail sometimes */
-                klog_log(domain, "tearing down %@ failed", itemURL);
-            }
-        }
-        
-        /* rebooting into empty mode, to restore the private keys entirely safely */
         klog_log(domain, "rebooting userspace into empty mode");
         [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeEmpty];
+        
+        /* getting contents of each */
+        NSURL *root = [[NXBootstrap shared] rootfsURL];
+        NSArray<NSString*> *rootDirectories = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[root path] error:nil];
+        klog_log(domain, "directories to tear down \ninside of %@: %@", [[NXBootstrap shared] rootfsURL], rootDirectories);
+        
+        /* deleting everything */
+        klog_log(domain, "restoring file system");
+        for(NSString *pathComponent in rootDirectories)
+        {
+            NSURL *itemURL = [root URLByAppendingPathComponent:pathComponent];
+            if(![[NSFileManager defaultManager] removeItemAtURL:itemURL error:nil])
+            {
+                klog_log(domain, "tearing down %@ failed", itemURL);
+                goto retry_fail;
+            }
+        }
         
         /* now we have to restore the default hostname */
         klog_log(domain, "restoring hostname");
@@ -331,9 +286,6 @@ first:
         /* we're done, now rebooting back into default mode */
         klog_log(domain, "bringing userspace back into normal mode");
         [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeDefault];
-        
-        /* waiting till everything is back */
-        sleep(1);
         
         /* TODO: make the entire reboot timing perfect */
     }
