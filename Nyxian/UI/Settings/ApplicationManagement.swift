@@ -207,7 +207,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
             //updateMultitaskingButton()
         //}
     }
- 
+    
     private func updateMultitaskingButton() {
         let isMultitasking = NXWindowServer.isMultitaskingEnabled()
         let isFullscreen = NXWindowServer.isFullscreenEnabled()
@@ -237,16 +237,17 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
             self?.setMode(multitasking: false, fullscreen: false, simulator: true)
         }
         
+        
         let modeMenu = UIMenu(title: "Display Mode", children: [multitaskAction, fullscreenAction, simulatorAction])
         let menuButton = UIButton(type: .system)
         menuButton.setImage(UIImage(systemName: currentImageName), for: .normal)
         menuButton.menu = modeMenu
         menuButton.showsMenuAsPrimaryAction = true
      
-        let modeItem = UIBarButtonItem(customView: menuButton)
-        self.navigationItem.leftBarButtonItems = [modeItem]
+        //let modeItem = UIBarButtonItem(customView: menuButton)
+        //self.navigationItem.leftBarButtonItems = [modeItem]
     }
-
+    
     private func setMode(multitasking: Bool, fullscreen: Bool, simulator: Bool) {
         if multitasking {
             NXWindowServer.setMultitaskingEnabled(true)
@@ -265,7 +266,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
 
         NotificationCenter.default.post(name: NSNotification.Name("NXMultitaskingStateDidChange"), object: nil)
 
-        updateMultitaskingButton()
+        //updateMultitaskingButton()
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
