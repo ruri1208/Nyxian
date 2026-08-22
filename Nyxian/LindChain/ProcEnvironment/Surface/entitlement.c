@@ -202,3 +202,20 @@ PEEntitlement entitlement_sanitize(PEEntitlement base)
     return base;
 }
 #endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
+
+CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict)
+{
+    CFErrorRef err = NULL;
+    CFDataRef data = CFPropertyListCreateData(kCFAllocatorDefault, dict, kCFPropertyListXMLFormat_v1_0, 0, &err);
+    if(!data)
+    {
+        if(err)
+        {
+            CFStringRef desc = CFErrorCopyDescription(err);
+            CFRelease(desc);
+            CFRelease(err);
+        }
+        return NULL;
+    }
+    return data;
+}

@@ -33,6 +33,9 @@
 typedef struct ksurface_proc ksurface_proc_t;
 typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
 typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
+typedef struct ksurface_nxt2_blob_header ksurface_nxt2_blob_header_t;
+typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
+typedef struct ksurface_nxt2 ksurface_nxt2_t;
 
 /*!
  @enum PEEntitlement
@@ -171,7 +174,7 @@ struct __attribute__((packed)) ksurface_nxt2_blob_header {
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     uint64_t nonce;
     size_t plist_len;
-    const char plist_str[];
+    const char plist_data[];
 };
 
 /* footer remains unsigned, it contains the signing identity */
@@ -206,5 +209,7 @@ PEEntitlement entitlement_sanitize(PEEntitlement base);
 #else
 #define entitlement_sanitize(base) (base)
 #endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
+
+CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict);
 
 #endif /* PROC_ENTITLEMENT_H */

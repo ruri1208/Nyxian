@@ -20,9 +20,10 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/trust.h>
-#import <LindChain/ProcEnvironment/Surface/entitlement.h>
-#import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <LindChain/ProcEnvironment/Surface/trust.h>
+#include <LindChain/ProcEnvironment/Surface/entitlement.h>
+#include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <LindChain/ProcEnvironment/Surface/surface.h>
 #include <LindChain/ProcEnvironment/Surface/cdhash.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,9 +35,10 @@
 #include <mach-o/loader.h>
 #include <mach-o/fat.h>
 #include <sys/stat.h>
-#import <CommonCrypto/CommonCrypto.h>
-#import <mach-o/loader.h>
-#import <mach-o/fat.h>
+#include <OpenSSL/evp.h>
+#include <OpenSSL/err.h>
+#include <OpenSSL/ec.h>
+#include <OpenSSL/pem.h>
 
 #define APPEND_TAG_NXTR "NXTR"
 #define APPEND_TAG_NXT2 "NXT2"
@@ -60,10 +62,10 @@ kern_return_t nxtr_sign(const char *path,
         return KERN_FAILURE;
     }
     
-    kern_return_t retval = nxtr_sign_fd(fd, entitlement);
+    kern_return_t kr = nxtr_sign_fd(fd, entitlement);
     fsync(fd);
     close(fd);
-    return retval;
+    return kr;
 }
 
 kern_return_t nxtr_sign_fd(int fd, PEEntitlement entitlement)
@@ -131,7 +133,7 @@ kern_return_t nxtr_read(const char *path,
         return KERN_FAILURE;
     }
     
-    int ret = nxtr_read_fd(fd, result);
+    kern_return_t ret = nxtr_read_fd(fd, result);
     close(fd);
     return ret;
 }
@@ -205,4 +207,204 @@ kern_return_t nxtr_read_fd(int fd,
     
     free(hash);
     return KERN_FAILURE;
+}
+
+kern_return_t nxt2_sign(const char *path,
+                        CFDictionaryRef entitlements,
+                        bool signBlob)
+{
+    int fd = open(path, O_RDWR);
+    if(fd < 0)
+    {
+        return KERN_FAILURE;
+    }
+    
+    kern_return_t kr = nxt2_sign_fd(fd, entitlements, signBlob);
+    fsync(fd);
+    close(fd);
+    return kr;
+}
+
+kern_return_t nxt2_sign_fd(int fd,
+                           CFDictionaryRef entitlements,
+                           bool signBlob)
+{
+    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
+    if(machO == NULL)
+    {
+        return KERN_FAILURE;
+    }
+    char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
+    LCUnmapMachO(machO);
+    
+    /* find eof */
+    char tag[4];
+    off_t eof = lseek(fd, 0, SEEK_END);
+    
+    if(eof >= (off_t)(sizeof(ksurface_nxtr_blob_t) + sizeof(uint32_t) + 4))
+    {
+        read_at(fd, eof - 4, tag, 4);
+        if(memcmp(tag, APPEND_TAG_NXT2, 4) == 0)
+        {
+            uint32_t data_len;
+            read_at(fd, eof - 4 - sizeof(uint32_t), &data_len, sizeof(uint32_t));
+            eof -= (off_t)(data_len + sizeof(uint32_t) + 4);
+            ftruncate(fd, eof);
+        }
+    }
+    
+    if(lseek(fd, eof, SEEK_SET) < 0)
+    {
+        free(cdhash);
+        return KERN_FAILURE;
+    }
+    
+    if(ftruncate(fd, eof) < 0)
+    {
+        free(cdhash);
+        return KERN_FAILURE;
+    }
+    
+    /* generate nxt2 blob (nxt2 unlike nxtr requires us to do it our selves and not entitlements api) */
+    CFDataRef entitlementsData = entitlement_dict_to_plist(entitlements);
+    if(entitlementsData == NULL)
+    {
+        free(cdhash);
+        return KERN_FAILURE;
+    }
+    CFIndex entitlementsDataLength = CFDataGetLength(entitlementsData);
+    size_t header_size = sizeof(ksurface_nxt2_blob_header_t) + (size_t)entitlementsDataLength;
+    
+    /* allocating the blob header */
+    ksurface_nxt2_blob_header_t *blob_header = calloc(1, header_size);
+    if(blob_header == NULL)
+    {
+        CFRelease(entitlementsData);
+        free(cdhash);
+        return KERN_FAILURE;
+    }
+    
+    /* writing entitlement data */
+    memcpy((void*)blob_header->plist_data, CFDataGetBytePtr(entitlementsData), (size_t)entitlementsDataLength);
+    blob_header->plist_len = (size_t)entitlementsDataLength;
+    CFRelease(entitlementsData);
+    
+    ksurface_nxt2_blob_footer_t *blob_footer = NULL;
+    size_t footer_size;
+    
+    /* signing blob if applicable */
+    if(signBlob && cdhash != NULL)
+    {
+        /* sign blob mode requires cdhash */
+        memcpy((void*)(blob_header->cdhash), cdhash, USER_FSIGNATURES_CDHASH_LEN);
+        free(cdhash);
+        
+        /* generating nonce so it's harder to crack */
+        arc4random_buf(&(blob_header->nonce), sizeof(uint64_t));
+        
+        /* signing blob */
+        const uint8_t *p = ksurface->priv_key;
+        EVP_PKEY *priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
+        if(!priv)
+        {
+            free(blob_header);
+            return KERN_FAILURE;
+        }
+        
+        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+        if(!mdctx)
+        {
+            free(blob_header);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        
+        if(EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, priv) != 1)
+        {
+            free(blob_header);
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        
+        size_t mac_len = 0;
+        if(EVP_DigestSign(mdctx, NULL, &mac_len, (const unsigned char *)blob_header, header_size) != 1)
+        {
+            free(blob_header);
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        
+        /* allocate the blob footer to hold the signature */
+        footer_size = sizeof(ksurface_nxt2_blob_footer_t) + mac_len;
+        blob_footer = calloc(1, sizeof(ksurface_nxt2_blob_footer_t) + mac_len);
+        if(blob_footer == NULL)
+        {
+            free(blob_header);
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        blob_footer->mac_len = mac_len;
+        
+        if(EVP_DigestSign(mdctx, blob_footer->mac, &mac_len, (const unsigned char *)blob_header, header_size) != 1)
+        {
+            free(blob_footer);
+            free(blob_header);
+            EVP_MD_CTX_free(mdctx);
+            EVP_PKEY_free(priv);
+            return KERN_FAILURE;
+        }
+        
+        EVP_MD_CTX_free(mdctx);
+        EVP_PKEY_free(priv);
+    }
+    else if(cdhash != NULL)
+    {
+        free(cdhash);
+        free(blob_header);
+        return KERN_NOT_SUPPORTED;
+    }
+    else
+    {
+        free(blob_header);
+        return KERN_NOT_SUPPORTED;
+    }
+    
+    if(write(fd, blob_header, header_size) != header_size)
+    {
+        free(blob_footer);
+        free(blob_header);
+        return KERN_FAILURE;
+    }
+    
+    if(write(fd, blob_footer, footer_size) != footer_size)
+    {
+        free(blob_footer);
+        free(blob_header);
+        return KERN_FAILURE;
+    }
+    
+    return KERN_SUCCESS;
+}
+
+kern_return_t nxt2_read(const char *path,
+                        ksurface_nxt2_t *result)
+{
+    int fd = open(path, O_RDONLY);
+    if(fd < 0)
+    {
+        return KERN_FAILURE;
+    }
+    
+    kern_return_t kr = nxt2_read_fd(fd, result);
+    close(fd);
+    return kr;
+}
+
+kern_return_t nxt2_read_fd(int fd,
+                           ksurface_nxt2_t *result)
+{
+    return KERN_NOT_SUPPORTED;
 }
