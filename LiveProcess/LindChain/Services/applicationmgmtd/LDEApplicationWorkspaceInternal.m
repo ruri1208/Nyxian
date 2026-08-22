@@ -120,6 +120,7 @@
     [fileManager createDirectoryAtURL:self.binaryURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.homeURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/root"]] withIntermediateDirectories:YES attributes:nil error:nil];
+    [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/blastbox"]] withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
     
     // Enumerating all app bundles
@@ -467,7 +468,7 @@ create_container:
 
 - (void)utilityHomePathWithReply:(void (^)(NSString*))reply
 {
-    NSString *homePath = [NSHomeDirectory() stringByAppendingPathComponent:@"/Documents/var/mobile"];
+    NSString *homePath = [NSHomeDirectory() stringByAppendingPathComponent:@"/var/mobile"];
     
     NSURL *homeURL = [NSURL fileURLWithPath:homePath];
     

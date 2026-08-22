@@ -61,7 +61,7 @@ DEFINE_SYSCALL_HANDLER(procpath)
     /* locking process read */
     kvo_rdlock(target);
     
-    size_t buflen = strnlen(target->nyx.executable_path, PATH_MAX - 1) + 1;
+    size_t buflen = strnlen(target->nyx.identity->path, PATH_MAX - 1) + 1;
     if(buflen > PATH_MAX)
     {
         kvo_unlock(target);
@@ -73,7 +73,7 @@ DEFINE_SYSCALL_HANDLER(procpath)
      * getting output layout lenght. We have to add 1 more so the
      * nullterminator gets copied with it.
      */
-    if(!mach_syscall_copy_out(sys_task_, buflen, target->nyx.executable_path, buffer_ptr))
+    if(!mach_syscall_copy_out(sys_task_, buflen, target->nyx.identity->path, buffer_ptr))
     {
         kvo_unlock(target);
         kvo_release(target);

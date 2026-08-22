@@ -30,6 +30,7 @@
 #include <ksurface_config.h>
 #else
 #define KSURFACE_DYLD_HOOK_LOGGING_ENABLED 0
+#define KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER 1
 #endif /* __has_include(<ksurface_config.h>) */
 
 #if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
@@ -197,13 +198,17 @@ static int hook_open(const char *path,
                    cdhash_data_container_match == NULL ||
                    memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
                 {
+                    cdhash_verified = false;
                     dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
                     
-                    cdhash_verified = false;
+#if KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER
+                    open_hardlock = true;
+#else
                     if(cdhash_verifier_failed_callback != NULL)
                     {
                         cdhash_verifier_failed_callback(fd, &open_hardlock);
                     }
+#endif /* !KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER */
                     
                     /* callback can set open hardlock */
                     if(open_hardlock)

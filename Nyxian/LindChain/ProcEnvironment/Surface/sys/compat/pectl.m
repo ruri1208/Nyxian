@@ -246,18 +246,21 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
         }
         case kPECTLCodeSigningGetCDHash:
         {
-            if(!sys_proc_snapshot_->nyx.explicit_cdhash)
+            kvo_rdlock(sys_proc_);
+            if(!sys_proc_->nyx.identity->isCdHashValid)
             {
+                kvo_unlock(sys_proc_);
                 sys_return_failure(ENOENT);
             }
             
             userspace_pointer_t ch_user_ptr = (userspace_pointer_t)args[2];
-            
-            if(!mach_syscall_copy_out(sys_task_, sizeof(sys_proc_->nyx.cdhash), sys_proc_->nyx.cdhash, ch_user_ptr))
+            if(!mach_syscall_copy_out(sys_task_, sizeof(sys_proc_->nyx.identity->cdhash), sys_proc_->nyx.identity->cdhash, ch_user_ptr))
             {
+                kvo_unlock(sys_proc_);
                 sys_return_failure(EFAULT);
             }
             
+            kvo_unlock(sys_proc_);
             sys_return;
         }
         case kPECTLCodeSigningAllEntitlements:

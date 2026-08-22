@@ -101,6 +101,7 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
                     mach_port_deallocate(mach_task_self(), proc->task);
                 }
             }
+            trust_identity_destroy(proc->nyx.identity);
             
             /* fallthrough */
         default:

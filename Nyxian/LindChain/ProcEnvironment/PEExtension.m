@@ -141,12 +141,6 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
     NSMutableDictionary *mutableItems = [items mutableCopy];
     mutableItems[@"PESyscallPort"] = [PEMachPort portWithPortName:syscall_server_get_port(ksurface->sys_server)];
     mutableItems[@"PEEndpoint"] = [Server getTicket];   /* MARK: deprecated and soon replaced with the syscall server entirely */
-    if(mutableItems[@"PEFilePermissions"] == nil)
-    {
-        mutableItems[@"PEFilePermissions"] = @[
-            [NXBootstrap issueSandboxFileExtensionForURL:[[NXBootstrap shared] rootfsURL] readWrite:YES],   /* full rootfs access */
-        ];
-    }
     NSMutableDictionary *env = [mutableItems[@"PEEnvironment"] mutableCopy];
     if(env == nil)
     {

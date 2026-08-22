@@ -251,15 +251,10 @@ static inline void ksurface_kinit_kproc(void)
     proc_setppid(kproc, 1); /* this is done, because when debugging it has a other ppid than launchd's pid */
     proc_setsid(kproc, pid);
     
-    /* writing executable path */
-    uint32_t bufsize = PATH_MAX;
-    if(_NSGetExecutablePath(kproc->nyx.executable_path, &bufsize) > 0)
-    {
-        /* shall never happen */
-        environment_panic("failed to aquire executable path from dyld");
-    }
-    const char *name = strrchr(kproc->nyx.executable_path, '/');
-    name = name ? name + 1 : kproc->nyx.executable_path;
+    /* getting own identity */
+    kproc->nyx.identity = trust_identity_get_kernel();
+    const char *name = strrchr(kproc->nyx.identity->path, '/');
+    name = name ? name + 1 : kproc->nyx.identity->path;
     strlcpy(kproc->bsd.kp_proc.p_comm, name, MAXCOMLEN);
     
     /* kernel shall only expose its task name */

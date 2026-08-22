@@ -20,7 +20,6 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/trust.h>
 #import <LindChain/ProcEnvironment/Surface/entitlement.h>
 #import <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #import <LindChain/ProcEnvironment/Surface/proc/insert.h>
@@ -32,25 +31,18 @@
 #import <LindChain/Services/containerd/PEContainer.h>
 #include <ksurface_config.h>
 
-const char *trustDaemonPath[] = {
-    "/sbin/launchd",
-    "/usr/libexec/containerd",
-    "/usr/libexec/installd",
-};
-
 kern_return_t proc_spawn(ksurface_proc_t *parent,
                          ksurface_proc_t **child,
                          pid_t child_pid,
-                         const char *path)
+                         ksurface_trust_identity_t *identity)
 {
-    assert(parent != NULL && child != NULL && path != NULL);
+    assert(parent != NULL && child != NULL && identity != NULL);
     
     ksurface_proc_t *child_new = kvo_copy(parent);
     if(child_new == NULL)
     {
         return KERN_FAILURE;
     }
-    child_new->nyx.explicit_cdhash = false;
 
     proc_setppid(child_new, proc_getpid(child_new));    /* as the child is the copy of the parent the current pid is the ppid */
     proc_setpid(child_new, child_pid);      /* function passed pid of child */
@@ -63,30 +55,25 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     PEEntitlement currentEntitlement = proc_getentitlements(child_new);
     PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
     
-    /* verify nxtr signature blob if present */
-    ksurface_trust_identity_t *identity = trust_identity_create(path);
-    if(identity != NULL)
+    /* verify trust */
+    if(identity == NULL)
     {
-        if(identity->isSigned)
-        {
-            /* this was signed by us, nods head like a silly girl >< */
+        kvo_release(child_new);
+        return KERN_FAILURE;
+    }
+    
+    /* TODO: this is very early */
+    switch(identity->type)
+    {
+        case kPETrustTypeFallback:
+        case kPETrustTypeSignature:
+        case kPETrustTypeTrusted:
+        default:
             entitlement = identity->legacyEntitlements;
-            memcpy(child_new->nyx.cdhash, identity->cdhash, USER_FSIGNATURES_CDHASH_LEN);
-            child_new->nyx.explicit_cdhash = true;
-        }
-        trust_identity_destroy(identity);
+            break;
     }
-    else
-    {
-        /* checking if it is a daemon controlled spawning */
-        for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
-        {
-            if(strncmp(path, trustDaemonPath[index], MAXPATHLEN - 1) == 0)
-            {
-                entitlement = kPEEntitlementSystemDaemon;
-            }
-        }
-    }
+    
+    child_new->nyx.identity = identity;
     
     /*
      * only a platform process, may be able to
@@ -124,16 +111,39 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
         currentEntitlement = kPEEntitlementNone;
     }
     
-    /* checking for special platform root credentials */
-    if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatformRoot) &&
-       entitlement_got_entitlement(entitlement, kPEEntitlementPlatform))
+#if KSURFACE_SYS_UCRED_ENABLED
+    
+    /* only platform processes can use those */
+    if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatform))
     {
         /*
          * child process exeuctable is platform binary and has
          * the special platform root entitlement.
          */
-        proc_setrootcred(child_new);
+        if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatformRoot))
+        {
+            proc_setrootcred(child_new);
+        }
+        
+        /* special user and group entitlement */
+        CFNumberRef entitlementUserIdentifier = CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER);
+        CFNumberRef entitlementGroupIdentifier = CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP);
+        int32_t identifier;
+        if(entitlementUserIdentifier != NULL && CFNumberGetValue(entitlementUserIdentifier, kCFNumberSInt32Type, &identifier))
+        {
+            proc_setruid(child_new, identifier);
+            proc_seteuid(child_new, identifier);
+            proc_setsvuid(child_new, identifier);
+        }
+        if(entitlementGroupIdentifier != NULL && CFNumberGetValue(entitlementGroupIdentifier, kCFNumberSInt32Type, &identifier))
+        {
+            proc_setrgid(child_new, identifier);
+            proc_setegid(child_new, identifier);
+            proc_setsvgid(child_new, identifier);
+        }
     }
+    
+#endif /* KSURFACE_SYS_UCRED_ENABLED */
     
     /*
      * now combining the current entitlements
@@ -142,12 +152,10 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     PEEntitlement combinedEntitlement = entitlement_sanitize(currentEntitlement | entitlement);
     proc_setentitlements(child_new, combinedEntitlement);
     proc_setmaxentitlements(child_new, combinedEntitlement);
-    
-    strlcpy(child_new->nyx.executable_path, path, PATH_MAX);
         
     /* FIXME: argv[0] shall be used for p_comm and not the last path component */
-    const char *name = strrchr(path, '/');
-    name = name ? name + 1 : path;
+    const char *name = strrchr(identity->path, '/');
+    name = name ? name + 1 : identity->path;
     strlcpy(child_new->bsd.kp_proc.p_comm, name, MAXCOMLEN + 1);
     
     /* insert will retain the child process */

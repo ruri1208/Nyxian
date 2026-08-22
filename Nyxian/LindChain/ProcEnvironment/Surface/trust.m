@@ -20,6 +20,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 #include <LindChain/ProcEnvironment/Surface/trust.h>
 #include <LindChain/ProcEnvironment/Surface/entitlement.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
@@ -43,6 +45,12 @@
 
 #define APPEND_TAG_NXTR "NXTR"
 #define APPEND_TAG_NXT2 "NXT2"
+
+const char *trustDaemonPath[] = {
+    "/sbin/launchd",
+    "/usr/libexec/containerd",
+    "/usr/libexec/installd",
+};
 
 ssize_t read_at(int fd, off_t offset, void *buf, size_t len)
 {
@@ -628,21 +636,6 @@ static CFDictionaryRef trust_identity_entitlements_from_legacy_entitlements(PEEn
         return NULL;
     }
     
-    if(entitlement_got_entitlement(entitlement, kPEEntitlementFileRootRW))
-    {
-        CFArrayAppendValue(filePermissions, CFSTR("$(ROOTFS)"));
-    }
-    
-    if(entitlement_got_entitlement(entitlement, kPEEntitlementFileBundleRW))
-    {
-        CFArrayAppendValue(filePermissions, CFSTR("$(BUNDLE)"));
-    }
-    
-    if(entitlement_got_entitlement(entitlement, kPEEntitlementFileContainerRW))
-    {
-        CFArrayAppendValue(filePermissions, CFSTR("$(CONTAINER)"));
-    }
-    
     CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE, filePermissions);
     return dictionary;
 }
@@ -666,7 +659,8 @@ typedef struct {
     CFTypeID expected_type;
 } entitlement_schema_entry;
 
-static CFDictionaryRef trust_identity_validate_entitlements(CFDictionaryRef entitlements)
+static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executablePath,
+                                                            CFDictionaryRef entitlements)
 {
     if(entitlements == NULL)
     {
@@ -678,6 +672,8 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFDictionaryRef enti
         /* foundational */
         { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM,            CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT,       CFBooleanGetTypeID() },
+        { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER,       CFNumberGetTypeID()  },
+        { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP,      CFNumberGetTypeID()  },
         { KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW,      CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID,        CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_SUGID,               CFBooleanGetTypeID() },
@@ -696,8 +692,7 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFDictionaryRef enti
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST,           CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_CREDENTIALS,    CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE,  CFBooleanGetTypeID() },
-        { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE,  CFBooleanGetTypeID() },
-        { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE,  CFBooleanGetTypeID() },
+
         
         /* launch services */
         { KSURFACE_NXT2_ENTITLEMENT_ID_LS_START,            CFBooleanGetTypeID() },
@@ -739,7 +734,130 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFDictionaryRef enti
         CFDictionarySetValue(clean, schema[i].key, val);
     }
     
+    /* grant access automatically to executable and blastbox */
+    CFMutableArrayRef rwPaths;
+    CFArrayRef existing = CFDictionaryGetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE);
+    if(existing)
+    {
+        rwPaths = CFArrayCreateMutableCopy(kCFAllocatorDefault, 0, existing);
+    }
+    else
+    {
+        rwPaths = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    }
+    
+    if(rwPaths)
+    {
+        CFArrayAppendValue(rwPaths, CFSTR("$(EXECUTABLE)"));
+        CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/blastbox"));
+        
+        @autoreleasepool {
+            LDEApplicationObject *applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:(__bridge NSString*)executablePath];
+            if(applicationObject != NULL && applicationObject.bundlePath != NULL && applicationObject.containerPath != NULL)
+            {
+                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)applicationObject.bundlePath);
+                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)applicationObject.containerPath);
+            }
+        }
+        
+        CFDictionarySetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE, rwPaths);
+        CFRelease(rwPaths);
+    }
+    
     return clean;
+}
+
+static NSArray<NSString *> *PEResolveEntitlementPaths(NSString *pathTemplate,
+                                                      NSDictionary<NSString *, NSString *> *vars)
+{
+    NSMutableString *resolved = [pathTemplate mutableCopy];
+    for(NSString *key in vars)
+    {
+        NSString *token = [NSString stringWithFormat:@"$(%@)", key];
+        [resolved replaceOccurrencesOfString:token withString:vars[key] options:0 range:NSMakeRange(0, resolved.length)];
+    }
+    
+    if(![resolved hasSuffix:@"/*"])
+    {
+        return @[[resolved copy]];
+    }
+    
+    NSString *dir = [resolved substringToIndex:resolved.length - 2];
+    while(dir.length > 1 && [dir hasSuffix:@"/"])
+    {
+        dir = [dir substringToIndex:dir.length - 1];
+    }
+    
+    NSError *err = nil;
+    NSArray<NSString *> *entries = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:&err];
+    if(!entries)
+    {
+        return @[];
+    }
+    
+    NSMutableArray<NSString *> *paths = [NSMutableArray arrayWithCapacity:entries.count];
+    for(NSString *name in entries)
+    {
+        [paths addObject:[dir stringByAppendingPathComponent:name]];
+    }
+    [paths sortUsingSelector:@selector(compare:)];
+    return [paths copy];
+}
+
+static NSString *PECanonicalizePath(NSString *path)
+{
+    char resolved[PATH_MAX];
+    if(realpath(path.fileSystemRepresentation, resolved) == NULL)
+    {
+        return nil;
+    }
+    return [NSString stringWithUTF8String:resolved];
+}
+
+static CFArrayRef trust_identity_gib_file_permissions(CFStringRef executableString,
+                                                      CFDictionaryRef entitlements)
+{
+    NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
+    NSDictionary *vars = @{
+        @"ROOTFS": NXBootstrap.shared.rootfsURL.path,
+        @"EXECUTABLE": (__bridge NSString*)executableString,
+    };
+    NSDictionary *nsEntitlements = (__bridge NSDictionary*)entitlements;
+    NSArray<NSString*> *readFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ];
+    NSArray<NSString*> *readWriteFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE];
+    for(NSString *readWriteFilePermission in readWriteFilePermissions)
+    {
+        NSArray<NSString*> *paths = PEResolveEntitlementPaths(readWriteFilePermission, vars);
+        for(NSString *path in paths)
+        {
+            NSString *actualPath = PECanonicalizePath(path);
+            if(actualPath)
+            {
+                NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:YES];
+                if(sandboxExtension != nil)
+                {
+                    [filePermissions addObject:sandboxExtension];
+                }
+            }
+        }
+    }
+    for(NSString *readFilePermission in readFilePermissions)
+    {
+        NSArray<NSString*> *paths = PEResolveEntitlementPaths(readFilePermission, vars);
+        for(NSString *path in paths)
+        {
+            NSString *actualPath = PECanonicalizePath(path);
+            if(actualPath)
+            {
+                NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:NO];
+                if(sandboxExtension != nil)
+                {
+                    [filePermissions addObject:sandboxExtension];
+                }
+            }
+        }
+    }
+    return (__bridge_retained CFArrayRef)filePermissions;
 }
 
 static PEEntitlement trust_identity_legacy_entitlements_from_entitlements(CFDictionaryRef entitlements)
@@ -788,7 +906,27 @@ static PEEntitlement trust_identity_legacy_entitlements_from_entitlements(CFDict
     return legacyEntitlements;
 }
 
-ksurface_trust_identity_t *trust_identity_create(const char *path)
+ksurface_trust_identity_t *trust_identity_get_kernel(void)
+{
+    static ksurface_trust_identity_t *identity = NULL;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        identity = calloc(1, sizeof(ksurface_trust_identity_t));
+        identity->legacyEntitlements = kPEEntitlementKernel;
+        identity->maxLegacyEntitlements = kPEEntitlementKernel;
+        identity->type = kPETrustTypeTrusted;
+        
+        uint32_t bufsize = PATH_MAX;
+        if(_NSGetExecutablePath(identity->path, &bufsize) > 0)
+        {
+            /* shall never happen */
+            environment_panic("failed to aquire executable path from dyld");
+        }
+    });
+    return identity;
+}
+
+ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
 {
     if(path == NULL)
     {
@@ -796,30 +934,77 @@ ksurface_trust_identity_t *trust_identity_create(const char *path)
         return NULL;
     }
     
+    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
+    if(executableString == NULL)
+    {
+        return NULL;
+    }
+    
+    /* check if in daemon trustpath */
+    for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
+    {
+        if(strncmp(path, trustDaemonPath[index], MAXPATHLEN - 1) == 0)
+        {
+            ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
+            if(identity == NULL)
+            {
+                goto fallback;
+            }
+            strlcpy(identity->path, path, MAXPATHLEN);
+            identity->type = kPETrustTypeTrusted;
+            identity->isSigned = true;
+            identity->isValid = true;
+            identity->isCdHashValid = false;
+            identity->legacyEntitlements = kPEEntitlementSystemDaemon;
+            identity->maxLegacyEntitlements = kPEEntitlementSystemDaemon;
+            identity->entitlements = trust_identity_entitlements_from_legacy_entitlements(kPEEntitlementSystemDaemon);
+            if(identity->entitlements == NULL)
+            {
+                free(identity);
+                goto fallback;
+            }
+            return identity;
+        }
+    }
+    
+    /* signature */
+    
     /* modern */
     ksurface_nxt2_t result_nxt2;
     if(nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
     {
-        ksurface_trust_identity_t *identity = malloc(sizeof(ksurface_trust_identity_t));
+        ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
         if(identity == NULL)
         {
             CFRelease(result_nxt2.entitlements);
-            errno = ENOMEM;
-            return NULL;
+            CFRelease(executableString);
+            goto fallback;
         }
+        identity->type = kPETrustTypeSignature;
+        strlcpy(identity->path, path, MAXPATHLEN);
         
         memcpy(identity->cdhash, result_nxt2.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        identity->entitlements = trust_identity_validate_entitlements(result_nxt2.entitlements);
+        identity->entitlements = trust_identity_validate_entitlements(executableString, result_nxt2.entitlements);
         CFRelease(result_nxt2.entitlements);
         if(identity->entitlements == NULL)
         {
-            errno = ENOMEM;
-            return NULL;
+            CFRelease(executableString);
+            free(identity);
+            goto fallback;
         }
         identity->isValid = result_nxt2.isValid;
         identity->isSigned = result_nxt2.isSigned;
+        if(!identity->isSigned)
+        {
+            CFRelease(identity->entitlements);
+            CFRelease(executableString);
+            free(identity);
+            goto fallback;
+        }
         identity->isCdHashValid = result_nxt2.isCdHashValid;
         identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(identity->entitlements);
+        identity->maxLegacyEntitlements = identity->legacyEntitlements;
+        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
         return identity;
     }
     
@@ -829,31 +1014,79 @@ ksurface_trust_identity_t *trust_identity_create(const char *path)
     if(nxtr_read(path, &result_nxtr) == KERN_SUCCESS &&
        entitlement_mach_verify(&result_nxtr, ksurface->pub_key, ksurface->pub_key_len) == KERN_SUCCESS)
     {
-        ksurface_trust_identity_t *identity = malloc(sizeof(ksurface_trust_identity_t));
+        ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
         if(identity == NULL)
         {
-            errno = ENOMEM;
-            return NULL;
+            CFRelease(executableString);
+            goto fallback;
         }
+        identity->type = kPETrustTypeSignature;
+        strlcpy(identity->path, path, MAXPATHLEN);
         
         memcpy(identity->cdhash, result_nxtr.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        identity->entitlements = trust_identity_entitlements_from_legacy_entitlements(result_nxtr.blob.entitlement);
+        identity->entitlements = trust_identity_validate_entitlements(executableString, trust_identity_entitlements_from_legacy_entitlements(result_nxtr.blob.entitlement));
         if(identity->entitlements == NULL)
         {
+            CFRelease(executableString);
             free(identity);
-            return NULL;
+            goto fallback;
         }
         identity->isValid = result_nxtr.blob_valid;
         identity->isSigned = result_nxtr.blob_valid;    /* the same thing on nxtr */
+        if(!identity->isSigned)
+        {
+            CFRelease(identity->entitlements);
+            CFRelease(executableString);
+            free(identity);
+            goto fallback;
+        }
         identity->isCdHashValid = result_nxtr.cdhash_valid;
         identity->legacyEntitlements = result_nxtr.blob.entitlement;
+        identity->maxLegacyEntitlements = identity->legacyEntitlements;
+        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
         return identity;
     }
 #endif /* KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR */
     
-    /* unknown or unsigned? */
-    errno = ENOTSUP;
-    return NULL;
+    /* fallback */
+fallback:
+    {
+        CFMutableDictionaryRef entitlements = CFDictionaryCreateMutable(kCFAllocatorDefault, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        if(entitlements == NULL)
+        {
+            CFRelease(executableString);
+            errno = ENOMEM;
+            return NULL;
+        }
+        CFDictionaryRef newEntitlements = trust_identity_validate_entitlements(executableString, entitlements); /* gives container access if applicable */
+        CFRelease(entitlements);
+        if(newEntitlements == NULL)
+        {
+            CFRelease(executableString);
+            errno = ENOMEM;
+            return NULL;
+        }
+        ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
+        if(identity == NULL)
+        {
+            CFRelease(executableString);
+            errno = ENOMEM;
+            return NULL;
+        }
+        strlcpy(identity->path, path, MAXPATHLEN);
+        
+        identity->type = kPETrustTypeFallback;
+        identity->entitlements = newEntitlements;
+        identity->legacyEntitlements = kPEEntitlementNone;
+        identity->maxLegacyEntitlements = kPEEntitlementNone;
+        identity->isSigned = true;
+        identity->isValid = true;
+        identity->isCdHashValid = false;
+        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
+        
+        CFRelease(executableString);
+        return identity;
+    }
 }
 
 void trust_identity_destroy(ksurface_trust_identity_t *identity)
@@ -866,6 +1099,10 @@ void trust_identity_destroy(ksurface_trust_identity_t *identity)
     if(identity->entitlements != NULL)
     {
         CFRelease(identity->entitlements);
+    }
+    if(identity->filePermissions != NULL)
+    {
+        CFRelease(identity->filePermissions);
     }
     free(identity);
 }

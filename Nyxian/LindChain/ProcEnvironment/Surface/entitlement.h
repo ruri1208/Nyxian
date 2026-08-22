@@ -131,6 +131,8 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
 /* foundational */
 #define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM           CFSTR("org.emexlabs.nyxian.platform")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT      CFSTR("org.emexlabs.nyxian.platform-root")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER      CFSTR("org.emexlabs.nyxian.platform.user")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP     CFSTR("org.emexlabs.nyxian.platform.group")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW     CFSTR("org.emexlabs.nyxian.get-task-allow")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID       CFSTR("org.emexlabs.nyxian.task-for-pid")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_SUGID              CFSTR("org.emexlabs.nyxian.sugid")

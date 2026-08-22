@@ -26,6 +26,7 @@
  *  Surface API Headers
  * -------------------------------------------------------------------- */
 #include <LindChain/ProcEnvironment/Surface/entitlement.h>
+#include <sys/param.h>
 #include <stdbool.h>
 
 kern_return_t nxtr_sign(const char *path, PEEntitlement entitlement);
@@ -38,17 +39,30 @@ kern_return_t nxt2_sign_fd(int fd, CFDictionaryRef entitlements, bool signBlob);
 kern_return_t nxt2_read(const char *path, ksurface_nxt2_t *result);
 kern_return_t nxt2_read_fd(int fd, ksurface_nxt2_t *result);
 
+typedef enum: UInt8 {
+    kPETrustTypeFallback = 0,
+    kPETrustTypeSignature = 1,
+    kPETrustTypeTrusted = 2,
+} PETrustType;
+
 typedef struct {
-    bool isValid;       /* unlike in nxtr a valid blob in nxt2 means it passes sanity checks! */
-    bool isSigned;      /* means the blob is signed */
+    char path[MAXPATHLEN];
+    bool isValid;           /* unlike in nxtr a valid blob in nxt2 means it passes sanity checks! */
+    bool isSigned;          /* means the blob is signed */
     bool isCdHashValid;
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     CFDictionaryRef entitlements;
+    CFArrayRef filePermissions;
     PEEntitlement legacyEntitlements;
+    PEEntitlement maxLegacyEntitlements;
+    PETrustType type;
 } ksurface_trust_identity_t;
 
-/* they are immutable! */
-ksurface_trust_identity_t *trust_identity_create(const char *path);
+ksurface_trust_identity_t *trust_identity_get_kernel(void);
+
+/* they are immutable, except for maxLegacyEntitlements! */
+ksurface_trust_identity_t *trust_identity_create_from_path(const char *path);
+/* ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(const char *path, ksurface_trust_identity_t *parentIdentity); */
 void trust_identity_destroy(ksurface_trust_identity_t *identity);
 
 #endif /* SIGNING_TRUST_H */

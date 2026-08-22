@@ -64,7 +64,7 @@
       withKernelSurfaceProcess:(ksurface_proc_t*)proc
 {    
     /* creating a process */
-    PEProcess *process = [[PEProcess alloc] initWithItems:items withKernelSurfaceProcess:proc];
+    PEProcess *process = [[PEProcess alloc] initWithItems:items withKernelSurfaceProcess:proc ?: kernel_proc_];
     if(process == nil)
     {
         return -1;

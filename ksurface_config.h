@@ -27,8 +27,8 @@
  * -------------------------------------------------------------------- */
 
 /* kernel process configuration */
-#define KSURFACE_EMIT_KERNEL_TASK   0   /* adds kernel task entry, instead of Nyxian entry */
-#define KSURFACE_EMIT_LAUNCHD       0   /* adds a launchd entry */
+#define KSURFACE_EMIT_KERNEL_TASK   0   /* adds kernel task entry, instead of Nyxian entry MARK: unsupported currently */
+#define KSURFACE_EMIT_LAUNCHD       0   /* adds a launchd entry MARK: unsupported currently */
 
 /* syscalling coverage configuration */
 #define KSURFACE_SYS_IO_ENABLED     0   /* very early in development */
@@ -43,6 +43,7 @@
 #define KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR  1
 
 /* dyld debugging feature configuration */
-#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED  0   /* enables logging from the hooks */
+#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED      0   /* enables logging from the hooks */
+#define KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER  1   /* hardlocks open on failed cdhash verification (recommended to be enabled as it closes a huge security risk otherwise) */
 
 #endif /* KSURFACE_CONFIG_H */
