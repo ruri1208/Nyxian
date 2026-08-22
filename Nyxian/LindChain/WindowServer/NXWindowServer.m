@@ -88,10 +88,10 @@
 {
     [super layoutSubviews];
     _windowLayer.frame = self.bounds;
-    if ([NXWindowServer isSimulatorEnabled] && _activeWindowIdentifier != (id_t)-1) { 
+    if (_activeWindowIdentifier != (id_t)-1) { 
         NXWindow *activeWin = self.windows[@(_activeWindowIdentifier)]; 
         if (activeWin) { 
-            [self layoutSimulatorWindow:activeWin]; 
+            [self applyLayoutForWindow:activeWin]; 
         } 
     }
     if (self.appSwitcherView && _appSwitcherHeightConstraint) { 
@@ -194,9 +194,7 @@
         [window openWindow];
         [window focusWindow];
         
-        if ([NXWindowServer isSimulatorEnabled]) {
-            [self layoutSimulatorWindow:window]; 
-        } 
+        [self applyLayoutForWindow:window];
 
         if ([NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled]) { 
             NXFloatingBallWindow *ball = [NXFloatingBallWindow sharedInstance];
@@ -1206,6 +1204,39 @@
     
     [window.view setNeedsLayout];
     [window.view layoutIfNeeded];
+}
+- (void)applyLayoutForWindow:(NXWindow *)window {
+    if (!window || !window.view) return;
+    
+    if ([NXWindowServer isSimulatorEnabled]) {
+        [self layoutSimulatorWindow:window];
+    } else {
+        window.view.backgroundColor = [UIColor clearColor];
+        window.view.frame = [self window:window wantsToChangeToRect:window.view.frame];
+        
+        for (UIView *subview in window.view.subviews) {
+            subview.frame = window.view.bounds;
+            subview.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        }
+        
+        [window.view setNeedsLayout];
+        [window.view layoutIfNeeded];
+    }
+}
+
+- (void)orientationChanged:(NSNotification*)notification
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        for(NSNumber *key in self.windows)
+        {
+            NXWindow *window = self.windows[key];
+            if(window != nil)
+            {
+                [self applyLayoutForWindow:window];
+            }
+        }
+        [self layoutIfNeeded];
+    });
 }
 
 @end
