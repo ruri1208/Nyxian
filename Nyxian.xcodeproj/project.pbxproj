@@ -258,7 +258,7 @@
 				LindChain/ProcEnvironment/Surface/extra/relax.c,
 				LindChain/ProcEnvironment/Utils/fd.c,
 				LindChain/ProcEnvironment/Utils/ktfp.c,
-				LindChain/ProcEnvironment/Utils/vnode.m,
+				LindChain/ProcEnvironment/Utils/vnode.c,
 				LindChain/Utils/CFTools.c,
 				LindChain/Utils/Swizzle.c,
 				LindChain/Utils/Zip.m,

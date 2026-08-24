@@ -35,7 +35,7 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     {
         /* task port's can only be initialized once per process lifecycle. */
         kvo_unlock(sys_proc_);
-        sys_return_failure(EPERM);
+        sys_return_failure_with_errno(EPERM);
     }
     
     /* consuming the exception port so it won't be released by the send_reply symbol. */
@@ -46,7 +46,7 @@ DEFINE_SYSCALL_HANDLER(handoffep)
      * reply to the guest process so that it can trigger the
      * pseudo exception using __builtin_trap.
      */
-    send_reply((mach_msg_header_t*)*recv_buffer, 0, *out_ports, *out_ports_cnt, true);
+    send_reply((mach_msg_header_t*)*recv_buffer, 0, *out_ports, *out_ports_cnt, true, 0);
     *recv_buffer = NULL;    /* consuming the mach message header the syscall server uses so it won't attempt to reply. */
     
     task_t returnedTask;

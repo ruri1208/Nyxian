@@ -34,7 +34,7 @@ DEFINE_SYSCALL_HANDLER(gettask)
     kern_return_t ret = proc_for_pid(pid, &target);
     if(ret != KERN_SUCCESS)
     {
-        sys_return_failure(ESRCH);
+        sys_return_failure_with_errno(ESRCH);
     }
         
     /*
@@ -58,7 +58,7 @@ DEFINE_SYSCALL_HANDLER(gettask)
             kvo_unlock(sys_proc_);
         }
         kvo_release(target);
-        sys_return_failure(errno);
+        sys_return_failure_with_errno(errno);
     }
     
 skip_bsd_permission_checks:
@@ -69,7 +69,7 @@ skip_bsd_permission_checks:
         kvo_release(target);
         if(ksr != KERN_SUCCESS)
         {
-            sys_return_failure(EACCES);
+            sys_return_failure_with_errno(EACCES);
         }
         
         /* allocating syscall payload, so we can export it to the syscall caller */
@@ -77,7 +77,7 @@ skip_bsd_permission_checks:
         if(kr != KERN_SUCCESS)
         {
             mach_port_deallocate(mach_task_self(), exportTask);
-            sys_return_failure(ENOMEM);
+            sys_return_failure_with_errno(ENOMEM);
         }
         
         /* set task port to be send */

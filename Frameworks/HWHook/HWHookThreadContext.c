@@ -137,7 +137,7 @@ static void *__HWHookThreadContextServer(void *ctxp)
         if(mr != MACH_MSG_SUCCESS)
         {
             printf("[!] failed to receive exception\n");
-            return NULL;
+            continue;
         }
         
         arm_exception_state64_t es;
@@ -146,6 +146,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
         
         uint16_t imm;
         uint32_t ec = (es.__esr >> 26) & 0x3F;
+        
+        kern_return_t handled_ret = KERN_SUCCESS;
         
         switch(ec)
         {
@@ -161,7 +163,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                         if(kr != KERN_SUCCESS)
                         {
                             fprintf(stderr, "[!] failed to set debug thread state\n");
-                            return NULL;
+                            handled_ret = KERN_FAILURE;
+                            goto reply_fastpath;
                         }
                         
                         /* skip over pseudo exception */
@@ -171,7 +174,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                         if(kr != KERN_SUCCESS)
                         {
                             fprintf(stderr, "[!] failed to get normal thread state\n");
-                            return NULL;
+                            handled_ret = KERN_FAILURE;
+                            goto reply_fastpath;
                         }
                         
                         /* skipping over __builtin_trap */
@@ -181,7 +185,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                         if(kr != KERN_SUCCESS)
                         {
                             fprintf(stderr, "[!] failed to set normal thread state\n");
-                            return NULL;
+                            handled_ret = KERN_FAILURE;
+                            goto reply_fastpath;
                         }
                         
                         break;
@@ -195,6 +200,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                         if(kr != KERN_SUCCESS)
                         {
                             fprintf(stderr, "[!] failed to clear debug state\n");
+                            handled_ret = KERN_FAILURE;
+                            goto reply_fastpath;
                         }
                         
                         arm_thread_state64_t state;
@@ -235,15 +242,16 @@ static void *__HWHookThreadContextServer(void *ctxp)
                         if(mr != KERN_SUCCESS)
                         {
                             fprintf(stderr, "[!] failed to send reply to the kernel\n");
-                            return NULL;
+                            handled_ret = KERN_FAILURE;
+                            goto reply_fastpath;
                         }
                         return NULL;
                     }
                 }
                 break;
             }
-            case 0x30:          // HW breakpoint, lower EL  ← your case
-            case 0x31:          // HW breakpoint, current EL
+            case 0x30:  /* this is a hardware breakpoint hook */
+            case 0x31:
             {
                 /* debug register are set */
                 arm_thread_state64_t state;
@@ -252,7 +260,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                 if(kr != KERN_SUCCESS)
                 {
                     fprintf(stderr, "[!] failed to get normal thread state\n");
-                    return NULL;
+                    handled_ret = KERN_FAILURE;
+                    goto reply_fastpath;
                 }
                 
                 /* matching hook */
@@ -271,7 +280,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                 if(matchingHook == NULL)
                 {
                     fprintf(stderr, "[!] failed to match the hook\n");
-                    return NULL;
+                    handled_ret = KERN_FAILURE;
+                    goto reply_fastpath;
                 }
                 
                 /* now call the replacement */
@@ -283,6 +293,8 @@ static void *__HWHookThreadContextServer(void *ctxp)
                     if(kr != KERN_SUCCESS)
                     {
                         fprintf(stderr, "[!] failed to clear debug state\n");
+                        handled_ret = KERN_FAILURE;
+                        goto reply_fastpath;
                     }
                     
                     __HWHookThreadContextServerTrampolineReenableHooks(&state, (uint64_t)HWHookGetReplacementPtr(matchingHook));
@@ -295,30 +307,36 @@ static void *__HWHookThreadContextServer(void *ctxp)
                 if(kr != KERN_SUCCESS)
                 {
                     fprintf(stderr, "[!] failed to set normal thread state\n");
-                    return NULL;
+                    handled_ret = KERN_FAILURE;
+                    goto reply_fastpath;
                 }
                 break;
             }
             case 0x32:  /* step or something else */
             case 0x33:
+            default:
+                handled_ret = KERN_FAILURE;
                 break;
         }
         
-        __Reply__exception_raise_t reply;
-        memset(&reply, 0, sizeof(reply));
-        reply.Head.msgh_bits = MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(request.v.Head.msgh_bits), 0);
-        reply.Head.msgh_id = request.v.Head.msgh_id + 100;
-        reply.Head.msgh_local_port = MACH_PORT_NULL;
-        reply.Head.msgh_remote_port = request.v.Head.msgh_remote_port;
-        reply.Head.msgh_size = sizeof(reply);
-        reply.NDR = NDR_record;
-        reply.RetCode = KERN_SUCCESS;
-        mr = mach_msg(&reply.Head, MACH_SEND_MSG, reply.Head.msgh_size, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-        mach_msg_destroy(&(request.v.Head));
-        if(mr != KERN_SUCCESS)
+    reply_fastpath:
         {
-            fprintf(stderr, "[!] failed to send reply to the kernel\n");
-            return NULL;
+            __Reply__exception_raise_t reply;
+            memset(&reply, 0, sizeof(reply));
+            reply.Head.msgh_bits = MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(request.v.Head.msgh_bits), 0);
+            reply.Head.msgh_id = request.v.Head.msgh_id + 100;
+            reply.Head.msgh_local_port = MACH_PORT_NULL;
+            reply.Head.msgh_remote_port = request.v.Head.msgh_remote_port;
+            reply.Head.msgh_size = sizeof(reply);
+            reply.NDR = NDR_record;
+            reply.RetCode = handled_ret;    /* mach takes that to the next handler */
+            mr = mach_msg(&reply.Head, MACH_SEND_MSG, reply.Head.msgh_size, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+            mach_msg_destroy(&(request.v.Head));
+            if(mr != KERN_SUCCESS)
+            {
+                fprintf(stderr, "[!] failed to send reply to the kernel\n");
+                return NULL;
+            }
         }
     }
     

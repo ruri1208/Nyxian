@@ -38,7 +38,7 @@ DEFINE_SYSCALL_HANDLER(procpath)
     if(ret != KERN_SUCCESS ||
        target == NULL)
     {
-        sys_return_failure(EINVAL);
+        sys_return_failure_with_errno(EINVAL);
     }
     
     /* getting visibility */
@@ -48,14 +48,14 @@ DEFINE_SYSCALL_HANDLER(procpath)
     if(!proc_can_see_proc(sys_proc_snapshot_, target, vis))
     {
         kvo_release(target);
-        sys_return_failure(ESRCH);
+        sys_return_failure_with_errno(ESRCH);
     }
     
     size_t size = 0;
     if(!mach_syscall_copy_in(sys_task_, sizeof(size_t), &size, size_ptr))
     {
         kvo_release(target);
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     /* locking process read */
@@ -66,7 +66,7 @@ DEFINE_SYSCALL_HANDLER(procpath)
     {
         kvo_unlock(target);
         kvo_release(target);
-        sys_return_failure(E2BIG);
+        sys_return_failure_with_errno(E2BIG);
     }
     
     /*
@@ -77,7 +77,7 @@ DEFINE_SYSCALL_HANDLER(procpath)
     {
         kvo_unlock(target);
         kvo_release(target);
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     kvo_unlock(target);

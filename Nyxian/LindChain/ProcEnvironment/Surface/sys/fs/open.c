@@ -32,14 +32,14 @@ DEFINE_SYSCALL_HANDLER(open)
     char *path = mach_syscall_copy_str_in(sys_task_, user_path, MAXPATHLEN);
     if(path == NULL)
     {
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     const char *sub = vfs_match_mount(path);
     if(sub == NULL)
     {
         free(path);
-        sys_return_failure(ENOSYS);
+        sys_return_failure_with_errno(ENOSYS);
     }
     
     char rel[MAXPATHLEN];
@@ -47,13 +47,13 @@ DEFINE_SYSCALL_HANDLER(open)
     free(path);
     if(!ok)
     {
-        sys_return_failure(ENOENT);
+        sys_return_failure_with_errno(ENOENT);
     }
     
     int rootfd = vfs_root_fd();
     if(rootfd < 0)
     {
-        sys_return_failure(ENOENT);
+        sys_return_failure_with_errno(ENOENT);
     }
     
     int oflags = flags & KSURFACE_OPEN_FLAG_MASK;
@@ -64,15 +64,14 @@ DEFINE_SYSCALL_HANDLER(open)
     int fd = openat(rootfd, rel, oflags, mode);
     if(fd < 0)
     {
-        printf("%s\n", strerror(errno));
-        sys_return_failure(errno);
+        sys_return_failure_with_errno(errno);
     }
     
     fileport_t fileport = MACH_PORT_NULL;
     if(fileport_makeport(fd, &fileport) != 0)
     {
         close(fd);
-        sys_return_failure(EIO);
+        sys_return_failure_with_errno(EIO);
     }
     close(fd);
     
@@ -80,7 +79,7 @@ DEFINE_SYSCALL_HANDLER(open)
     if(kr != KERN_SUCCESS)
     {
         mach_port_deallocate(mach_task_self(), fileport);
-        sys_return_failure(ENOMEM);
+        sys_return_failure_with_errno(ENOMEM);
     }
     
     (*out_ports)[0] = fileport;

@@ -34,21 +34,21 @@ DEFINE_SYSCALL_HANDLER(faccessat)
     /* means we take in raw path or nah */
     if(user_dirFd != AT_FDCWD)
     {
-        sys_return_failure(ENOSYS);
+        sys_return_failure_with_errno(ENOSYS);
         //sys_need_in_ports(1, MACH_MSG_TYPE_MOVE_SEND);
     }
     
     char *path = mach_syscall_copy_str_in(sys_task_, user_path, MAXPATHLEN);
     if(path == NULL)
     {
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     const char *sub = vfs_match_mount(path);
     if(sub == NULL)
     {
         free(path);
-        sys_return_failure(ENOSYS);
+        sys_return_failure_with_errno(ENOSYS);
     }
     
     char rel[MAXPATHLEN];
@@ -56,7 +56,7 @@ DEFINE_SYSCALL_HANDLER(faccessat)
     free(path);
     if(!ok)
     {
-        sys_return_failure(ENOENT);
+        sys_return_failure_with_errno(ENOENT);
     }
     
     switch(mode)

@@ -139,7 +139,9 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
     
     /* insert required items */
     NSMutableDictionary *mutableItems = [items mutableCopy];
-    mutableItems[@"PESyscallPort"] = [PEMachPort portWithPortName:syscall_server_get_port(ksurface->sys_server)];
+    PEMachPort *syscallPort = [PEMachPort portWithPortName:syscall_server_get_port(ksurface->sys_server)];
+    [syscallPort setSendOnce:YES];
+    mutableItems[@"PESyscallPort"] = syscallPort;
     mutableItems[@"PEEndpoint"] = [Server getTicket];   /* MARK: deprecated and soon replaced with the syscall server entirely */
     NSMutableDictionary *env = [mutableItems[@"PEEnvironment"] mutableCopy];
     if(env == nil)

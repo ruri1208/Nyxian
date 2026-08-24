@@ -45,7 +45,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
         {
             if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesGetEndpoint))
             {
-                sys_return_failure(EPERM);
+                sys_return_failure_with_errno(EPERM);
             }
             
             userspace_pointer_t userspace_str = (userspace_pointer_t)args[2];
@@ -53,39 +53,39 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             char *service_name = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
             if(service_name == NULL)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             NSString *service_nsname = [NSString stringWithCString:service_name encoding:NSUTF8StringEncoding];
             free(service_name);
             if(service_nsname == nil)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             NSXPCListenerEndpoint *endpoint = [[PEBootstrapRegistry shared] getEndpointWithServiceIdentifier:service_nsname];
             if(endpoint == nil)
             {
-                sys_return_failure(EACCES);
+                sys_return_failure_with_errno(EACCES);
             }
             
             mach_port_t port = xpc_endpoint_copy_listener_port_4sim(endpoint._endpoint);
             if(port == MACH_PORT_NULL)
             {
-                sys_return_failure(EACCES);
+                sys_return_failure_with_errno(EACCES);
             }
             
             kern_return_t kr = mach_port_mod_refs(mach_task_self(), port, MACH_PORT_RIGHT_SEND, 1);
             if(kr != KERN_SUCCESS)
             {
-                sys_return_failure(EACCES);
+                sys_return_failure_with_errno(EACCES);
             }
             
             kr = mach_syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
             if(kr != KERN_SUCCESS)
             {
                 mach_port_deallocate(mach_task_self(), port);
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             (*out_ports)[0] = port;
@@ -99,14 +99,14 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             
             if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesSetEndpoint))
             {
-                sys_return_failure(EPERM);
+                sys_return_failure_with_errno(EPERM);
             }
             
             NSXPCListenerEndpoint *endpoint = [[NSXPCListenerEndpoint alloc] init];
             endpoint._endpoint = xpc_endpoint_create_mach_port_4sim(sys_in_ports[0]);
             if(endpoint == nil || endpoint._endpoint == nil)
             {
-                sys_return_failure(EACCES);
+                sys_return_failure_with_errno(EACCES);
             }
             
             userspace_pointer_t userspace_str = (userspace_pointer_t)args[2];
@@ -114,14 +114,14 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             char *service_name = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
             if(service_name == NULL)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             NSString *service_nsname = [NSString stringWithCString:service_name encoding:NSUTF8StringEncoding];
             free(service_name);
             if(service_nsname == nil)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             /*
@@ -145,7 +145,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                  */
                 if(process == nil)
                 {
-                    sys_return_failure(EPERM);
+                    sys_return_failure_with_errno(EPERM);
                 }
                 
                 /*
@@ -155,7 +155,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                  */
                 if(process.pid != proc_getpid(sys_proc_snapshot_))
                 {
-                    sys_return_failure(EPERM);
+                    sys_return_failure_with_errno(EPERM);
                 }
             }
             
@@ -165,7 +165,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             sys_return;
         }
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
 }
 
@@ -183,25 +183,25 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             size_t key_len = 0;
             if(!mach_syscall_copy_in(sys_task_, sizeof(size_t), &key_len, key_len_ptr))
             {
-                sys_return_failure(EFAULT);
+                sys_return_failure_with_errno(EFAULT);
             }
             
             if(key_len < ksurface->pub_key_len)
             {
-                sys_return_failure(E2BIG);
+                sys_return_failure_with_errno(E2BIG);
             }
             
             if(!mach_syscall_copy_out(sys_task_, ksurface->pub_key_len, ksurface->pub_key, key_user_ptr) ||
                !mach_syscall_copy_out(sys_task_, sizeof(size_t), &key_len, key_len_ptr))
             {
-                sys_return_failure(EFAULT);
+                sys_return_failure_with_errno(EFAULT);
             }
             
             sys_return;
         }
         case kPECTLCodeSigningGetPrivateKey:
             /* too much of a security concern */
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
         case kPECTLCodeSigningSignPath:
         {
             /*
@@ -215,7 +215,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
              */
             if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_), kPEEntitlementProcessSpawn))
             {
-                sys_return_failure(EPERM);
+                sys_return_failure_with_errno(EPERM);
             }
             
             /* getting path */
@@ -224,20 +224,20 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             char *path = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
             if(path == NULL)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             NSString *nsPath = [NSString stringWithCString:path encoding:NSUTF8StringEncoding];
             free(path);
             if(nsPath == nil)
             {
-                sys_return_failure(ENOMEM);
+                sys_return_failure_with_errno(ENOMEM);
             }
             
             /* signing that shit */
             if(![LCUtils signMachOAtURL:[NSURL fileURLWithPath:nsPath]])
             {
-                sys_return_failure(ENOEXEC);
+                sys_return_failure_with_errno(ENOEXEC);
             }
             vnode_refresh_at_path([nsPath UTF8String]);
             
@@ -249,14 +249,14 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             if(sys_proc_->nyx.identity->trustLevel != kPETrustLevelSignature)   /* signature type needs cdhash verification */
             {
                 kvo_unlock(sys_proc_);
-                sys_return_failure(ENOENT);
+                sys_return_failure_with_errno(ENOENT);
             }
             
             userspace_pointer_t ch_user_ptr = (userspace_pointer_t)args[2];
             if(!mach_syscall_copy_out(sys_task_, sizeof(sys_proc_->nyx.identity->cdhash), sys_proc_->nyx.identity->cdhash, ch_user_ptr))
             {
                 kvo_unlock(sys_proc_);
-                sys_return_failure(EFAULT);
+                sys_return_failure_with_errno(EFAULT);
             }
             
             kvo_unlock(sys_proc_);
@@ -282,7 +282,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_), added))
             {
                 kvo_unlock(sys_proc_);
-                sys_return_failure(EPERM);
+                sys_return_failure_with_errno(EPERM);
             }
             
             proc_setentitlements(sys_proc_, userPassed);
@@ -299,7 +299,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             sys_return;
         }
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
 }
 
@@ -310,13 +310,13 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
     {
         case kPECTLUserInterfaceInit:
         {
-            __block errno_t err = 0;
+            __block errno_t errWin = 0;
             dispatch_sync(dispatch_get_main_queue(), ^{
                 NXWindowServer *sharedWindowServer = [NXWindowServer shared];
                 if(sharedWindowServer == nil)
                 {
                     /* window server is not running yet */
-                    err = EAGAIN;
+                    errWin = EAGAIN;
                     return;
                 }
                 
@@ -324,7 +324,7 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                 if(process == nil || process.bundleIdentifier == nil)
                 {
                     /* process must exist in Process Manager */
-                    err = EACCES;
+                    errWin = EACCES;
                     return;
                 }
                 
@@ -332,17 +332,17 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                 if(wid < 0)
                 {
                     /* bundleid is already presented */
-                    err = EACCES;
+                    errWin = EACCES;
                     return;
                 }
                 
                 NXWindowSessionApplication *session = [[NXWindowSessionApplication alloc] initWithProcess:process];
                 [sharedWindowServer openWindowWithSession:session withCompletion:nil];
             });
-            sys_return_failure(err);
+            sys_return_failure_with_errno(errWin);
         }
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
 }
 
@@ -354,16 +354,16 @@ DEFINE_SYSCALL_HANDLER(pectl_userspace)
         case kPECTLUserspaceReboot:
             if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_snapshot_), kPEEntitlementPlatform))
             {
-                sys_return_failure(EPERM);
+                sys_return_failure_with_errno(EPERM);
             }
             [[PEUserspaceManager shared] rebootUserspaceWithType:kPEUserspaceRebootTypeDefault];
             sys_return;
         case kPECTLUserspaceGetMode:
             return [[PEUserspaceManager shared] mode];
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
-    sys_return_failure(ENOSYS);
+    sys_return_failure_with_errno(ENOSYS);
 }
 
 DEFINE_SYSCALL_HANDLER(pectl_misceleanous)
@@ -378,9 +378,9 @@ DEFINE_SYSCALL_HANDLER(pectl_misceleanous)
             return kPEBuildTypeRelease;
             #endif /* DEBUG */
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
-    sys_return_failure(ENOSYS);
+    sys_return_failure_with_errno(ENOSYS);
 }
 
 DEFINE_SYSCALL_HANDLER(pectl)
@@ -400,7 +400,7 @@ DEFINE_SYSCALL_HANDLER(pectl)
             case kPECTLCategoryMisceleanous:
                 return SYSCALL_HANDLER_REDIRECT_TO_HANDLER(pectl_misceleanous);
             default:
-                sys_return_failure(ENOSYS);
+                sys_return_failure_with_errno(ENOSYS);
         }
     }
 }

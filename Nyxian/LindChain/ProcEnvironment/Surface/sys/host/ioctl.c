@@ -43,7 +43,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
         case TIOCGWINSZ:
             break;
         default:
-            sys_return_failure(ENOSYS);
+            sys_return_failure_with_errno(ENOSYS);
     }
     
     /* looking up tty */
@@ -53,7 +53,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
     /* final check */
     if(ksr != KERN_SUCCESS)
     {
-        sys_return_failure(ENOTTY);
+        sys_return_failure_with_errno(ENOTTY);
     }
     
     /* ioctl paths */
@@ -141,10 +141,10 @@ DEFINE_SYSCALL_HANDLER(ioctl)
 out_fault:
     kvo_unlock(tty);
     kvo_release(tty);
-    sys_return_failure(EFAULT);
+    sys_return_failure_with_errno(EFAULT);
 
 out_perm:
     kvo_unlock(tty);
     kvo_release(tty);
-    sys_return_failure(EPERM);
+    sys_return_failure_with_errno(EPERM);
 }

@@ -108,8 +108,7 @@ bool wait4_proc_event_handler(uint32_t type,
 out_trigger_unregister:
     mach_syscall_copy_out(payload->task, sizeof(int), &(child->nyx.p_status), payload->status_ptr);
     child->nyx.p_status = 0;
-    errno = 0;
-    send_reply(&(payload->buffer->header), proc_getpid(child), NULL, 0, true);
+    send_reply(&(payload->buffer->header), proc_getpid(child), NULL, 0, true, 0);
     kvo_unlock(child);
     pthread_mutex_unlock(&(parent->children.mutex));
     return true;
@@ -212,7 +211,7 @@ DEFINE_SYSCALL_HANDLER(wait4)
     if(payload == NULL)
     {
         pthread_mutex_unlock(&(sys_proc_->children.mutex));
-        sys_return_failure(ENOMEM);
+        sys_return_failure_with_errno(ENOMEM);
     }
     
     kern_return_t kr = mach_port_mod_refs(mach_task_self(), sys_task_, MACH_PORT_RIGHT_SEND, 1);
@@ -237,7 +236,7 @@ DEFINE_SYSCALL_HANDLER(wait4)
     out_again:
         pthread_mutex_unlock(&(sys_proc_->children.mutex));
         free(payload);
-        sys_return_failure(EAGAIN);
+        sys_return_failure_with_errno(EAGAIN);
     }
     
     pthread_mutex_unlock(&(sys_proc_->children.mutex));

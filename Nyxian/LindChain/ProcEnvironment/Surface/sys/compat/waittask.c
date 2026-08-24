@@ -38,7 +38,7 @@ bool waittask_proc_event_handler(uint32_t type,
         case kvObjEventDeinit:
         case kProcEventTypeWaitTask:    /* task port available */
             errno = 0;
-            send_reply(&(payload->buffer->header), 0, NULL, 0, true);
+            send_reply(&(payload->buffer->header), 0, NULL, 0, true, 0);
             return true;
         case kvObjEventUnregister:
             mach_port_mod_refs(mach_task_self(), payload->task, MACH_PORT_RIGHT_SEND, -1);
@@ -64,7 +64,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     kern_return_t ksr = proc_for_pid(pid, &target);
     if(ksr != KERN_SUCCESS)
     {
-        sys_return_failure(ECHILD);
+        sys_return_failure_with_errno(ECHILD);
     }
     
     /* visibility check */
@@ -85,7 +85,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     out_nochild:
         kvo_unlock(target);
         kvo_release(target);
-        sys_return_failure(ECHILD);  /* doesnt exist for the caller */
+        sys_return_failure_with_errno(ECHILD);  /* doesnt exist for the caller */
     }
     kvo_unlock(target);
     
@@ -102,7 +102,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     if(payload == NULL)
     {
         kvo_release(target);
-        sys_return_failure(ENOMEM);
+        sys_return_failure_with_errno(ENOMEM);
     }
     
     kern_return_t kr = mach_port_mod_refs(mach_task_self(), sys_task_, MACH_PORT_RIGHT_SEND, 1);
@@ -123,7 +123,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     out_again:
         free(payload);
         kvo_release(target);
-        sys_return_failure(EAGAIN);
+        sys_return_failure_with_errno(EAGAIN);
     }
     
     *recv_buffer = NULL;

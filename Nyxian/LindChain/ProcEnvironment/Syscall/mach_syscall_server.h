@@ -43,9 +43,17 @@ typedef struct ksurface_proc ksurface_proc_snapshot_t;
 #define sys_proc_ ((ksurface_proc_t*)(sys_proc_snapshot_->header.orig))
 
 /* helping macros for returns and checks */
-#define sys_return_failure(errval) \
-    errno = errval; \
+#define sys_return_failure_with_errno(errval) \
+    *err = errval; \
     return -1
+
+#define sys_return_failure() return -1 \
+
+#define sys_set_errno(errval) \
+    *err = errval
+
+#define sys_get_errno() \
+    *err
 
 #define sys_return \
     return 0
@@ -55,7 +63,7 @@ typedef struct ksurface_proc ksurface_proc_snapshot_t;
        in_ports.count < cnt || \
        in_ports.disposition != expected_disposition) \
     { \
-        sys_return_failure(EINVAL); \
+        sys_return_failure_with_errno(EINVAL); \
     }
 
 #define sys_in_ports ((mach_port_t*)in_ports.address)
@@ -112,7 +120,9 @@ typedef int64_t (*syscall_handler_t)(
     /* input and output ports */
     mach_msg_ool_ports_descriptor_t in_ports,
     mach_port_t                     **out_ports,
-    uint32_t                        *out_ports_cnt
+    uint32_t                        *out_ports_cnt,
+
+    errno_t                         *err
 );
 
 #define DEFINE_SYSCALL_HANDLER(sysname) int64_t syscall_server_handler_##sysname( \
@@ -122,12 +132,13 @@ typedef int64_t (*syscall_handler_t)(
     int64_t                         *args, \
     mach_msg_ool_ports_descriptor_t in_ports, \
     mach_port_t                     **out_ports, \
-    uint32_t                        *out_ports_cnt \
+    uint32_t                        *out_ports_cnt, \
+    errno_t                         *err \
 )
 
 #define GET_SYSCALL_HANDLER(sysname) syscall_server_handler_##sysname
 
-#define SYSCALL_HANDLER_REDIRECT_TO_HANDLER(sysname) syscall_server_handler_##sysname(task, proc_snapshot, recv_buffer, args, in_ports, out_ports, out_ports_cnt)
+#define SYSCALL_HANDLER_REDIRECT_TO_HANDLER(sysname) syscall_server_handler_##sysname(task, proc_snapshot, recv_buffer, args, in_ports, out_ports, out_ports_cnt, err)
 
 typedef struct syscall_server syscall_server_t;
 
@@ -136,6 +147,6 @@ int syscall_server_start(syscall_server_t *server);
 mach_port_t syscall_server_get_port(syscall_server_t *server);
 void syscall_server_register(syscall_server_t *server, uint32_t syscall_num, syscall_handler_t handler);
 
-void send_reply(mach_msg_header_t *request, int64_t result, mach_port_t *out_ports, uint32_t out_ports_cnt, bool release_req);
+void send_reply(mach_msg_header_t *request, int64_t result, mach_port_t *out_ports, uint32_t out_ports_cnt, bool release_req, errno_t err);
 
 #endif /* MACH_SYSCALL_SERVER_H */

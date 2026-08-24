@@ -39,39 +39,39 @@ DEFINE_SYSCALL_HANDLER(getattrlist)
     {
         printf("%p\n", path);
         fsync(STDOUT_FILENO);
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     char host[MAXPATHLEN];
-    int err = vfs_host_path(path, host, sizeof host);
+    sys_set_errno(vfs_host_path(path, host, sizeof host));
     free(path);
-    if(err != 0)
+    if(sys_get_errno() != 0)
     {
-        sys_return_failure(err);
+        sys_return_failure();
     }
     
     struct attrlist al;
     if(!mach_syscall_copy_in(sys_task_, sizeof(al), &al, user_attrlist))
     {
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     if(attrbufsz == 0 || attrbufsz > KSURFACE_ATTRBUF_MAX)
     {
-        sys_return_failure(EINVAL);
+        sys_return_failure_with_errno(EINVAL);
     }
     
     void *buf = malloc(attrbufsz);
     if(buf == NULL)
     {
-        sys_return_failure(ENOMEM);
+        sys_return_failure_with_errno(ENOMEM);
     }
     
     if(getattrlist(host, &al, buf, attrbufsz, options) != 0)
     {
         int e = errno ? errno : EIO;
         free(buf);
-        sys_return_failure(e);
+        sys_return_failure_with_errno(e);
     }
     
     u_int32_t written = *(u_int32_t *)buf;
@@ -84,7 +84,7 @@ DEFINE_SYSCALL_HANDLER(getattrlist)
     free(buf);
     if(!success)
     {
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     sys_return;

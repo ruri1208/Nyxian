@@ -32,7 +32,7 @@ DEFINE_SYSCALL_HANDLER(kill)
     /* checking signal bounds */
     if(signal <= 0 || signal >= NSIG)
     {
-        sys_return_failure(EINVAL);
+        sys_return_failure_with_errno(EINVAL);
     }
     
     /*
@@ -42,14 +42,14 @@ DEFINE_SYSCALL_HANDLER(kill)
      */
     if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, kPEEntitlementProcessKill, kPEEntitlementNone))
     {
-        sys_return_failure(errno);
+        sys_return_failure_with_errno(errno);
     }
     
     ksurface_proc_t *target;
     kern_return_t kr = proc_for_pid(pid, &target);
     if(kr != KERN_SUCCESS)
     {
-        sys_return_failure(ESRCH);
+        sys_return_failure_with_errno(ESRCH);
     }
     
     kr = proc_kill(target, signal);
@@ -57,7 +57,7 @@ DEFINE_SYSCALL_HANDLER(kill)
     if(kr != KERN_SUCCESS)
     {
         /* shall never happen */
-        sys_return_failure(EINVAL);
+        sys_return_failure_with_errno(EINVAL);
     }
     
     sys_return;

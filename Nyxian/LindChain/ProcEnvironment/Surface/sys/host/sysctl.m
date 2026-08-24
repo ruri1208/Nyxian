@@ -536,13 +536,13 @@ DEFINE_SYSCALL_HANDLER(sysctl)
     size_t count = req.namelen;
     if(count > 6)
     {
-        sys_return_failure(ENOSYS);
+        sys_return_failure_with_errno(ENOSYS);
     }
     
     /* copy name array from userspace */
     if(!mach_syscall_copy_in(sys_task_, count * sizeof(int), &(req.name), (userspace_pointer_t)args[0]))
     {
-        sys_return_failure(EFAULT);
+        sys_return_failure_with_errno(EFAULT);
     }
     
     /* looking up sysctl map */
@@ -554,7 +554,7 @@ DEFINE_SYSCALL_HANDLER(sysctl)
         return ret;
     }
     
-    sys_return_failure(ENOSYS);
+    sys_return_failure_with_errno(ENOSYS);
 }
 
 DEFINE_SYSCALL_HANDLER(sysctlbyname)
@@ -563,7 +563,7 @@ DEFINE_SYSCALL_HANDLER(sysctlbyname)
     
     if(name_buf == NULL)
     {
-        sys_return_failure(EINVAL);
+        sys_return_failure_with_errno(EINVAL);
     }
     
     const sysctl_name_map_entry_t *found = NULL;
@@ -580,7 +580,7 @@ DEFINE_SYSCALL_HANDLER(sysctlbyname)
     
     if(found == NULL)
     {
-        sys_return_failure(ENOSYS);
+        sys_return_failure_with_errno(ENOSYS);
     }
     
     sysctl_req_t req = {

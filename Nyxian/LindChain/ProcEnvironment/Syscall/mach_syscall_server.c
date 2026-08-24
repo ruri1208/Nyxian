@@ -80,7 +80,8 @@ void send_reply(mach_msg_header_t *request,
                 int64_t result,
                 mach_port_t *out_ports,
                 uint32_t out_ports_cnt,
-                bool release_req)
+                bool release_req,
+                errno_t err)
 {
     /* stack allocating  */
     syscall_reply_t reply;
@@ -95,7 +96,7 @@ void send_reply(mach_msg_header_t *request,
     reply.header.msgh_size = sizeof(reply);
     reply.header.msgh_id = request->msgh_id + 100;
     reply.result = result;
-    reply.err = errno;
+    reply.err = err;
     
     /*
      * this is the ports descriptor used to hand
@@ -185,6 +186,7 @@ static void* syscall_worker_thread(void *ctx)
         mach_port_t *out_ports = NULL;      /* the outports the syscall exports to the caller */
         uint32_t out_ports_cnt = 0;         /* the amount of outports the syscall exports to the caller */
         task_t task = MACH_PORT_NULL;       /* the mach task of the caller */
+        errno_t err = 0;                    /* the errno value */
         
         /* waiting for the syscall client to invoke its syscall */
         mach_msg_return_t mr = mach_msg(&(buffer->header), options, 0, sizeof(recv_buffer_t), server->port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
@@ -208,7 +210,7 @@ static void* syscall_worker_thread(void *ctx)
         if((req->header.msgh_bits & MACH_MSGH_BITS_COMPLEX) == 0 ||
            (req->header.msgh_bits & MACH_MSGH_BITS_PORTS_MASK) != MACH_MSGH_BITS(MACH_MSG_TYPE_PORT_SEND_ONCE, MACH_MSG_TYPE_PORT_SEND))
         {
-            errno = EBADMSG;
+            err = EBADMSG;
             result = -1;
             goto cleanup;
         }
@@ -218,7 +220,7 @@ static void* syscall_worker_thread(void *ctx)
            req->oolp.type != MACH_MSG_OOL_PORTS_DESCRIPTOR ||
            req->oolp.count > 64)    /* 64 ports maximum for now */
         {
-            errno = EBADMSG;
+            err = EBADMSG;
             result = -1;
             goto cleanup;
         }
@@ -233,7 +235,7 @@ static void* syscall_worker_thread(void *ctx)
         if(proc_snapshot == NULL)
         {
             /* checking if proc copy is null */
-            errno = EAGAIN;
+            err = EAGAIN;
             result = -1;
             goto cleanup;
         }
@@ -260,14 +262,14 @@ static void* syscall_worker_thread(void *ctx)
         /* checking if the handler was set by the kernel virtualisation layer */
         if(!handler)
         {
-            errno = ENOSYS;
+            err = ENOSYS;
             result = -1;
             goto cleanup;
         }
         
         /* calling syscall handler */
         errno = 0;  /* starting with clean errno, to prevent errno leak from other syscalls */
-        result = handler(task, proc_snapshot, &buffer, req->args, req->oolp, &out_ports, &out_ports_cnt);
+        result = handler(task, proc_snapshot, &buffer, req->args, req->oolp, &out_ports, &out_ports_cnt, &err);
         
     cleanup:
         /* destroying snapshot of process */
@@ -298,7 +300,7 @@ static void* syscall_worker_thread(void *ctx)
          */
         if(buffer != NULL)
         {
-            send_reply(&(req->header), result, out_ports, out_ports_cnt, false);
+            send_reply(&(req->header), result, out_ports, out_ports_cnt, false, err);
         }
     }
     

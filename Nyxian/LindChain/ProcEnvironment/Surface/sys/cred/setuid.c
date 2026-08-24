@@ -109,7 +109,7 @@ DEFINE_SYSCALL_HANDLER(setuid)
     
     /* setting errno on failure */
     kvo_unlock(sys_proc_);
-    sys_return_failure(EPERM);
+    sys_return_failure_with_errno(EPERM);
     
 out_update:
     proc_set_sugid_if_applicable(sys_proc_, ucred_backup);
@@ -151,7 +151,7 @@ DEFINE_SYSCALL_HANDLER(seteuid)
     
     /* setting errno on failure */
     kvo_unlock(sys_proc_);
-    sys_return_failure(EPERM);
+    sys_return_failure_with_errno(EPERM);
     
 out_update:
     proc_set_sugid_if_applicable(sys_proc_, ucred_backup);
@@ -184,7 +184,7 @@ DEFINE_SYSCALL_HANDLER(setreuid)
         if(ruid != cur_ruid && ruid != cur_euid)
         {
             kvo_unlock(sys_proc_);
-            sys_return_failure(EPERM);
+            sys_return_failure_with_errno(EPERM);
         }
     }
     
@@ -197,7 +197,7 @@ DEFINE_SYSCALL_HANDLER(setreuid)
            euid != cur_svuid)
         {
             kvo_unlock(sys_proc_);
-            sys_return_failure(EPERM);
+            sys_return_failure_with_errno(EPERM);
         }
     }
     

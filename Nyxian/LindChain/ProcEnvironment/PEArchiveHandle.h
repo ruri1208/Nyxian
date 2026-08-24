@@ -19,31 +19,31 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PEMACHPORT_H
-#define PEMACHPORT_H
+#ifndef PEARCHIVEHANDLE_H
+#define PEARCHIVEHANDLE_H
 
 /* ----------------------------------------------------------------------
  *  Apple API Headers
  * -------------------------------------------------------------------- */
 #import <Foundation/Foundation.h>
-#import <mach/mach.h>
 
+/* ----------------------------------------------------------------------
+ *  Environment API Headers
+ * -------------------------------------------------------------------- */
+#import <LindChain/ProcEnvironment/PEFileHandle.h>
 
 /* ----------------------------------------------------------------------
  *  Class Declarations
  * -------------------------------------------------------------------- */
 
-@interface PEMachPort : NSObject <NSSecureCoding,NSCopying>
+@interface PEArchiveHandle : PEFileHandle
 
-@property (nonatomic, readonly) mach_port_t port;
-@property (nonatomic, readwrite) BOOL sendOnce;
-@property (nonatomic, readonly, getter=isUsable) BOOL usable;
-@property (nonatomic, readonly, getter=getIPCType) ipc_info_object_type_t ipc_type;
-@property (nonatomic, readonly, getter=getRefCnt) mach_port_urefs_t ref;
+@property (nonatomic,strong) NSString *temporaryZipArchivePath;
 
-+ (instancetype)portWithPortName:(mach_port_name_t)port;
-- (instancetype)initWithPortName:(mach_port_name_t)port;
++ (instancetype)objectForDirectoryAtPath:(NSString*)path;
+
+- (NSString*)extractArchive;
 
 @end
 
-#endif /* PEMACHPORT_H */
+#endif /* PEARCHIVEHANDLE_H */

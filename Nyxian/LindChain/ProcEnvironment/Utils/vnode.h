@@ -22,6 +22,8 @@
 #ifndef __VNODE_H
 #define __VNODE_H
 
+#include <stdbool.h>
+
 bool vnode_refresh_at_path(const char* path);
 
 #endif /* __VNODE_H */

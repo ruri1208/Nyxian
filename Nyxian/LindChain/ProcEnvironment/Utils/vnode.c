@@ -19,19 +19,49 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/Foundation.h>
+#include <LindChain/ProcEnvironment/Utils/vnode.h>
+#include <sys/clonefile.h>
 #include <copyfile.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 bool vnode_refresh_at_path(const char* path)
 {
-    NSString* objcPath = @(path);
-    NSString* newPath = [NSString stringWithFormat:@"%s.tmp", path];
-    if(![NSFileManager.defaultManager fileExistsAtPath:objcPath] ||
-       ![NSFileManager.defaultManager copyItemAtPath:objcPath toPath:newPath error:nil] ||
-       ![NSFileManager.defaultManager removeItemAtPath:objcPath error:nil] ||
-       ![NSFileManager.defaultManager moveItemAtPath:newPath toPath:objcPath error:nil])
+    int fd = open(path, O_RDWR, 0777);
+    if(fd < 0)
     {
         return false;
     }
-    return true;
+    
+    if(unlink(path) != 0)
+    {
+        close(fd);
+        return false;
+    }
+    
+    if(fclonefileat(fd, AT_FDCWD, path, 0) == 0)
+    {
+        /* yayyy =3 */
+        close(fd);
+        return true;
+    }
+    
+    /* fallback is using copy file */
+    int copyfd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0777);
+    if(copyfd < 0)
+    {
+        /* shit */
+        close(fd);
+        return false;
+    }
+    
+    if(fcopyfile(fd, copyfd, NULL, COPYFILE_DATA) == 0)
+    {
+        /* atleast this worked :3 */
+        close(copyfd);
+        close(fd);
+        return true;
+    }
+    
+    return false;
 }

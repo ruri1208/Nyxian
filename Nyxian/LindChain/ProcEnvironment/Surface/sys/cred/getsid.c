@@ -33,7 +33,7 @@ DEFINE_SYSCALL_HANDLER(getsid)
     kern_return_t kr = proc_for_pid(pid, &target);
     if(kr != KERN_SUCCESS || target == NULL)
     {
-        sys_return_failure(ESRCH);
+        sys_return_failure_with_errno(ESRCH);
     }
     
     /* visibility check  */
@@ -41,7 +41,7 @@ DEFINE_SYSCALL_HANDLER(getsid)
     if(!proc_can_see_proc(sys_proc_snapshot_, target, vis))
     {
         kvo_release(target);
-        sys_return_failure(ESRCH);
+        sys_return_failure_with_errno(ESRCH);
     }
     
     /* getting sid */

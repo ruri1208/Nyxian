@@ -38,6 +38,7 @@
         return nil;
     }
     _port = port;
+    _sendOnce = false;
     return self;
 }
 
@@ -66,12 +67,29 @@
 - (void)encodeWithCoder:(nonnull NSCoder *)coder
 {
     xpc_object_t dict = xpc_dictionary_create(NULL, NULL, 0);
-    kern_return_t kr =  mach_port_mod_refs(mach_task_self(), _port, MACH_PORT_RIGHT_SEND, 1);
-    if(kr == KERN_SUCCESS)
+    if(dict)
     {
-        xpc_dictionary_set_mach_send(dict, "port", _port);
-        [(id)coder encodeXPCObject:dict forKey:@"machPort"];
+        mach_port_t receivePort = _port;
+        if(_sendOnce)
+        {
+            mach_msg_type_name_t acquiredType;
+            kern_return_t kr = mach_port_extract_right(mach_task_self(), _port, MACH_MSG_TYPE_MAKE_SEND_ONCE, &receivePort, &acquiredType);
+            if(kr != KERN_SUCCESS || acquiredType != MACH_MSG_TYPE_MOVE_SEND_ONCE)
+            {
+                return;
+            }
+        }
+        else
+        {
+            kern_return_t kr =  mach_port_mod_refs(mach_task_self(), _port, MACH_PORT_RIGHT_SEND, 1);
+            if(kr != KERN_SUCCESS)
+            {
+                return;
+            }
+        }
     }
+    xpc_dictionary_set_mach_send(dict, "port", _port);
+    [(id)coder encodeXPCObject:dict forKey:@"machPort"];
 }
 
 - (nullable instancetype)initWithCoder:(nonnull NSCoder *)coder
