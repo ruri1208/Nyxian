@@ -892,6 +892,9 @@
     [window deinit];
     [self.windows removeObjectForKey:@(window.identifier)];
     [self.windowOrder removeObject:@(window.identifier)];
+    dispatch_async(dispatch_get_main_queue(), ^{ 
+        [[NXFloatingBallWindow sharedInstance] updateVisibility];
+    });
 }
 
 - (void)windowWantsToMinimize:(NXWindow *)window
