@@ -321,11 +321,9 @@
     self.hidden = YES;
 }
 
-- (void)updateVisibility {
-    BOOL isModeEnabled = [NXWindowServer isFullscreenEnabled] || [NXWindowServer isSimulatorEnabled];
+- (void)updateVisibility {    
     BOOL hasRunningApps = ([NXWindowServer shared].windows.count > 0);
-    
-    if (isModeEnabled && hasRunningApps) {
+    if (hasRunningApps) {
         [self show];
     } else {
         [self hide];
