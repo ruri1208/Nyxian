@@ -332,8 +332,9 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                 var trust_nxt2 = ksurface_nxt2()
                 let kr: kern_return_t = trust_nxt2_read(bundle.executablePath, &trust_nxt2)
                 if(kr != 0) {
-                    trust_nxt2.entitlements.release()
-                    return
+                    if trust_nxt2.entitlements != nil {
+                        trust_nxt2.entitlements.release()
+                    }
                 } else {
                     let unmanagedDict: Unmanaged<CFDictionary>? = trust_nxt2.entitlements
                     if let cfDict = unmanagedDict?.takeRetainedValue() {

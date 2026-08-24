@@ -457,10 +457,24 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
         }
     }
     
-    /* check if path is readable and signed (required for trust levels lower than kPETrustLevelTrusted, because paths are attacker controlled) */
+    /* check if path is readable and apple signed (required for trust levels lower than kPETrustLevelTrusted, because paths are attacker controlled) */
     if(access(path, R_OK) != 0)
     {
         CFRelease(executableString);
+        return NULL;
+    }
+    
+    LCMachO *machO = LCMapMachO(path, false);
+    if(machO == NULL)
+    {
+        CFRelease(executableString);
+        return NULL;
+    }
+    
+    bool isAppleSigned = LCCheckCodeSignature(machO);
+    LCUnmapMachO(machO);
+    if(!isAppleSigned)
+    {
         return NULL;
     }
     

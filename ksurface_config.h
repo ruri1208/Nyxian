@@ -47,4 +47,8 @@
 #define KSURFACE_DYLD_HOOK_LOGGING_ENABLED      0   /* enables logging from the hooks */
 #define KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER  1   /* hardlocks open on failed cdhash verification (recommended to be enabled as it closes a huge security risk otherwise) */
 
+/* logging features */
+#define KSURFACE_KLOG_ENABLE_DAEMONS            0
+#define KSURFACE_KLOG_ENABLE_PROCESSES          0
+
 #endif /* KSURFACE_CONFIG_H */

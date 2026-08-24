@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <copyfile.h>
 #include <sys/clonefile.h>
+#include <time.h>
 
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
@@ -37,9 +38,22 @@
 #endif /* __has_include(<ksurface_config.h>) */
 
 #if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
-#define dyld_hook_log(fmt, ...) printf(fmt, ##__VA_ARGS__)
+
+static inline void _dyld_hook_log_timestamp(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    printf("[%6ld.%03ldms] ", ts.tv_sec % 1000, ts.tv_nsec / 1000000);
+}
+
+#define dyld_hook_log(fmt, ...) \
+    do { \
+        _dyld_hook_log_timestamp(); \
+        printf(fmt, ##__VA_ARGS__); \
+    } while (0)
+
 #else
-#define dyld_hook_log(fmt, ...)
+#define dyld_hook_log(fmt, ...) ((void)0)
 #endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
 
 static const char openSig[] = {0xB0, 0x00, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};

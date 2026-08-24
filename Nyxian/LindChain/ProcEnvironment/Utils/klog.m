@@ -32,6 +32,14 @@ int kfd = -1;
 
 #if DEBUG
 
+static struct timespec g_process_start_time;
+
+__attribute__((constructor))
+static void init_process_start_time(void)
+{
+    clock_gettime(CLOCK_MONOTONIC, &g_process_start_time);
+}
+
 /* maximum lines klog can take */
 static const NSUInteger KLOG_MAX_LINES = 500;
 
@@ -127,7 +135,6 @@ void klog_log_internal(const char *system, const char *format, ...)
 #if DEBUG
     @autoreleasepool {
         /* only open klog once */
-        static NSDateFormatter *df = nil;
         static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
         os_unfair_lock_lock(&(lock));
         
@@ -184,10 +191,6 @@ void klog_log_internal(const char *system, const char *format, ...)
                 dprintf(kfd, "%s", [tail UTF8String]);
                 dprintf(kfd, "\n(new debugging session)\n");
             }
-            
-            df = [[NSDateFormatter alloc] init];
-            df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-            df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
         });
         
         /* checking kfd */
@@ -210,11 +213,18 @@ void klog_log_internal(const char *system, const char *format, ...)
         /* ending parse */
         va_end(args);
         
-        /* now we need the date ^^ */
-        NSString *ts = [df stringFromDate:[NSDate date]];
-        
         /* final log string */
-        NSString *final = [NSString stringWithFormat:@"%@ [%@] %@\n", ts, [NSString stringWithCString:system encoding:NSUTF8StringEncoding] ?: @"(null)", msg ?: @"(null)"];
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        
+        long sec = now.tv_sec - g_process_start_time.tv_sec;
+        long nsec = now.tv_nsec - g_process_start_time.tv_nsec;
+        if(nsec < 0)
+        {
+            sec--;
+            nsec += 1000000000L;
+        }
+        NSString *final = [NSString stringWithFormat:@"[%5ld.%06ld] [%@] %@\n", sec, nsec / 1000, system ? @(system) : @"(null)", msg ?: @"(null)"];
         
         /* getting constent c version of that string */
         const char *utf8 = [final UTF8String];

@@ -22,6 +22,7 @@
 #import <LindChain/ProcEnvironment/PELaunchService.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <os/lock.h>
+#import <ksurface_config.h>
 
 @implementation PELaunchService {
     os_unfair_lock _lock;
@@ -71,7 +72,7 @@
 {
     NSDictionary *dictionary = _dictionary;
     
-#if DEBUG
+#if DEBUG && KSURFACE_KLOG_ENABLE_DAEMONS
     extern int kfd;
     NSMutableDictionary *mutableDictionary = [_dictionary mutableCopy];
     PEFileTable *fileTable = [PEFileTable emptyTable];
@@ -79,7 +80,7 @@
     [fileTable appendFileDescriptor:kfd withMappingToLoc:STDERR_FILENO];
     [mutableDictionary setObject:fileTable forKey:@"PEFileTable"];
     dictionary = [mutableDictionary copy];
-#endif /* DEBUG */
+#endif /* DEBUG && KSURFACE_KLOG_ENABLE_DAEMONS */
     
     /* getting lock */
     os_unfair_lock_lock(&_lock);

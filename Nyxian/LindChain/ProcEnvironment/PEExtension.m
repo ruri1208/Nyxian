@@ -27,6 +27,7 @@
 #import <LindChain/ProcEnvironment/Shims/environment.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <ksurface_config.h>
 #import <objc/runtime.h>
 
 static const char kNSExtensionKey;
@@ -161,6 +162,17 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
         }
     }
     mutableItems[@"PEEnvironment"] = env;
+    
+#if DEBUG && KSURFACE_KLOG_ENABLE_PROCESSES
+    if(![mutableItems valueForKey:@"PEFileTable"])
+    {
+        extern int kfd;
+        PEFileTable *fileTable = [PEFileTable emptyTable];
+        [fileTable appendFileDescriptor:kfd withMappingToLoc:STDOUT_FILENO];
+        [fileTable appendFileDescriptor:kfd withMappingToLoc:STDERR_FILENO];
+        [mutableItems setObject:fileTable forKey:@"PEFileTable"];
+    }
+#endif /* DEBUG && KSURFACE_KLOG_ENABLE_PROCESSES */
     
     NSExtensionItem *item = [NSExtensionItem new];
     item.userInfo = mutableItems;
