@@ -1009,9 +1009,11 @@
             NXWindow *window = self.windows[key];
             if(window != nil)
             {
-                [window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
+                //[window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
+                [self layoutSimulatorWindow:window];
             }
         }
+        [self layoutIfNeeded];
     });
 }
 
@@ -1056,6 +1058,7 @@
             {
                 [super bringSubviewToFront:_fullScreenWindow.view];
             }
+            [[NXFloatingBallWindow sharedInstance] updateVisibility];
         }
         return;
     }
