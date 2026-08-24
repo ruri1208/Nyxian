@@ -213,6 +213,7 @@
         return;
     }
     */
+    
     if(!_focusHitView)
     {
         _focusHitView = [[UIView alloc] init];
@@ -221,12 +222,14 @@
         _focusHitView.translatesAutoresizingMaskIntoConstraints = NO;
         [_contentStack insertSubview:_focusHitView aboveSubview:self.session.view];
         [NSLayoutConstraint activateConstraints:@[
-            [_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
+            //[_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
+            [_focusHitView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
             [_focusHitView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
             [_focusHitView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
             [_focusHitView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
         ]];
     }
+   
     if(![self.delegate windowWantsToFocus:self])
     {
         return;
@@ -294,7 +297,9 @@
         };
         
         completion = ^{
+            if (self->_windowBar){
             self->_windowBar.maximizeButton.imageView.image = [UIImage systemImageNamed:@"arrow.up.left.and.arrow.down.right.circle.fill"];
+            }
         };
     }
     else
@@ -320,7 +325,9 @@
         };
         
         completion = ^{
+            if (self->_windowBar){
             self->_windowBar.maximizeButton.imageView.image = [UIImage systemImageNamed:@"arrow.down.right.and.arrow.up.left.circle.fill"];
+            }
         };
     }
     
