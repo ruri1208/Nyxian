@@ -65,11 +65,11 @@
         _activeWindowIdentifier = (id_t)-1;
         _appSwitcherView = nil;
         
-        if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-        {
+        //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        //{
             [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
             [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:nil];
-        }
+        //}
         
         hasInitialized = YES;
     }
