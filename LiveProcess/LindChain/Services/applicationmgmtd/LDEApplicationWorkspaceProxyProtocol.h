@@ -23,6 +23,7 @@
 #define LDEAPPLICATIONWORKSPACEPROXYPROTOCOL_H
 
 #import <Foundation/Foundation.h>
+#import <LindChain/ProcEnvironment/PEArchiveHandle.h>
 
 @protocol LDEApplicationWorkspaceProxyProtocol
 
