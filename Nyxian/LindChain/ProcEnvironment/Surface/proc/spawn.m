@@ -20,7 +20,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/entitlement.h>
+#import <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #import <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #import <LindChain/ProcEnvironment/Surface/proc/insert.h>
 #import <LindChain/ProcEnvironment/Surface/proc/def.h>
@@ -28,7 +28,6 @@
 #import <LindChain/ProcEnvironment/Surface/proc/remove.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
-#import <LindChain/Services/containerd/PEContainer.h>
 #include <ksurface_config.h>
 
 kern_return_t proc_spawn(ksurface_proc_t *parent,
@@ -47,80 +46,25 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     proc_setppid(child_new, proc_getpid(child_new));    /* as the child is the copy of the parent the current pid is the ppid */
     proc_setpid(child_new, child_pid);      /* function passed pid of child */
     
-    /*
-     * temporary entitlement variables, they get merged in the end.
-     * after rules have been applied.
-     */
-    PEEntitlement entitlement = kPEEntitlementNone;
-    PEEntitlement currentEntitlement = proc_getentitlements(child_new);
-    PEEntitlement currentMaxEntitlement = proc_getmaxentitlements(child_new);
-    
-    /* verify trust */
-    if(identity == NULL)
-    {
-        kvo_release(child_new);
-        return KERN_FAILURE;
-    }
-    
-    /* TODO: this is very early */
-    switch(identity->type)
-    {
-        case kPETrustTypeFallback:
-        case kPETrustTypeSignature:
-        case kPETrustTypeTrusted:
-        default:
-            entitlement = identity->legacyEntitlements;
-            break;
-    }
-    
     child_new->nyx.identity = identity;
     
-    /*
-     * only a platform process, may be able to
-     * spawn a process with higher primitives
-     * than it it self.
-     */
-    if(!entitlement_got_entitlement(currentMaxEntitlement, kPEEntitlementPlatform))
-    {
-        /*
-         * child gets nothing extra, removing
-         * what parent doesnt have.
-         */
-        entitlement &= currentEntitlement;
-    }
-
     if(parent == kernel_proc_)
     {
-        /* the kernel process shall never inherite entitlements */
-        currentEntitlement = kPEEntitlementNone;
+        /* process needs new credentials */
         proc_setmobilecred(child_new);
-        proc_setsid(child_new, child_pid);
-    }
-    else if(entitlement_got_entitlement(currentEntitlement, kPEEntitlementProcessSpawnInheriteEntitlements))
-    {
-        /*
-         * entitlements which shall be stripped from parent
-         * merging entitlements, because they are just too
-         * over powered.
-         */
-        entitlement_strip(currentEntitlement, kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementTaskForPid | kPEEntitlementProcessElevate);
-    }
-    else
-    {
-        /* inherites nothing */
-        currentEntitlement = kPEEntitlementNone;
+        proc_setsid(child_new, proc_getpid(child_new));
     }
     
 #if KSURFACE_SYS_UCRED_ENABLED
     
     /* only platform processes can use those */
-    if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatform))
+    if(CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM) == kCFBooleanTrue)
     {
         /*
          * child process exeuctable is platform binary and has
          * the special platform root entitlement.
          */
-        if(entitlement_got_entitlement(entitlement, kPEEntitlementPlatformRoot))
+        if(CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT) == kCFBooleanTrue)
         {
             proc_setrootcred(child_new);
         }
@@ -144,14 +88,6 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     }
     
 #endif /* KSURFACE_SYS_UCRED_ENABLED */
-    
-    /*
-     * now combining the current entitlements
-     * and the entitlements of the executable it self.
-     */
-    PEEntitlement combinedEntitlement = entitlement_sanitize(currentEntitlement | entitlement);
-    proc_setentitlements(child_new, combinedEntitlement);
-    proc_setmaxentitlements(child_new, combinedEntitlement);
         
     /* FIXME: argv[0] shall be used for p_comm and not the last path component */
     const char *name = strrchr(identity->path, '/');

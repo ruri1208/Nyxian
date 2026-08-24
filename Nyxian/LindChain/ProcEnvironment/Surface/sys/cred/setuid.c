@@ -21,7 +21,7 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setuid.h>
-#include <LindChain/ProcEnvironment/Surface/entitlement.h>
+#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
 ksurface_proc_ucred_backup_t proc_make_ucred_backup(ksurface_proc_t *proc)

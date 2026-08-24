@@ -34,7 +34,7 @@
  * and jetsam is involved, which means
  * we can only set a soft limit for now.
  */
-#define PROC_MAX 500   /* MARK: jetsam is involved, meaning hard no by apple */
+#define PROC_MAX 500    /* MARK: jetsam is involved, meaning hard no by apple */
 
 /*
  * why would a process need more than 128

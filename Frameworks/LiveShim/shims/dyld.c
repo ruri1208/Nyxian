@@ -21,10 +21,13 @@
 
 #include <LiveShim/shim.h>
 #include <LiveShim/dyld.h>
+#include <LiveShim/dyld_node_remap.h>
 #include <LiveShim/cdhash.h>
 #include <Frameworks/HWHook/HWHookThreadContext.h>
 #include <mach-o/dyld_images.h>
 #include <sys/mman.h>
+#include <copyfile.h>
+#include <sys/clonefile.h>
 
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
@@ -40,12 +43,16 @@
 #endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
 
 static const char openSig[] = {0xB0, 0x00, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char mmapSig[] = {0xB0, 0x18, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 static const char fcntlSig[] = {0x90, 0x0B, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
+static const char fstat64Sig[] = {0x70, 0x2A, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
+static const char stat64Sig[] = {0x50, 0x2A, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
+static const char openatSig[] = {0xF0, 0x39, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
 
 static int (*orig_dyld_open)(const char *path, int flags, mode_t mode);
 static int (*orig_dyld_fcntl)(int fildes, int cmd, void *param);
-static void *(*orig_dyld_mmap)(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
+static int (*orig_dyld_fstat64)(int fildes, struct stat *buf);
+static int (*orig_dyld_stat64)(const char *path, struct stat *buf);
+static int (*orig_dyld_openat)(int fd, const char *path, int flags, mode_t mode);
 
 static struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
 {
@@ -102,65 +109,18 @@ static int hook_fcntl(int fildes,
     }
 #endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
     
+    if(cmd == F_GETPATH)
+    {
+        if(inode_bank_get_path(inode_for_fd(fildes), param, MAXPATHLEN))
+        {
+            dyld_hook_log("[hook_fcntl:fool] fooling da cutie dyld >:3\n");
+        }
+    }
+    
     return ret;
 }
 
 static const char *mmap_sandbox_map_exec_allowed_path = NULL;
-static void *hook_mmap(void *addr,
-                       size_t len,
-                       int prot,
-                       int flags,
-                       int fd,
-                       off_t offset)
-{
-    dyld_hook_log("[hook_mmap:args] (addr = %p, len = %zu, prot = %d, flags = %d, fd = %d, offset = %lld)\n", addr, len, prot, flags, fd, offset);
-    void *ret = orig_dyld_mmap(addr, len, prot, flags, fd, offset);
-    if(ret != MAP_FAILED || !(prot & PROT_EXEC) || fd < 0 || mmap_sandbox_map_exec_allowed_path == NULL)
-    {
-        goto log_return;
-    }
-    
-    char filePath[PATH_MAX];
-    if(fcntl(fd, F_GETPATH, filePath) != 0)
-    {
-        goto log_return;
-    }
-    char newTmpPath[PATH_MAX];
-    /*
-     * very dumb duy, ima be fair using ASLR as a UUID generator is something you've gone too far with
-     * that is a text book way to defeat  ASLR, i'd better use arc4random_buf.
-     */
-    void *random;
-    arc4random_buf(&random, sizeof(void*));
-    snprintf(newTmpPath, sizeof(newTmpPath),  "%s/tmp/%016llx.dylib", mmap_sandbox_map_exec_allowed_path, (unsigned long long)random);  /* use tmp so iOS clears it automatically in LP home */
-    /* TODO: copy it instead of rename, meaning we need to do more with fcntl and fstat and what not */
-    if(rename(filePath, newTmpPath) != 0)
-    {
-        goto log_return;
-    }
-    ret = orig_dyld_mmap(addr, len, prot, flags, fd, offset);
-    if(rename(newTmpPath, filePath) != 0)
-    {
-        unlink(newTmpPath);
-    }
-    
-    /* return logging */
-log_return:
-#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
-    {
-        char path[PATH_MAX];
-        if(orig_dyld_fcntl(fd, F_GETPATH, path) != -1)
-        {
-            dyld_hook_log("[hook_mmap:return] (ret = %p, path: %s)\n", ret, path);
-        }
-        else
-        {
-            dyld_hook_log("[hook_mmap:return] (ret = %p)\n", ret);
-        }
-    }
-#endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
-    return ret;
-}
 
 static _Thread_local bool cdhash_verified = false;
 static _Thread_local bool cdhash_must_valid;
@@ -180,20 +140,57 @@ static int hook_open(const char *path,
     }
     
     int fd = orig_dyld_open(path, flags, mode);
-    if(fd < 0)
+    if(fd < 0 || flags & O_DIRECTORY)
     {
         goto just_return;
     }
     
-    if(cdhash_must_valid && !cdhash_verified)
+    char actualPath[PATH_MAX];
+    if(fcntl(fd, F_GETPATH, actualPath) != -1)
     {
-        char actualPath[PATH_MAX];
-        if(orig_dyld_fcntl(fd, F_GETPATH, actualPath) != -1)
+        dyld_hook_log("[hook_open:path] %s\n", actualPath);
+        
+        const char prefix[] = "/private/var/mobile/Containers/Data";
+        if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
         {
-            dyld_hook_log("[hook_open:path] %s\n", actualPath);
+            /* need a new path */
+            char newTmpPath[PATH_MAX];
+            snprintf(newTmpPath, sizeof(newTmpPath),  "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
             
-            const char prefix[] = "/private/var/mobile/Containers/Data";
-            if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
+            int copyfd = open(newTmpPath, flags);
+            if(copyfd >= 0)
+            {
+                close(fd);
+                dup2(copyfd, fd);
+                close(copyfd);
+                goto skip_inode_setup;
+            }
+            
+            if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)   /* APFS CoW */
+            {
+                copyfd = open(newTmpPath, flags);
+                if(copyfd < 0)
+                {
+                    goto skip_inode_setup;
+                }
+            }
+            else
+            {
+                goto skip_inode_setup;
+            }
+            
+            /* this to orient or selfs */
+            ino_t inode = inode_for_fd(copyfd);
+            inode_bank_put(inode, newTmpPath);
+            inode_bank_set_redirect(inode, actualPath);
+            
+            close(fd);
+            dup2(copyfd, fd);
+            close(copyfd);
+            
+        skip_inode_setup:
+            
+            if(cdhash_must_valid && !cdhash_verified)
             {
                 /* no matter what this is not reentrant */
                 cdhash_must_valid = false;
@@ -249,6 +246,176 @@ just_return:
     return fd;
 }
 
+static int hook_openat(int dirfd,
+                       const char *path,
+                       int flags,
+                       mode_t mode)
+{
+    dyld_hook_log("[hook_openat:args] (dirfd = %d, path = %s, flags = %d, mode = %d)\n", dirfd, path, flags, mode);
+    if(open_hardlock)
+    {
+        dyld_hook_log("[hook_openat:args] [error: hard locked]\n");
+        errno = EACCES;
+        return -1;
+    }
+    
+    int fd = orig_dyld_openat(dirfd, path, flags, mode);
+    if(fd < 0 || flags & O_DIRECTORY)
+    {
+        goto just_return;
+    }
+    
+    char actualPath[PATH_MAX];
+    if(fcntl(fd, F_GETPATH, actualPath) != -1)
+    {
+        dyld_hook_log("[hook_openat:path] %s\n", actualPath);
+        
+        const char prefix[] = "/private/var/mobile/Containers/Data";
+        if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
+        {
+            /* need a new path */
+            char newTmpPath[PATH_MAX];
+            snprintf(newTmpPath, sizeof(newTmpPath), "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
+            
+            int copyfd = open(newTmpPath, flags);
+            if(copyfd >= 0)
+            {
+                close(fd);
+                dup2(copyfd, fd);
+                close(copyfd);
+                goto skip_inode_setup;
+            }
+            
+            if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)  /* APFS CoW */
+            {
+                copyfd = open(newTmpPath, flags);
+                if(copyfd < 0)
+                {
+                    goto skip_inode_setup;
+                }
+            }
+            else
+            {
+                goto skip_inode_setup;
+            }
+            
+            /* this to orient or selfs */
+            ino_t inode = inode_for_fd(copyfd);
+            inode_bank_put(inode, newTmpPath);
+            inode_bank_set_redirect(inode, actualPath);
+            
+            close(fd);
+            dup2(copyfd, fd);
+            close(copyfd);
+            
+        skip_inode_setup:
+            
+            if(cdhash_must_valid && !cdhash_verified)
+            {
+                /* no matter what this is not reentrant */
+                cdhash_must_valid = false;
+                cdhash_verified = false;
+                
+                lseek(fd, 0, SEEK_SET);
+                /* need to get cdhash and then reset it's position */
+                
+                char *cdhash = cdhash_of_fd(fd);
+                dyld_hook_log("[hook_openat:cdhash] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
+                
+                /* match */
+                if(cdhash == NULL ||
+                   cdhash_data_container_match == NULL ||
+                   memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
+                {
+                    cdhash_verified = false;
+                    dyld_hook_log("[hook_openat:cdhash] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
+                    
+#if KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER
+                    open_hardlock = true;
+#else
+                    if(cdhash_verifier_failed_callback != NULL)
+                    {
+                        cdhash_verifier_failed_callback(fd, &open_hardlock);
+                    }
+#endif /* !KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER */
+                    
+                    /* callback can set open hardlock */
+                    if(open_hardlock)
+                    {
+                        dyld_hook_log("[hook_openat:args] [error: hard locked]\n");
+                        errno = EACCES;
+                        close(fd);
+                        fd = -1;
+                    }
+                }
+                else
+                {
+                    dyld_hook_log("[hook_openat:cdhash] [nyxian cdhash verifier] cdhash valid!\n");
+                    cdhash_verified = true;
+                    lseek(fd, 0, SEEK_SET);
+                }
+                
+                /* reset position */
+                free(cdhash);   /* free on macOS/iOS is NULL safe */
+            }
+        }
+    }
+    
+just_return:
+    dyld_hook_log("[hook_openat:return] (fd = %d)\n", fd);
+    return fd;
+}
+
+static const time_t fake_time = 1700000000;
+
+static int hook_fstat64(int fd,
+                        struct stat *buf)
+{
+    dyld_hook_log("[hook_fstat64:args] (fd = %d, buf = %p)\n", fd, buf);
+    int ret = orig_dyld_fstat64(fd, buf);
+    if(ret == 0)
+    {
+        char canon[PATH_MAX];
+        if(inode_bank_get_path(buf->st_ino, canon, sizeof(canon)) || orig_dyld_fcntl(fd, F_GETPATH, canon) != -1)
+        {
+            ino_t fake_ino = fake_inode_for_path(canon);
+            dyld_hook_log("[hook_fstat64] changing inode: 0x%llx -> 0x%llx\n", buf->st_ino, fake_ino);
+            buf->st_ino = fake_ino;
+        }
+        
+        dyld_hook_log("[hook_stat64] playing a bit with the clock so DYLD thinks the file never changed =3 (1700000000)\n");
+        buf->st_mtimespec.tv_sec = fake_time;
+        buf->st_mtimespec.tv_nsec = 0;
+        buf->st_ctimespec.tv_sec = fake_time;
+        buf->st_ctimespec.tv_nsec = 0;
+        buf->st_birthtimespec.tv_sec = fake_time;
+        buf->st_birthtimespec.tv_nsec = 0;
+    }
+    dyld_hook_log("[hook_fstat64:return] (ret = %d)\n", ret);
+    return ret;
+}
+
+static int hook_stat64(const char *path,
+                       struct stat *buf)
+{
+    dyld_hook_log("[hook_stat64:args] (path = %s, buf = %p)\n", path, buf);
+    int ret = orig_dyld_stat64(path, buf);
+    if(ret == 0)
+    {
+        ino_t fake_ino = fake_inode_for_path(path);
+        dyld_hook_log("[hook_stat64] changing inode: 0x%llx -> 0x%llx\n", buf->st_ino, fake_ino);
+        buf->st_ino = fake_ino;   /* canonicalizes internally */
+        
+        dyld_hook_log("[hook_stat64] playing a bit with the clock so DYLD thinks the file never changed =3 (1700000000)\n");
+        buf->st_mtimespec.tv_sec = fake_time;
+        buf->st_mtimespec.tv_nsec = 0;
+        buf->st_ctimespec.tv_sec = fake_time; buf->st_ctimespec.tv_nsec = 0;
+        buf->st_birthtimespec.tv_sec = fake_time; buf->st_birthtimespec.tv_nsec = 0;
+    }
+    dyld_hook_log("[hook_stat64:return] (ret = %d)\n", ret);
+    return ret;
+}
+
 static HWHookThreadContextRef HWHookDlopenThreadContext(void)
 {
     static HWHookThreadContextRef context = nil;
@@ -256,9 +423,11 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
     dispatch_once(&onceToken, ^{
         char *dyldBase = (char *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
         orig_dyld_fcntl = (void *)searchDyldFunction(dyldBase, (char*)fcntlSig, sizeof(fcntlSig));
-        orig_dyld_mmap = (void *)searchDyldFunction(dyldBase, (char*)mmapSig, sizeof(mmapSig));
         orig_dyld_open = (void *)searchDyldFunction(dyldBase, (char*)openSig, sizeof(openSig));
-        if(orig_dyld_mmap == NULL || orig_dyld_fcntl == NULL || orig_dyld_open == NULL)
+        orig_dyld_fstat64 = (void *)searchDyldFunction(dyldBase, (char*)fstat64Sig, sizeof(fstat64Sig));
+        orig_dyld_stat64 = (void *)searchDyldFunction(dyldBase, (char*)stat64Sig, sizeof(stat64Sig));
+        orig_dyld_openat = (void *)searchDyldFunction(dyldBase, (char*)openatSig, sizeof(openatSig));
+        if(orig_dyld_fcntl == NULL || orig_dyld_open == NULL || orig_dyld_fstat64 == NULL || orig_dyld_stat64 == NULL || orig_dyld_openat == NULL)
         {
             return;
         }
@@ -269,24 +438,45 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
             return;
         }
         
-        HWHookRef mmapHook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_mmap, hook_mmap);
-        if(mmapHook == NULL)
-        {
-            CFRelease(fcntlHook);
-            return;
-        }
-        
         HWHookRef openHook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_open, hook_open);
         if(openHook == NULL)
         {
             CFRelease(fcntlHook);
-            CFRelease(mmapHook);
+            return;
+        }
+        
+        HWHookRef fstat64Hook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_fstat64, hook_fstat64);
+        if(fstat64Hook == NULL)
+        {
+            CFRelease(fcntlHook);
+            CFRelease(openHook);
+            return;
+        }
+        
+        HWHookRef stat64Hook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_stat64, hook_stat64);
+        if(fstat64Hook == NULL)
+        {
+            CFRelease(fcntlHook);
+            CFRelease(openHook);
+            CFRelease(fstat64Hook);
+            return;
+        }
+        
+        HWHookRef openatHook = HWHookCreateWithPointerToSymbol(kCFAllocatorDefault, orig_dyld_openat, hook_openat);
+        if(openatHook == NULL)
+        {
+            CFRelease(fcntlHook);
+            CFRelease(openHook);
+            CFRelease(fstat64Hook);
+            CFRelease(stat64Hook);
             return;
         }
         
         HWHookSetDisableContextHooksInFrame(fcntlHook, true);
-        HWHookSetDisableContextHooksInFrame(mmapHook, true);
         HWHookSetDisableContextHooksInFrame(openHook, true);
+        HWHookSetDisableContextHooksInFrame(fstat64Hook, true);
+        HWHookSetDisableContextHooksInFrame(stat64Hook, true);
+        HWHookSetDisableContextHooksInFrame(openatHook, true);
         
         context = HWHookThreadContextCreate(kCFAllocatorDefault);
         if(context == NULL)
@@ -295,14 +485,18 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
         }
         
         if(!HWHookThreadContextAppendHook(context, fcntlHook) ||
-           !HWHookThreadContextAppendHook(context, mmapHook) ||
-           !HWHookThreadContextAppendHook(context, openHook))
+           !HWHookThreadContextAppendHook(context, openHook) ||
+           !HWHookThreadContextAppendHook(context, fstat64Hook) ||
+           !HWHookThreadContextAppendHook(context, stat64Hook) ||
+           !HWHookThreadContextAppendHook(context, openatHook))
         {
             CFRelease(context);
         release_hooks:
             CFRelease(fcntlHook);
-            CFRelease(mmapHook);
             CFRelease(openHook);
+            CFRelease(fstat64Hook);
+            CFRelease(stat64Hook);
+            CFRelease(openatHook);
             return;
         }
     });
@@ -315,6 +509,14 @@ INTERPOSE(hook_dlopen, dlopen);
 
 void *hook_dlopen(const char *path, int mode)
 {
+    inode_bank_init();
+    
+    char newTmpPath[PATH_MAX];
+    snprintf(newTmpPath, sizeof(newTmpPath), "%s/tmp", mmap_sandbox_map_exec_allowed_path);
+    mkdir(newTmpPath, 0777);
+    snprintf(newTmpPath, sizeof(newTmpPath), "%s/tmp/%d", mmap_sandbox_map_exec_allowed_path, getpid());
+    mkdir(newTmpPath, 0777);
+    
     void *(*darwin_dlopen)(const char *path, int mode) = _interpose_dlopen.replacee;
     dyld_hook_log("[hook_dlopen] %s\n", path);
     
@@ -323,6 +525,9 @@ void *hook_dlopen(const char *path, int mode)
     HWHookThreadContextEnter(context);  /* is nil safe, so it shall work anyways */
     void *ret = darwin_dlopen(path, mode);
     HWHookThreadContextExit(context);
+    
+    inode_bank_unlink_all(newTmpPath);
+    rmdir(newTmpPath);
     return ret;
 }
 

@@ -62,11 +62,10 @@
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
-#import <LindChain/ProcEnvironment/Surface/trust.h>
+#import <LindChain/ProcEnvironment/Surface/trust/trust.h>
 
 /* Daemon Interfaces Headers */
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
-#import <LindChain/Services/containerd/PEContainer.h>
 
 void refreshFile(const char* path);
 

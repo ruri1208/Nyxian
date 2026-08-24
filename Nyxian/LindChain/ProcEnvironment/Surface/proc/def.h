@@ -23,11 +23,10 @@
 #define PROC_DEF_H
 
 #import <LindChain/ProcEnvironment/Surface/limits.h>
-#import <LindChain/ProcEnvironment/Surface/entitlement.h>
 #import <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
 #include <sys/sysctl.h>
 #include <ksurface_config.h>
-#include <LindChain/ProcEnvironment/Surface/trust.h>
+#include <LindChain/ProcEnvironment/Surface/trust/trust.h>
 
 /// Helper macros
 #define proc_getpid(proc) ((proc)->bsd.kp_proc.p_pid)

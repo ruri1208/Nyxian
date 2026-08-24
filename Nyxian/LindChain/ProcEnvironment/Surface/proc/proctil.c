@@ -25,7 +25,7 @@
 #include <stdatomic.h>
 #include <os/lock.h>
 
-static atomic_int counter = 0;
+static _Atomic uint32_t counter = 1;    /* kernel_proc_ is already one process */
 static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
 
 kern_return_t proctil(ProctilAction action)
@@ -33,18 +33,31 @@ kern_return_t proctil(ProctilAction action)
     switch(action)
     {
         case kProctilActionCount:
-            if(atomic_fetch_add(&counter, 1) >= PROC_MAX)
+        {
+            uint32_t cur = atomic_load_explicit(&counter, memory_order_relaxed);
+            do
             {
-                atomic_fetch_sub(&counter, 1);
-                return KERN_POLICY_LIMIT;
+                if(cur >= PROC_MAX)
+                {
+                    return KERN_POLICY_LIMIT;
+                }
             }
+            while(!atomic_compare_exchange_weak_explicit(&counter, &cur, cur + 1, memory_order_acq_rel, memory_order_relaxed));
             return KERN_SUCCESS;
+        }
         case kProctilActionUncount:
-            if(atomic_fetch_sub(&counter, 1) == 0)
+        {
+            uint32_t cur = atomic_load_explicit(&counter, memory_order_relaxed);
+            do
             {
-                environment_panic("process count did underflow");
+                if(cur == 0)
+                {
+                    environment_panic("process count did underflow");
+                }
             }
+            while(!atomic_compare_exchange_weak_explicit(&counter, &cur, cur - 1, memory_order_release, memory_order_relaxed));
             return KERN_SUCCESS;
+        }
         case kProctilActionLock:
             os_unfair_lock_lock(&lock);
             return KERN_SUCCESS;

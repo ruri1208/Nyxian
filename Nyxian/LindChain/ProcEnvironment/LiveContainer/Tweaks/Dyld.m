@@ -30,7 +30,7 @@
 #import "LCMachOUtils.h"
 #import "../utils.h"
 #import <LindChain/ProcEnvironment/Shims/environment.h>
-#import <LindChain/ProcEnvironment/Surface/cdhash.h>
+#import <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/Tweaks.h>
 #import <LindChain/Utils/CFTools.h>
 #import <LiveShim/LiveShimSyscall.h>

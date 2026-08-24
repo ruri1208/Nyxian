@@ -23,13 +23,14 @@
 #define NXWINDOWBAR_H
 
 #import <UIKit/UIKit.h>
+#import <LindChain/WindowServer/Window/NXHitSurfaceButton.h>
 
 @interface NXWindowBar : UIView
 
 @property (nonatomic, strong, readonly) UIVisualEffectView *buttonIsland;
 
-@property (nonatomic,strong) UIButton *closeButton;
-@property (nonatomic,strong) UIButton *maximizeButton;
+@property (nonatomic,strong) NXHitSurfaceButton *closeButton;
+@property (nonatomic,strong) NXHitSurfaceButton *maximizeButton;
 @property (nonatomic,strong,getter=getTitle,setter=setTitle:) NSString *title;
 
 - (instancetype)initWithTitle:(NSString*)title withCloseCallback:(void (^)(void))closeCallback withMaximizeCallback:(void (^)(void))maximizeCallback;

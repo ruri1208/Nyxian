@@ -22,7 +22,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setgid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setuid.h>
-#include <LindChain/ProcEnvironment/Surface/entitlement.h>
+#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
 DEFINE_SYSCALL_HANDLER(setgid)

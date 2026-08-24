@@ -25,7 +25,7 @@
 #import <Foundation/Foundation.h>
 #import <LindChain/IDEFoundation/NXPlist.h>
 #import <LindChain/IDEFoundation/NXType.h>
-#import <LindChain/ProcEnvironment/Surface/entitlement.h>
+#import <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 
 @interface NXProjectConfig : NXPlist
 

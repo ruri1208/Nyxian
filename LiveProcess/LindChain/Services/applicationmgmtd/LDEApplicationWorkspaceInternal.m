@@ -408,23 +408,9 @@ create_container:
     {
         NSError *error = nil;
         [[NSFileManager defaultManager] createDirectoryAtURL:containerURL withIntermediateDirectories:YES attributes:nil error:&error];
-        
         if(error != nil)
         {
             return nil;
-        }
-        
-        /* bootstrapping data container */
-        NSArray *dirList = @[@"Library/Caches", @"Documents", @"SystemData", @"Tmp"];
-        for(NSString *dir in dirList)
-        {
-            [[NSFileManager defaultManager] createDirectoryAtURL:[containerURL URLByAppendingPathComponent:dir] withIntermediateDirectories:YES attributes:nil error:&error];
-            
-            if(error != nil)
-            {
-                [[NSFileManager defaultManager] removeItemAtURL:containerURL error:nil];
-                return nil;
-            }
         }
     }
     else
@@ -434,6 +420,19 @@ create_container:
         {
             [[NSFileManager defaultManager] removeItemAtURL:containerURL error:nil];
             goto create_container;
+        }
+    }
+    
+    /* bootstrapping data container */
+    NSArray *dirList = @[@"Library/Caches", @"Documents", @"SystemData", @"Tmp"];
+    for(NSString *dir in dirList)
+    {
+        NSError *error = nil;
+        [[NSFileManager defaultManager] createDirectoryAtURL:[containerURL URLByAppendingPathComponent:dir] withIntermediateDirectories:YES attributes:nil error:&error];
+        if(error != nil)
+        {
+            [[NSFileManager defaultManager] removeItemAtURL:containerURL error:nil];
+            return nil;
         }
     }
     

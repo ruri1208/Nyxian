@@ -33,6 +33,7 @@
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceInternal.h>
 #import <ResecureDecoder.h>
 #import <LiveShim/LiveShimSyscall.h>
+#import <LiveShim/dyld.h>
 #import <ksurface_config.h>
 
 bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** origFunction, void* hookFunction);
@@ -196,6 +197,10 @@ int LiveProcessMain(int argc, char *argv[])
     /* overwriting environment and arguments */
     overwriteEnvironmentProperties(environmentDictionary);
     overwriteArguments(argumentDictionary, &argc, &argv);
+    
+#if DEBUG
+    setenv("DYLD_MMAP_SANDBOX_EXEC_ALLOWED_PATH", dyld_get_mmap_sandbox_map_exec_allowed_path(), 0);
+#endif /* DEBUG */
     
     /* for integrated launch services */
     if(service != nil)

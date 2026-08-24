@@ -75,7 +75,9 @@ class MachOPatcherViewController: UIThemedTableViewController {
 
     init(machOPath path: String, applyHandler: @escaping () -> Void) {
         self.path = path
-        self.entitlements = PEContainer.shared().entitlementForExecutable(atPath: path)
+        let trust = trust_identity_create_from_path(path)
+        self.entitlements = trust?.pointee.legacyEntitlements ?? PEEntitlement(rawValue: 0)
+        trust_identity_destroy(trust)
         self.applyHandler = applyHandler
         super.init(style: .insetGrouped)
     }
@@ -167,7 +169,7 @@ class MachOPatcherViewController: UIThemedTableViewController {
     }
     
     @objc private func applyTapped() {
-        PEContainer.shared().setEntitlements(entitlements, forExecutableAtPath: path)
+        trust_nxtr_sign(path, self.entitlements)
         self.applyHandler()
         self.dismiss(animated: true)
     }

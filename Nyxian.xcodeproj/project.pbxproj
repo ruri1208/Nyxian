@@ -213,7 +213,6 @@
 				LindChain/ServiceKit/Service.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationObject.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceInternal.m,
-				LindChain/Services/containerd/PEContainerService.m,
 				main.m,
 				ResecureDecoder.m,
 			);
@@ -224,7 +223,6 @@
 			membershipExceptions = (
 				LindChain/Services/applicationmgmtd/LDEApplicationObject.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.m,
-				LindChain/Services/containerd/PEContainer.m,
 			);
 			target = AF9916D82DC8C42200DDF895 /* Nyxian */;
 		};
@@ -350,6 +348,8 @@
 				LiveShim/mach/fileport.m,
 				LiveShim/private/cdhash.h,
 				LiveShim/private/cdhash.m,
+				LiveShim/private/dyld_node_remap.c,
+				LiveShim/private/dyld_node_remap.h,
 				LiveShim/shims/dyld.c,
 				LiveShim/shims/dyld.h,
 				LiveShim/shims/io.c,
@@ -362,6 +362,7 @@
 			privateHeaders = (
 				LiveShim/mach/fileport.h,
 				LiveShim/private/cdhash.h,
+				LiveShim/private/dyld_node_remap.h,
 				LiveShim/shims/shim.h,
 			);
 			publicHeaders = (

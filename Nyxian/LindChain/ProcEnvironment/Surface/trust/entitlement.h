@@ -19,24 +19,27 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROC_ENTITLEMENT_H
-#define PROC_ENTITLEMENT_H
+#ifndef TRUST_ENTITLEMENT_H
+#define TRUST_ENTITLEMENT_H
 
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
 #include <CoreFoundation/CoreFoundation.h>
 #include <mach/kern_return.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <fcntl.h>
+
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
 #include <ksurface_config.h>
 
-typedef struct ksurface_proc ksurface_proc_t;
-typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
-typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
-typedef struct ksurface_nxt2_blob_header ksurface_nxt2_blob_header_t;
-typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
-typedef struct ksurface_nxt2 ksurface_nxt2_t;
-
+/* ----------------------------------------------------------------------
+ *  Constants
+ * -------------------------------------------------------------------- */
 /*!
  @enum PEEntitlement
  @abstract Entitlements which are responsible for the permitives of the environment hostsided
@@ -97,7 +100,7 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     kPEEntitlementLaunchServicesManager             = kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementLaunchServicesGetEndpoint,
     
     /*
-     * MARK: there is no device spoofing currently, but preserving for the future 
+     * MARK: there is no device spoofing currently, but preserving for the future
      *
      * PEEntitlementEnforceDeviceSpoof                 = 1ull << 17,
      */
@@ -162,6 +165,16 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
 /* sandbox */
 #define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ       CFSTR("org.emexlabs.nyxian.sandbox.file.read")          /* type shall be CFArray */
 #define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE CFSTR("org.emexlabs.nyxian.sandbox.file.read-write")    /* type shall be CFArray */
+
+/* ----------------------------------------------------------------------
+ *  Types
+ * -------------------------------------------------------------------- */
+typedef struct ksurface_proc ksurface_proc_t;
+typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
+typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
+typedef struct ksurface_nxt2_blob_header ksurface_nxt2_blob_header_t;
+typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
+typedef struct ksurface_nxt2 ksurface_nxt2_t;
     
 struct __attribute__((packed)) ksurface_nxtr_blob {
     PEEntitlement entitlement;
@@ -199,21 +212,27 @@ struct ksurface_nxtr_result {
     bool blob_valid;
 };
 
+/* ----------------------------------------------------------------------
+ *  Macros
+ * -------------------------------------------------------------------- */
 #define entitlement_got_entitlement(present,needed) (((present) & (needed)) == (needed))
 #define entitlement_strip(present,strip) (present) &= ~(strip)
 
+/* ----------------------------------------------------------------------
+ *  Function Prototypes
+ * -------------------------------------------------------------------- */
 kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob, const char *cdhash, PEEntitlement entitlement);
 kern_return_t entitlement_mach_verify(ksurface_nxtr_result_t *mach, uint8_t *pub_key, size_t pub_key_len);
 PEEntitlement entitlement_get_path(const char *path, bool *wasLocallySigned);
 bool entitlement_set_path(const char *path, PEEntitlement entitlement);
 
-#if KSURFACE_SEC_SANITIZE_ENTITLEMENTS
+#if KSURFACE_CS_SANITIZE_ENTITLEMENTS
 PEEntitlement entitlement_sanitize(PEEntitlement base);
 #else
 #define entitlement_sanitize(base) (base)
-#endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
+#endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */
 
 CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict);
 CFDictionaryRef entitlement_plist_to_dict(CFDataRef data);
 
-#endif /* PROC_ENTITLEMENT_H */
+#endif /* TRUST_ENTITLEMENT_H */

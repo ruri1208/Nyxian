@@ -47,6 +47,7 @@
 
 - (void)sendSignal:(int)signal;
 
+- (void)forceTerminate;
 - (void)terminate;
 - (void)suspend;
 - (void)resume;

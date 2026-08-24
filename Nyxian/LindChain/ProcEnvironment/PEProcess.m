@@ -23,7 +23,6 @@
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
-#import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/ProcEnvironment/PEExtension.h>
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
@@ -35,12 +34,15 @@
 @implementation PEProcess {
     NSHashTable<id<PEProcessObserver>> *_observers;
     os_unfair_lock _lock;
+    _Atomic(int) _termState;
+    _Atomic(int) _counted;
 }
 
 - (instancetype)initWithItems:(NSDictionary*)items
      withKernelSurfaceProcess:(ksurface_proc_t*)proc
 {
-    if(proctil(kProctilActionCount) != KERN_SUCCESS)
+    if(proc == NULL ||
+       proctil(kProctilActionCount) != KERN_SUCCESS)
     {
         return nil;
     }
@@ -51,31 +53,34 @@
         proctil(kProctilActionUncount);
         return nil;
     }
+    atomic_store(&_counted, true);
     
     _observers = [[NSHashTable alloc] initWithOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPointerPersonality capacity:0];
     _lock = OS_UNFAIR_LOCK_INIT;
     
     if(proctil(kProctilActionLock) != KERN_SUCCESS)
     {
+        proctil(kProctilActionUncount);
         return nil;
     }
     
     self.executablePath = items[@"PEExecutablePath"];
-    if(![[PEContainer shared] isReadableFileAtPath:self.executablePath])
+    if(self.executablePath == nil)
     {
         proctil(kProctilActionUnlock);
         return nil;
     }
     
-    ksurface_trust_identity_t *identity = trust_identity_create_from_path([self.executablePath UTF8String]);
+    kvo_rdlock(proc);
+    ksurface_trust_identity_t *identity = trust_identity_create_from_path_with_parent_identity([self.executablePath UTF8String], proc->nyx.identity);
+    kvo_unlock(proc);
     if(identity == NULL)
     {
-        [self terminate];
         proctil(kProctilActionUnlock);
         return nil;
     }
     
-    if(identity->type == kPETrustTypeTrusted)
+    if(identity->trustLevel == kPETrustLevelTrusted)
     {
         NSMutableDictionary *mutableItems = [items mutableCopy];
         [mutableItems setObject:@[
@@ -197,18 +202,29 @@
     }
 }
 
+- (void)forceTerminate
+{
+    if(atomic_exchange(&_termState, 2) == 2)
+    {
+        return;
+    }
+    [self sendSignal:SIGKILL];
+}
+
 - (void)terminate
 {
-    [self sendSignal:SIGTERM];
-    __weak typeof(self) weakSelf = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        __strong typeof(self) strongSelf = weakSelf;
-        if(strongSelf != NULL)
-        {
-            /* process still alive? */
-            [strongSelf sendSignal:SIGKILL];
-        }
-    });
+    int expected = 0;
+    if(atomic_compare_exchange_strong(&_termState, &expected, 1))
+    {
+        [self sendSignal:SIGTERM];
+        
+        __weak typeof(self) weakSelf = self;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [weakSelf forceTerminate];
+        });
+        return;
+    }
+    [self forceTerminate];
 }
 
 - (void)suspend
@@ -223,15 +239,18 @@
         
 - (void)processDidExit:(FBProcess *)arg1
 {
-    if(_proc != NULL)
+    ksurface_proc_t *proc = self->_proc;
+    self->_proc = nil;
+    if(proc != NULL)
     {
         /* yep writing official wait4 code~~ */
-        proc_state_change(_proc, arg1.exitContext.underlyingContext.legacyCode);
-        kern_return_t error = proc_zombify(_proc);
+        proc_state_change(proc, arg1.exitContext.underlyingContext.legacyCode);
+        kern_return_t error = proc_zombify(proc);
         if(error != KERN_SUCCESS)
         {
             klog_log("PEProcess:processDidExit", "failed to remove pid %d", _pid);
         }
+        kvo_release(proc);
     }
     
     /* notify observers */
@@ -278,11 +297,11 @@
 
 - (void)dealloc
 {
-    if(_proc != NULL)
+    if(atomic_exchange(&_counted, false))
     {
-        kvo_release(_proc);
+        proctil(kProctilActionUncount);
     }
-    proctil(kProctilActionUncount);
+    
 #if DEBUG
     NSLog(@"deallocated %@", self);
 #endif /* DEBUG */

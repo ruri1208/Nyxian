@@ -20,577 +20,35 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
-#import <LindChain/IDEFoundation/NXBootstrap.h>
-#include <LindChain/ProcEnvironment/Surface/trust.h>
-#include <LindChain/ProcEnvironment/Surface/entitlement.h>
-#include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
-#include <LindChain/ProcEnvironment/Surface/surface.h>
-#include <LindChain/ProcEnvironment/Surface/cdhash.h>
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
-#include <mach-o/loader.h>
-#include <mach-o/fat.h>
-#include <sys/stat.h>
-#include <OpenSSL/evp.h>
-#include <OpenSSL/err.h>
-#include <OpenSSL/ec.h>
-#include <OpenSSL/pem.h>
-#include <ksurface_config.h>
 
-#define APPEND_TAG_NXTR "NXTR"
-#define APPEND_TAG_NXT2 "NXT2"
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
+#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#import <LindChain/ProcEnvironment/Surface/trust/trust.h>
+#import <LindChain/ProcEnvironment/Surface/surface.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <ksurface_config.h>
 
+/* ----------------------------------------------------------------------
+ *  Constants
+ * -------------------------------------------------------------------- */
 const char *trustDaemonPath[] = {
     "/sbin/launchd",
-    "/usr/libexec/containerd",
     "/usr/libexec/installd",
 };
 
-ssize_t read_at(int fd, off_t offset, void *buf, size_t len)
-{
-    if(lseek(fd, offset, SEEK_SET) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    return read(fd, buf, len);
-}
-
-kern_return_t nxtr_sign(const char *path,
-                       PEEntitlement entitlement)
-{
-    int fd = open(path, O_RDWR);
-    if(fd < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    kern_return_t kr = nxtr_sign_fd(fd, entitlement);
-    fsync(fd);
-    close(fd);
-    return kr;
-}
-
-kern_return_t nxtr_sign_fd(int fd, PEEntitlement entitlement)
-{
-    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
-    if(machO == NULL)
-    {
-        return KERN_FAILURE;
-    }
-    char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
-    LCUnmapMachO(machO);
-    
-    ksurface_nxtr_blob_t token;
-    if(entitlement_token_mach_gen(&token, cdhash, entitlement) != KERN_SUCCESS)
-    {
-        free(cdhash);
-        return KERN_FAILURE;
-    }
-    free(cdhash);
-
-    char tag[4];
-    off_t eof = lseek(fd, 0, SEEK_END);
-    
-    if(eof >= (off_t)(sizeof(ksurface_nxtr_blob_t) + sizeof(uint32_t) + 4))
-    {
-        read_at(fd, eof - 4, tag, 4);
-        if(memcmp(tag, APPEND_TAG_NXTR, 4) == 0)
-        {
-            uint32_t data_len;
-            read_at(fd, eof - 4 - sizeof(uint32_t), &data_len, sizeof(uint32_t));
-            eof -= (off_t)(data_len + sizeof(uint32_t) + 4);
-            ftruncate(fd, eof);
-        }
-    }
-
-    if(lseek(fd, eof, SEEK_SET) < 0)
-    {
-        return KERN_FAILURE;
-    }
-
-    if(write(fd, &token, sizeof(ksurface_nxtr_blob_t)) != (ssize_t)sizeof(ksurface_nxtr_blob_t))
-    {
-        return KERN_FAILURE;
-    }
-
-    size_t data_len = sizeof(ksurface_nxtr_blob_t);
-    if(write(fd, &data_len, sizeof(uint32_t)) != sizeof(uint32_t))
-    {
-        return KERN_FAILURE;
-    }
-    if(write(fd, APPEND_TAG_NXTR, 4) != 4)
-    {
-        return KERN_FAILURE;
-    }
-
-    return KERN_SUCCESS;
-}
-
-kern_return_t nxtr_read(const char *path,
-                        ksurface_nxtr_result_t *result)
-{
-    int fd = open(path, O_RDONLY);
-    if(fd < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    kern_return_t ret = nxtr_read_fd(fd, result);
-    close(fd);
-    return ret;
-}
-
-kern_return_t nxtr_read_fd(int fd,
-                           ksurface_nxtr_result_t *result)
-{
-    bzero(result, sizeof(ksurface_nxtr_result_t));
-    
-    char tag[4];
-    uint32_t len;
-    
-    if(lseek(fd, -4, SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    if(read(fd, tag, 4) != 4)
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(memcmp(tag, APPEND_TAG_NXTR, 4) != 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(lseek(fd, -8, SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    if(read(fd, &len, sizeof(uint32_t)) != sizeof(uint32_t))
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(lseek(fd, -(off_t)(8 + len), SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(len != sizeof(ksurface_nxtr_blob_t))
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(read(fd, &(result->blob), len) != (ssize_t)len)
-    {
-        return KERN_FAILURE;
-    }
-    
-    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
-    if(machO == NULL)
-    {
-        return KERN_FAILURE;
-    }
-    char *hash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
-    LCUnmapMachO(machO);
-    
-    if(hash == NULL)
-    {
-        result->cdhash_valid = false;
-        goto out_no_cdhas;
-    }
-    else if(strncmp(hash, result->blob.cdhash, USER_FSIGNATURES_CDHASH_LEN) == 0)
-    {
-        free(hash);
-        result->cdhash_valid = true;
-    out_no_cdhas:
-        return KERN_SUCCESS;
-    }
-    
-    free(hash);
-    return KERN_FAILURE;
-}
-
-kern_return_t nxt2_sign(const char *path,
-                        CFDictionaryRef entitlements,
-                        bool signBlob)
-{
-    int fd = open(path, O_RDWR);
-    if(fd < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    kern_return_t kr = nxt2_sign_fd(fd, entitlements, signBlob);
-    fsync(fd);
-    close(fd);
-    return kr;
-}
-
-kern_return_t nxt2_sign_fd(int fd,
-                           CFDictionaryRef entitlements,
-                           bool signBlob)
-{
-    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
-    if(machO == NULL)
-    {
-        return KERN_FAILURE;
-    }
-    char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
-    LCUnmapMachO(machO);
-    
-    /* find eof */
-    char tag[4];
-    off_t eof = lseek(fd, 0, SEEK_END);
-    
-    if(eof >= (off_t)(sizeof(ksurface_nxtr_blob_t) + sizeof(uint32_t) + 4))
-    {
-        read_at(fd, eof - 4, tag, 4);
-        if(memcmp(tag, APPEND_TAG_NXT2, 4) == 0)
-        {
-            uint32_t data_len;
-            read_at(fd, eof - 4 - sizeof(uint32_t), &data_len, sizeof(uint32_t));
-            eof -= (off_t)(data_len + sizeof(uint32_t) + 4);
-            ftruncate(fd, eof);
-        }
-    }
-    
-    if(lseek(fd, eof, SEEK_SET) < 0)
-    {
-        free(cdhash);
-        return KERN_FAILURE;
-    }
-    
-    if(ftruncate(fd, eof) < 0)
-    {
-        free(cdhash);
-        return KERN_FAILURE;
-    }
-    
-    /* generate nxt2 blob (nxt2 unlike nxtr requires us to do it our selves and not entitlements api) */
-    CFDataRef entitlementsData = entitlement_dict_to_plist(entitlements);
-    if(entitlementsData == NULL)
-    {
-        free(cdhash);
-        return KERN_FAILURE;
-    }
-    CFIndex entitlementsDataLength = CFDataGetLength(entitlementsData);
-    size_t header_size = sizeof(ksurface_nxt2_blob_header_t) + (size_t)entitlementsDataLength;
-    
-    /* allocating the blob header */
-    ksurface_nxt2_blob_header_t *blob_header = calloc(1, header_size);
-    if(blob_header == NULL)
-    {
-        CFRelease(entitlementsData);
-        free(cdhash);
-        return KERN_FAILURE;
-    }
-    
-    /* writing entitlement data */
-    memcpy((void*)blob_header->plist_data, CFDataGetBytePtr(entitlementsData), (size_t)entitlementsDataLength);
-    blob_header->plist_len = (size_t)entitlementsDataLength;
-    CFRelease(entitlementsData);
-    
-    ksurface_nxt2_blob_footer_t *blob_footer = NULL;
-    size_t footer_size;
-    
-    /* signing blob if applicable */
-    if(signBlob && cdhash != NULL)
-    {
-        /* sign blob mode requires cdhash */
-        memcpy((void*)(blob_header->cdhash), cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        free(cdhash);
-        
-        /* generating nonce so it's harder to crack */
-        arc4random_buf(&(blob_header->nonce), sizeof(uint64_t));
-        
-        /* signing blob */
-        const uint8_t *p = ksurface->priv_key;
-        EVP_PKEY *priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
-        if(!priv)
-        {
-            free(blob_header);
-            return KERN_FAILURE;
-        }
-        
-        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-        if(!mdctx)
-        {
-            free(blob_header);
-            EVP_PKEY_free(priv);
-            return KERN_FAILURE;
-        }
-        
-        if(EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, priv) != 1)
-        {
-            free(blob_header);
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(priv);
-            return KERN_FAILURE;
-        }
-        
-        /* allocate the blob footer to hold the signature */
-        footer_size = sizeof(ksurface_nxt2_blob_footer_t);
-        blob_footer = calloc(1, sizeof(ksurface_nxt2_blob_footer_t));
-        if(blob_footer == NULL)
-        {
-            free(blob_header);
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(priv);
-            return KERN_FAILURE;
-        }
-        
-        size_t mac_len = 72;
-        if(EVP_DigestSign(mdctx, blob_footer->mac, &mac_len, (const unsigned char *)blob_header, header_size) != 1)
-        {
-            free(blob_header);
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(priv);
-            return KERN_FAILURE;
-        }
-        blob_footer->mac_len = mac_len;
-        
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(priv);
-    }
-    else if(cdhash != NULL)
-    {
-        free(cdhash);
-        free(blob_header);
-        return KERN_NOT_SUPPORTED;
-    }
-    else
-    {
-        free(blob_header);
-        return KERN_NOT_SUPPORTED;
-    }
-    
-    /* write blob */
-    if(write(fd, blob_header, header_size) != (ssize_t)header_size)
-    {
-        free(blob_footer);
-        free(blob_header);
-        return KERN_FAILURE;
-    }
-    
-    if(write(fd, blob_footer, footer_size) != (ssize_t)footer_size)
-    {
-        free(blob_footer);
-        free(blob_header);
-        return KERN_FAILURE;
-    }
-    
-    free(blob_footer);
-    free(blob_header);
-    
-    /* write tag */
-    uint32_t data_len = (uint32_t)(header_size + footer_size);
-    if(header_size + footer_size > UINT32_MAX)
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(write(fd, &data_len, sizeof(uint32_t)) != (ssize_t)sizeof(uint32_t))
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(write(fd, APPEND_TAG_NXT2, 4) != 4)
-    {
-        return KERN_FAILURE;
-    }
-    
-    fsync(fd);
-    
-    return KERN_SUCCESS;
-}
-
-kern_return_t nxt2_read(const char *path,
-                        ksurface_nxt2_t *result)
-{
-    int fd = open(path, O_RDONLY);
-    if(fd < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    kern_return_t kr = nxt2_read_fd(fd, result);
-    close(fd);
-    return kr;
-}
-
-kern_return_t nxt2_read_fd(int fd,
-                           ksurface_nxt2_t *result)
-{
-    if(fd < 0)
-    {
-        return KERN_INVALID_ARGUMENT;
-    }
-    
-    if(result == NULL)
-    {
-        return KERN_INVALID_ADDRESS;
-    }
-    
-    result->isValid = false;
-    result->isCdHashValid = false;
-    result->isSigned = false;
-    
-    /* read nxt2 tag */
-    char tag[4];
-    uint32_t len = 0;
-    
-    if(lseek(fd, -4, SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    if(read(fd, tag, 4) != 4)
-    {
-        return KERN_FAILURE;
-    }
-    
-    if(memcmp(tag, APPEND_TAG_NXT2, 4) != 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    /* read nxt2 length */
-    if(lseek(fd, -8, SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    if(read(fd, &len, sizeof(uint32_t)) != (ssize_t)sizeof(uint32_t))
-    {
-        return KERN_FAILURE;
-    }
-    
-    /* check sizing */
-    size_t min_blob = offsetof(ksurface_nxt2_blob_header_t, plist_data) + sizeof(ksurface_nxt2_blob_footer_t);
-    if(len < min_blob)
-    {
-        /* NXT2 blob doesn't fit */
-        return KERN_DENIED;
-    }
-    
-    if(len > PAGE_SIZE)
-    {
-        /* could be a exhaustion attack */
-        return KERN_DENIED;
-    }
-    
-    if(lseek(fd, -(off_t)(8 + len), SEEK_END) < 0)
-    {
-        return KERN_FAILURE;
-    }
-    
-    /* reading the blob */
-    uint8_t *blob_buf = malloc(len);
-    if(blob_buf == NULL)
-    {
-        return KERN_NO_SPACE;
-    }
-    
-    if(read(fd, blob_buf, len) != (ssize_t)len)
-    {
-        free(blob_buf);
-        return KERN_FAILURE;
-    }
-    
-    /* now we get the footer and validate it */
-    ksurface_nxt2_blob_footer_t *blob_footer = (ksurface_nxt2_blob_footer_t*)((blob_buf + len) - sizeof(ksurface_nxt2_blob_footer_t));
-    if(blob_footer->mac_len > sizeof(blob_footer->mac))
-    {
-        free(blob_buf);
-        return KERN_DENIED;
-    }
-    
-    /* now we get the header and validate it */
-    ksurface_nxt2_blob_header_t *blob_header = (ksurface_nxt2_blob_header_t*)blob_buf;
-    size_t plist_gap_len = len - (offsetof(ksurface_nxt2_blob_header_t, plist_data) + sizeof(ksurface_nxt2_blob_footer_t));
-    if(blob_header->plist_len > plist_gap_len)
-    {
-        free(blob_buf);
-        return KERN_DENIED;
-    }
-    
-    /* getting entitlements back */
-    CFDataRef entitlementsData = CFDataCreate(kCFAllocatorDefault, (const UInt8*)blob_header->plist_data, (CFIndex)blob_header->plist_len);
-    if(entitlementsData == NULL)
-    {
-        free(blob_buf);
-        return KERN_NO_SPACE;
-    }
-    
-    CFDictionaryRef entitlements = entitlement_plist_to_dict(entitlementsData);
-    CFRelease(entitlementsData);
-    if(entitlements == NULL)
-    {
-        free(blob_buf);
-        return KERN_NO_SPACE;
-    }
-    
-    result->isValid = true; /* everything parsed successfully */
-    
-    memcpy(result->cdhash, blob_header->cdhash, USER_FSIGNATURES_CDHASH_LEN);
-    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
-    if(machO != NULL)
-    {
-        char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
-        if(cdhash != NULL && memcmp(cdhash, result->cdhash, USER_FSIGNATURES_CDHASH_LEN) == 0)
-        {
-            result->isCdHashValid = true;
-        }
-        LCUnmapMachO(machO);
-    }
-    
-    if(result->isCdHashValid && result->isValid)
-    {
-        /* cdhash and blob must be valid for signature check, some checks are not performed twice */
-        const uint8_t *p = ksurface->pub_key;
-        EVP_PKEY *pub = d2i_PUBKEY(NULL, &p, ksurface->pub_key_len);
-        if(!pub)
-        {
-            goto signature_invalid;
-        }
-        
-        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-        if(!mdctx)
-        {
-            EVP_PKEY_free(pub);
-            goto signature_invalid;
-        }
-        
-        if(EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pub) != 1)
-        {
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(pub);
-            goto signature_invalid;
-        }
-        
-        if(EVP_DigestVerify(mdctx, blob_footer->mac, blob_footer->mac_len, (unsigned char *)blob_header, offsetof(ksurface_nxt2_blob_header_t, plist_data) + blob_header->plist_len) == 1)
-        {
-            result->isSigned = true;
-        }
-        
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(pub);
-    }
-    
-signature_invalid:
-    
-    free(blob_buf);
-    
-    result->entitlements = entitlements;
-    return KERN_SUCCESS;
-}
-
+/* ----------------------------------------------------------------------
+ *  Functions
+ * -------------------------------------------------------------------- */
 static CFDictionaryRef trust_identity_entitlements_from_legacy_entitlements(PEEntitlement entitlement)
 {
     CFMutableDictionaryRef dictionary = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -692,7 +150,6 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST,           CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_CREDENTIALS,    CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE,  CFBooleanGetTypeID() },
-
         
         /* launch services */
         { KSURFACE_NXT2_ENTITLEMENT_ID_LS_START,            CFBooleanGetTypeID() },
@@ -746,22 +203,40 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         rwPaths = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
     }
     
-    if(rwPaths)
+    CFMutableArrayRef roPaths;
+    CFArrayRef roExisting = CFDictionaryGetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ);
+    if(roExisting)
     {
-        CFArrayAppendValue(rwPaths, CFSTR("$(EXECUTABLE)"));
-        CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/blastbox"));
+        roPaths = CFArrayCreateMutableCopy(kCFAllocatorDefault, 0, roExisting);
+    }
+    else
+    {
+        roPaths = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    }
+    
+    if(rwPaths && roPaths)
+    {
+        /* the dyld patches currently need the node to be writable */
+        CFArrayAppendValue(roPaths, CFSTR("$(EXECUTABLE)"));
         
         @autoreleasepool {
             LDEApplicationObject *applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:(__bridge NSString*)executablePath];
             if(applicationObject != NULL && applicationObject.bundlePath != NULL && applicationObject.containerPath != NULL)
             {
-                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)applicationObject.bundlePath);
-                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)applicationObject.containerPath);
+                CFArrayAppendValue(roPaths, (__bridge CFStringRef)applicationObject.bundlePath);
+                CFArrayAppendValue(roPaths, (__bridge CFStringRef)applicationObject.containerPath);
+                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)[applicationObject.containerPath stringByAppendingString:@"/*"]);
+            }
+            else
+            {
+                CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/blastbox"));
             }
         }
         
+        CFDictionarySetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ, roPaths);
         CFDictionarySetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE, rwPaths);
         CFRelease(rwPaths);
+        CFRelease(roPaths);
     }
     
     return clean;
@@ -814,8 +289,8 @@ static NSString *PECanonicalizePath(NSString *path)
     return [NSString stringWithUTF8String:resolved];
 }
 
-static CFArrayRef trust_identity_gib_file_permissions(CFStringRef executableString,
-                                                      CFDictionaryRef entitlements)
+static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableString,
+                                                       CFDictionaryRef entitlements)
 {
     NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
     NSDictionary *vars = @{
@@ -912,9 +387,13 @@ ksurface_trust_identity_t *trust_identity_get_kernel(void)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         identity = calloc(1, sizeof(ksurface_trust_identity_t));
-        identity->legacyEntitlements = kPEEntitlementKernel;
-        identity->maxLegacyEntitlements = kPEEntitlementKernel;
-        identity->type = kPETrustTypeTrusted;
+        identity->legacyEntitlements = kPEEntitlementPlatform | kPEEntitlementPlatformRoot;
+        identity->maxLegacyEntitlements = kPEEntitlementPlatform | kPEEntitlementPlatformRoot;
+        identity->trustLevel = kPETrustLevelTrusted;
+        identity->entitlements = (__bridge_retained CFDictionaryRef)[@{
+            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM: @(YES),
+            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT: @(YES),
+        } copy];
         
         uint32_t bufsize = PATH_MAX;
         if(_NSGetExecutablePath(identity->path, &bufsize) > 0)
@@ -934,13 +413,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
         return NULL;
     }
     
-    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
-    if(executableString == NULL)
-    {
-        return NULL;
-    }
-    
-    /* check if in daemon trustpath */
+    /* daemon trustpath validation */
     for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
     {
         if(strncmp(path, trustDaemonPath[index], MAXPATHLEN - 1) == 0)
@@ -948,105 +421,137 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
             ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
             if(identity == NULL)
             {
-                goto fallback;
+                /*
+                 * returning cause this could become useful in a attack chain.
+                 *
+                 * 1. exhausting Nyxian's memory.
+                 * 2. crash a daemon.
+                 * 3. now it runs with fallback entitlements.
+                 */
+                errno = ENOMEM;
+                return NULL;
             }
             strlcpy(identity->path, path, MAXPATHLEN);
-            identity->type = kPETrustTypeTrusted;
-            identity->isSigned = true;
-            identity->isValid = true;
-            identity->isCdHashValid = false;
+            identity->trustLevel = kPETrustLevelTrusted;
             identity->legacyEntitlements = kPEEntitlementSystemDaemon;
             identity->maxLegacyEntitlements = kPEEntitlementSystemDaemon;
             identity->entitlements = trust_identity_entitlements_from_legacy_entitlements(kPEEntitlementSystemDaemon);
             if(identity->entitlements == NULL)
             {
                 free(identity);
-                goto fallback;
+                errno = ENOMEM;
+                return NULL;
             }
             return identity;
         }
     }
     
-    /* signature */
-    
-    /* modern */
-    ksurface_nxt2_t result_nxt2;
-    if(nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
+    /* check if path is readable and signed (required for trust levels lower than kPETrustLevelTrusted, because paths are attacker controlled) */
+    if(access(path, R_OK) != 0)
     {
-        ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
-        if(identity == NULL)
+        return NULL;
+    }
+    
+    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
+    if(executableString == NULL)
+    {
+        return NULL;
+    }
+    
+    /* signature validation */
+#if KSURFACE_CS_ALLOW_NXT2
+    {
+        ksurface_nxt2_t result_nxt2;
+        if(trust_nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
         {
+            /* check if blob was signed */
+            if(!result_nxt2.isSigned || !result_nxt2.isValid || !result_nxt2.isCdHashValid)
+            {
+                CFRelease(result_nxt2.entitlements);
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
+            if(identity == NULL)
+            {
+                CFRelease(result_nxt2.entitlements);
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            strlcpy(identity->path, path, MAXPATHLEN);
+            memcpy(identity->cdhash, result_nxt2.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+            
+            identity->trustLevel = kPETrustLevelSignature;
+            identity->entitlements = trust_identity_validate_entitlements(executableString, result_nxt2.entitlements);
             CFRelease(result_nxt2.entitlements);
-            CFRelease(executableString);
-            goto fallback;
+            if(identity->entitlements == NULL)
+            {
+                free(identity);
+                goto fallback;
+            }
+            identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(identity->entitlements);
+            identity->maxLegacyEntitlements = identity->legacyEntitlements;
+            identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
+            return identity;
         }
-        identity->type = kPETrustTypeSignature;
-        strlcpy(identity->path, path, MAXPATHLEN);
-        
-        memcpy(identity->cdhash, result_nxt2.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        identity->entitlements = trust_identity_validate_entitlements(executableString, result_nxt2.entitlements);
-        CFRelease(result_nxt2.entitlements);
-        if(identity->entitlements == NULL)
-        {
-            CFRelease(executableString);
-            free(identity);
-            goto fallback;
-        }
-        identity->isValid = result_nxt2.isValid;
-        identity->isSigned = result_nxt2.isSigned;
-        if(!identity->isSigned)
-        {
-            CFRelease(identity->entitlements);
-            CFRelease(executableString);
-            free(identity);
-            goto fallback;
-        }
-        identity->isCdHashValid = result_nxt2.isCdHashValid;
-        identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(identity->entitlements);
-        identity->maxLegacyEntitlements = identity->legacyEntitlements;
-        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
-        return identity;
     }
+#endif /* KSURFACE_CS_ALLOW_NXT2 */
     
-#if KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR
-    /* legacy */
-    ksurface_nxtr_result_t result_nxtr;
-    if(nxtr_read(path, &result_nxtr) == KERN_SUCCESS &&
-       entitlement_mach_verify(&result_nxtr, ksurface->pub_key, ksurface->pub_key_len) == KERN_SUCCESS)
+#if KSURFACE_CS_ALLOW_NXTR
     {
-        ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
-        if(identity == NULL)
+        ksurface_nxtr_result_t result_nxtr;
+        if(trust_nxtr_read(path, &result_nxtr) == KERN_SUCCESS)
         {
-            CFRelease(executableString);
-            goto fallback;
+            /* check if blob was signed */
+            if(entitlement_mach_verify(&result_nxtr, ksurface->pub_key, ksurface->pub_key_len) != KERN_SUCCESS)
+            {
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            if(!result_nxtr.blob_valid || !result_nxtr.cdhash_valid)
+            {
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
+            if(identity == NULL)
+            {
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            strlcpy(identity->path, path, MAXPATHLEN);
+            memcpy(identity->cdhash, result_nxtr.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
+            
+            identity->trustLevel = kPETrustLevelSignature;
+            
+            CFDictionaryRef convertedEntitlements = trust_identity_entitlements_from_legacy_entitlements(result_nxtr.blob.entitlement);
+            if(convertedEntitlements == NULL)
+            {
+                free(identity);
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            identity->entitlements = trust_identity_validate_entitlements(executableString, convertedEntitlements);
+            CFRelease(convertedEntitlements);
+            if(identity->entitlements == NULL)
+            {
+                free(identity);
+                CFRelease(executableString);
+                return NULL;
+            }
+            identity->legacyEntitlements = result_nxtr.blob.entitlement;
+            identity->maxLegacyEntitlements = identity->legacyEntitlements;
+            identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
+            return identity;
         }
-        identity->type = kPETrustTypeSignature;
-        strlcpy(identity->path, path, MAXPATHLEN);
-        
-        memcpy(identity->cdhash, result_nxtr.blob.cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        identity->entitlements = trust_identity_validate_entitlements(executableString, trust_identity_entitlements_from_legacy_entitlements(result_nxtr.blob.entitlement));
-        if(identity->entitlements == NULL)
-        {
-            CFRelease(executableString);
-            free(identity);
-            goto fallback;
-        }
-        identity->isValid = result_nxtr.blob_valid;
-        identity->isSigned = result_nxtr.blob_valid;    /* the same thing on nxtr */
-        if(!identity->isSigned)
-        {
-            CFRelease(identity->entitlements);
-            CFRelease(executableString);
-            free(identity);
-            goto fallback;
-        }
-        identity->isCdHashValid = result_nxtr.cdhash_valid;
-        identity->legacyEntitlements = result_nxtr.blob.entitlement;
-        identity->maxLegacyEntitlements = identity->legacyEntitlements;
-        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
-        return identity;
     }
-#endif /* KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR */
+#endif /* KSURFACE_CS_ALLOW_NXTR */
     
     /* fallback */
 fallback:
@@ -1075,18 +580,100 @@ fallback:
         }
         strlcpy(identity->path, path, MAXPATHLEN);
         
-        identity->type = kPETrustTypeFallback;
+        identity->trustLevel = kPETrustLevelSignature;
         identity->entitlements = newEntitlements;
         identity->legacyEntitlements = kPEEntitlementNone;
         identity->maxLegacyEntitlements = kPEEntitlementNone;
-        identity->isSigned = true;
-        identity->isValid = true;
-        identity->isCdHashValid = false;
-        identity->filePermissions = trust_identity_gib_file_permissions(executableString, identity->entitlements);
+        identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
         
         CFRelease(executableString);
         return identity;
     }
+}
+
+ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(const char *path,
+                                                                                ksurface_trust_identity_t *parentIdentity)
+{
+    /* first we create the child's identity */
+    ksurface_trust_identity_t *childIdentity = trust_identity_create_from_path(path);
+    if(childIdentity == NULL)
+    {
+        return NULL;
+    }
+    
+    /* entitlement inheritance */
+    CFMutableDictionaryRef parentMergingEntitlements = CFDictionaryCreateMutableCopy(kCFAllocatorDefault, 0, parentIdentity->entitlements);
+    if(parentMergingEntitlements == NULL)
+    {
+        return NULL;
+    }
+    
+    CFMutableDictionaryRef childNewEntitlements = CFDictionaryCreateMutableCopy(kCFAllocatorDefault, 0, childIdentity->entitlements);
+    if(childNewEntitlements == NULL)
+    {
+        CFRelease(parentMergingEntitlements);
+        return NULL;
+    }
+    
+    /*
+     * only a platform identity may be able to
+     * cause a process with higher identity
+     * than it it self.
+     */
+    if(CFDictionaryGetValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM) != kCFBooleanTrue)
+    {
+        /*
+         * child gets nothing extra, removing
+         * what parent doesnt have.
+         */
+        CFIndex childCount = CFDictionaryGetCount(childNewEntitlements);
+        if(childCount > 0)
+        {
+            const void **childKeys = malloc((size_t)childCount * sizeof(*childKeys));
+            if(childKeys == NULL)
+            {
+                return false;
+            }
+            CFDictionaryGetKeysAndValues(parentMergingEntitlements, childKeys, NULL);
+            for(CFIndex index = 0; index < childCount; index++)
+            {
+                if(!CFDictionaryContainsKey(parentMergingEntitlements, childKeys[index]))
+                {
+                    CFDictionaryRemoveValue(childNewEntitlements, childKeys[index]);
+                }
+            }
+            free(childKeys);
+        }
+    }
+    
+    if(parentIdentity != trust_identity_get_kernel() && /* the kernel cannot inherite entitlements */
+       CFDictionaryGetValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT) == kCFBooleanTrue)
+    {
+        /*
+         * entitlements which shall be stripped from parent
+         * merging entitlements, because they are just too
+         * over powered.
+         */
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM);
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT);
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER);
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP);
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID);
+        CFDictionaryRemoveValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_SUGID);
+    }
+    else
+    {
+        /* not inheriting anything */
+        CFDictionaryRemoveAllValues(parentMergingEntitlements);
+    }
+    
+    /* refreshing childIdentity */
+    CFRelease(childIdentity->entitlements);
+    childIdentity->entitlements = childNewEntitlements;
+    childIdentity->maxLegacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(childNewEntitlements);
+    childIdentity->legacyEntitlements = childIdentity->maxLegacyEntitlements;
+    
+    return childIdentity;
 }
 
 void trust_identity_destroy(ksurface_trust_identity_t *identity)

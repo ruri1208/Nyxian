@@ -19,15 +19,22 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/entitlement.h>
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
+#include <assert.h>
+
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
+#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
-#import <LindChain/ProcEnvironment/Surface/key.h>
-#include <LindChain/ProcEnvironment/Surface/trust.h>
+#include <LindChain/ProcEnvironment/Surface/key.h>
+#include <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #include <OpenSSL/evp.h>
 #include <OpenSSL/err.h>
 #include <OpenSSL/ec.h>
 #include <OpenSSL/pem.h>
-#include <assert.h>
 #include <ksurface_config.h>
 
 kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob,
@@ -145,7 +152,7 @@ PEEntitlement entitlement_get_path(const char *path,
                                    bool *wasLocallySigned)
 {
     ksurface_nxtr_result_t mach;
-    if(nxtr_read(path, &mach) != KERN_SUCCESS)
+    if(trust_nxtr_read(path, &mach) != KERN_SUCCESS)
     {
         *wasLocallySigned = false;
         return kPEEntitlementNone;
@@ -165,13 +172,13 @@ bool entitlement_set_path(const char *path,
         return false;
     }
     
-    kern_return_t kr = nxtr_sign_fd(fd, entitlement);
+    kern_return_t kr = trust_nxtr_sign_fd(fd, entitlement);
     fsync(fd);
     close(fd);
     return (kr == KERN_SUCCESS);
 }
 
-#if KSURFACE_SEC_SANITIZE_ENTITLEMENTS
+#if KSURFACE_CS_SANITIZE_ENTITLEMENTS
 PEEntitlement entitlement_sanitize(PEEntitlement base)
 {
     base &= kPEEntitlementAll;  /* making sure no unused bit fields are enabled */
@@ -201,7 +208,7 @@ PEEntitlement entitlement_sanitize(PEEntitlement base)
     }
     return base;
 }
-#endif /* KSURFACE_SEC_SANITIZE_ENTITLEMENTS */
+#endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */
 
 CFDataRef entitlement_dict_to_plist(CFDictionaryRef dict)
 {

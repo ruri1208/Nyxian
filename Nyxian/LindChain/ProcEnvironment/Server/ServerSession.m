@@ -24,7 +24,7 @@
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
-#import <LindChain/ProcEnvironment/Surface/entitlement.h>
+#import <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/Surface/proc/list.h>

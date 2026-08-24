@@ -38,11 +38,12 @@
 #define KSURFACE_SYS_UCRED_ENABLED  1
 #define KSURFACE_SYS_PROC_ENABLED   1
 
-/* security feature configuration */
-#define KSURFACE_SEC_SANITIZE_ENTITLEMENTS      1   /* strips unecessary entitlements at launch time */
-#define KSURFACE_SEC_CODESIGNATURE_ACCEPT_NXTR  1
+/* codesigning feature configuration */
+#define KSURFACE_CS_SANITIZE_ENTITLEMENTS       1   /* strips unecessary entitlements at launch time */
+#define KSURFACE_CS_ALLOW_NXTR                  1   /* enables compatibility with the legacy code signature format NXTR */
+#define KSURFACE_CS_ALLOW_NXT2                  1   /* enables compatibility with the new code signature format NXT2 (in case we have to disable this some day) */
 
-/* dyld debugging feature configuration */
+/* dyld feature configuration */
 #define KSURFACE_DYLD_HOOK_LOGGING_ENABLED      0   /* enables logging from the hooks */
 #define KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER  1   /* hardlocks open on failed cdhash verification (recommended to be enabled as it closes a huge security risk otherwise) */
 

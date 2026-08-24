@@ -68,7 +68,7 @@ class ManagementViewController: UIThemedTableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch(indexPath.section) {
             case 0:
-                navigationController?.pushViewController(FileListViewController(isSublink: true, path: PEContainer.shared().containerRoot.path), animated: true)
+                navigationController?.pushViewController(FileListViewController(isSublink: true, path: NXBootstrap.shared().rootfsURL.path), animated: true)
             default:
                 if indexPath.row == 0 {
                     PEUserspaceManager.shared().rebootUserspace()

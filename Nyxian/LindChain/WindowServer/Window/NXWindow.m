@@ -32,6 +32,7 @@
     dispatch_once_t _viewDidAppearOnceDispatch;
     dispatch_once_t _closeOnce;
     int _resizeEndDebounceRefCnt;
+    uint64_t _focusGeneration;
 }
 
 - (instancetype)initWithSession:(NXWindowSession*)session
@@ -201,7 +202,7 @@
     } completion:nil];
 }
 
-- (void)focusWindow
+- (void)changeFocus:(BOOL)focused
 {
     assert([NSThread isMainThread]);
     
@@ -211,64 +212,52 @@
     }
     if(!_focusHitView)
     {
-        return;
+        _focusHitView = [[UIView alloc] init];
+        _focusHitView.backgroundColor = UIColor.secondarySystemFillColor;
+        _focusHitView.alpha = 0.0;
+        _focusHitView.translatesAutoresizingMaskIntoConstraints = NO;
+        [_contentStack insertSubview:_focusHitView aboveSubview:self.session.view];
+        [NSLayoutConstraint activateConstraints:@[
+            [_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
+            [_focusHitView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+            [_focusHitView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [_focusHitView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
+        ]];
     }
     if(![self.delegate windowWantsToFocus:self])
     {
         return;
     }
-    self.session.isFocused = YES;
+    self.session.isFocused = focused;
+    if(focused)
+    {
+        [self.view.superview bringSubviewToFront:self.view];
+    }
     
-    [self.view.superview bringSubviewToFront:self.view];
+    [_windowBar changeFocus:focused];
     
-    [_windowBar changeFocus:true];
+    const uint64_t generation = ++_focusGeneration;
+    __weak typeof(self) weakSelf = self;
     
     [UIView animateWithDuration:0.11 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-        self->_focusHitView.alpha = 0.0;
-        self->_focusHitView.transform = CGAffineTransformMakeScale(1.02, 1.02);
+        self->_focusHitView.alpha = focused ? 0.0 : 0.12;
     } completion:^(BOOL finished) {
-        [self->_focusHitView removeFromSuperview];
-        self->_focusHitView = nil;
+        __strong typeof(self) strongSelf = weakSelf;
+        if(!strongSelf || strongSelf->_focusGeneration != generation)
+        {
+            return;
+        }
     }];
+}
+
+- (void)focusWindow
+{
+    [self changeFocus:YES];
 }
 
 - (void)unfocusWindow
 {
-    assert([NSThread isMainThread]);
-    
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
-        return;
-    }
-    if(_focusHitView != nil)
-    {
-        return;
-    }
-    self.session.isFocused = NO;
-    
-    [_windowBar changeFocus:false];
-    
-    _focusHitView = [[UIView alloc] init];
-    _focusHitView.backgroundColor = UIColor.secondarySystemFillColor;
-    _focusHitView.alpha = 0.0;
-    _focusHitView.translatesAutoresizingMaskIntoConstraints = NO;
-    [_contentStack insertSubview:_focusHitView aboveSubview:self.session.view];
-    
-    [NSLayoutConstraint activateConstraints:@[
-        [_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
-        [_focusHitView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [_focusHitView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [_focusHitView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
-    ]];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self->_focusHitView.transform = CGAffineTransformMakeScale(1.02, 1.02);
-        
-        [UIView animateWithDuration:0.11 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            self->_focusHitView.alpha = 0.12;
-            self->_focusHitView.transform = CGAffineTransformIdentity;
-        } completion:nil];
-    });
+    [self changeFocus:NO];
 }
 
 - (void)maximizeWindow:(BOOL)animated

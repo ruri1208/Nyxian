@@ -19,27 +19,38 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/cdhash.h>
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
+#import <CommonCrypto/CommonCrypto.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <mach-o/loader.h>
+#include <mach-o/fat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
-#include <mach-o/loader.h>
-#include <mach-o/fat.h>
-#include <sys/stat.h>
-#import <CommonCrypto/CommonCrypto.h>
-#import <mach-o/loader.h>
-#import <mach-o/fat.h>
 
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
+#import <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
+
+/* ----------------------------------------------------------------------
+ *  Constants
+ * -------------------------------------------------------------------- */
 #define CSMAGIC_EMBEDDED_SIGNATURE      0xfade0cc0
 #define CSMAGIC_CODEDIRECTORY           0xfade0c02
 #define CSSLOT_CODEDIRECTORY            0
 #define CS_HASHTYPE_SHA256              2
 #define CS_HASHTYPE_SHA256_TRUNCATED    3
 
+/* ----------------------------------------------------------------------
+ *  Types
+ * -------------------------------------------------------------------- */
 typedef struct __BlobIndex {
     uint32_t type;
     uint32_t offset;
@@ -79,6 +90,9 @@ typedef struct __CodeDirectory {
     uint64_t execSegFlags;
 } CS_CodeDirectory;
 
+/* ----------------------------------------------------------------------
+ *  Functions
+ * -------------------------------------------------------------------- */
 char *cdhash_of_hdr(const uint8_t *base,
                     size_t size)
 {

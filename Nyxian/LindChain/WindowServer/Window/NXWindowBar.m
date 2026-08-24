@@ -327,16 +327,17 @@ static inline UIColor *RGBHex(uint32_t hex)
     return dot;
 }
 
-- (UIButton *)_islandButtonWithImage:(NSString *)name
-                 withBackgroundColor:(UIColor*)backgroundColor
-                            callback:(void (^)(void))callback
+- (NXHitSurfaceButton *)_islandButtonWithImage:(NSString *)name
+                           withBackgroundColor:(UIColor*)backgroundColor
+                                      callback:(void (^)(void))callback
 {
     UIButtonConfiguration *cfg = [UIButtonConfiguration plainButtonConfiguration];
     cfg.preferredSymbolConfigurationForImage = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightSemibold];
     cfg.image = [UIImage systemImageNamed:name];
     cfg.baseForegroundColor = backgroundColor;
     
-    UIButton *btn = [UIButton buttonWithConfiguration:cfg primaryAction:nil];
+    NXHitSurfaceButton *btn = [NXHitSurfaceButton buttonWithConfiguration:cfg primaryAction:nil];
+    btn.hitSurface = UIEdgeInsetsMake(-14, -14, -14, -14);
     btn.translatesAutoresizingMaskIntoConstraints = NO;
     
     if(callback)

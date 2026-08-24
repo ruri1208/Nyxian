@@ -19,12 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_CDHASH_H
-#define SURFACE_CDHASH_H
+#ifndef TRUST_CDHASH_H
+#define TRUST_CDHASH_H
 
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
 #include <mach-o/loader.h>
 
+/* ----------------------------------------------------------------------
+ *  Function Prototypes
+ * -------------------------------------------------------------------- */
 char *cdhash_of_hdr(const uint8_t *mach_header, size_t size);
 char *cdhash_of_fd(int fd);
 
-#endif /* SURFACE_CDHASH_H */
+#endif /* TRUST_CDHASH_H */

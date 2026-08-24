@@ -86,7 +86,7 @@ void zsign(NSString *appPath,
 		return;
 	}
     
-	bool bEnableCache = true;
+	bool bEnableCache = false;
 	string strFolder = strPath;
 	
 	__block ZBundle bundle;

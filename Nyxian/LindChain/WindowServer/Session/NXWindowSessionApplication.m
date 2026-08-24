@@ -158,16 +158,6 @@
 {
     assert([NSThread isMainThread]);
     
-    /* destroy existing window if there is one already */
-    if(self.scenePresenter)
-    {
-        [self.scenePresenter invalidate];
-    }
-    if(self.scene)
-    {
-        [[PrivClass(FBSceneManager) sharedInstance] destroyScene:self.scene withTransitionContext:nil];
-    }
-    
     /* create a new window using the new lifecycle */
     void (^updateSceneSettings)(id) = ^void(UIMutableApplicationSceneSettings *settings) {
         settings.canShowAlerts = YES;
@@ -275,7 +265,6 @@
     {
         /* bye bye presenter */
         [_scenePresenter invalidate];
-        [[PrivClass(FBSceneManager) sharedInstance] destroyScene:self.scene withTransitionContext:nil];
     }
     [_process terminate];
     

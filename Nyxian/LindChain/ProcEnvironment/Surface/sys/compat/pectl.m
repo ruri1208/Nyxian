@@ -26,7 +26,6 @@
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
 #import <Foundation/Foundation.h>
-#import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
@@ -247,7 +246,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
         case kPECTLCodeSigningGetCDHash:
         {
             kvo_rdlock(sys_proc_);
-            if(!sys_proc_->nyx.identity->isCdHashValid)
+            if(sys_proc_->nyx.identity->trustLevel != kPETrustLevelSignature)   /* signature type needs cdhash verification */
             {
                 kvo_unlock(sys_proc_);
                 sys_return_failure(ENOENT);

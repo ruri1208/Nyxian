@@ -25,7 +25,6 @@
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
-#import <LindChain/Services/containerd/PEContainer.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <Nyxian-Swift.h>
@@ -338,22 +337,12 @@ first:
     
     os_unfair_lock_lock(&_lock);
     klog_log(domain, "rebooting to default (without apps)");
-    [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeMinimal];
-    
-    /* waiting till containerd is back */
-    sleep(1);   /* FIXME: waiting shall not be necessary */
+    [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeEmpty];
     
     /* getting containers */
-    NSURL *containerRoot = [[PEContainer shared] getContainerRoot];
-    if(containerRoot == NULL)
-    {
-        klog_log(domain, "failed to get stable connection with containerd");
-        os_unfair_lock_unlock(&_lock);
-        return NO;
-    }
-    
     NSError *error;
-    NSArray<NSString*> *containers = [[PEContainer shared] contentsOfDirectoryAtPath:[[containerRoot URLByAppendingPathComponent:@"/Documents/Data/Application"] path] error:&error];
+    NSURL *root = [[NXBootstrap shared] rootfsURL];
+    NSArray<NSString*> *containers = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[[root URLByAppendingPathComponent:@"/Data/Application"] path] error:&error];
     if(containers == NULL)
     {
         klog_log(domain, "failed to get all applications containers: \"%@\"", error);
@@ -364,8 +353,8 @@ first:
     /* now we gotta clear all caches */
     for(NSString *containerPath in containers)
     {
-        NSString *cachesPath = [[containerRoot path] stringByAppendingPathComponent:[@"/Documents/Data/Application" stringByAppendingPathComponent:[containerPath stringByAppendingPathComponent:@"/Library/Caches"]]];
-        [[PEContainer shared] removeItemAtURL:[NSURL fileURLWithPath:cachesPath] error:nil];
+        NSURL *cachesURL = [root URLByAppendingPathComponent:[@"/Data/Application" stringByAppendingPathComponent:[containerPath stringByAppendingPathComponent:@"/Library/Caches"]]];
+        [[NSFileManager defaultManager] removeItemAtURL:cachesURL error:nil];
     }
     
     klog_log(domain, "rebooting back to normal (without apps)");
