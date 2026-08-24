@@ -111,47 +111,47 @@
     [_contentStack addArrangedSubview:_session.view];
     [_contentStack sendSubviewToBack:_session.view];
     [_session didMoveToParentViewController:self];
-    /*
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-    {
+    
+   // if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+   // {
         /* this is to move the window obviously */
-        UIPanGestureRecognizer *moveGesture =
-        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
-        moveGesture.minimumNumberOfTouches = 1;
-        moveGesture.maximumNumberOfTouches = 1;
-        [_windowBar addGestureRecognizer:moveGesture];
+       // UIPanGestureRecognizer *moveGesture =
+       // [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
+       // moveGesture.minimumNumberOfTouches = 1;
+       // moveGesture.maximumNumberOfTouches = 1;
+       // [_windowBar addGestureRecognizer:moveGesture];
         
         /* this is to full screen the window by double tap */
-        UITapGestureRecognizer *fullScreenGesture =
-        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maximizeButtonPressed)];
-        fullScreenGesture.numberOfTapsRequired = 2;
-        fullScreenGesture.numberOfTouchesRequired = 1;
-        fullScreenGesture.delaysTouchesBegan = NO;
-        fullScreenGesture.delaysTouchesEnded = NO;
-        fullScreenGesture.cancelsTouchesInView = NO;
-        [_windowBar addGestureRecognizer:fullScreenGesture];
+       // UITapGestureRecognizer *fullScreenGesture =
+       // [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maximizeButtonPressed)];
+       // fullScreenGesture.numberOfTapsRequired = 2;
+       // fullScreenGesture.numberOfTouchesRequired = 1;
+       // fullScreenGesture.delaysTouchesBegan = NO;
+       // fullScreenGesture.delaysTouchesEnded = NO;
+       // fullScreenGesture.cancelsTouchesInView = NO;
+       // [_windowBar addGestureRecognizer:fullScreenGesture];
         
-        moveGesture.delegate = self;
-        fullScreenGesture.delegate = self;
+       // moveGesture.delegate = self;
+       // fullScreenGesture.delegate = self;
         
         /* and this is to resize a window lol */
-        UIPanGestureRecognizer *resizeGesture =
-        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(resizeWindow:)];
-        resizeGesture.minimumNumberOfTouches = 1;
-        resizeGesture.maximumNumberOfTouches = 1;
-        resizeGesture.cancelsTouchesInView = NO;
+       // UIPanGestureRecognizer *resizeGesture =
+       // [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(resizeWindow:)];
+       // resizeGesture.minimumNumberOfTouches = 1;
+       // resizeGesture.maximumNumberOfTouches = 1;
+       // resizeGesture.cancelsTouchesInView = NO;
         
-        _resizeHandle = [[NXResizeHandle alloc] initWithFrame:CGRectMake(_contentStack.frame.size.width - 44, _contentStack.frame.size.height - 44, 44, 44)];
-        [_resizeHandle addGestureRecognizer:resizeGesture];
-        [_contentStack addSubview:_resizeHandle];
-    }
-    else
-    {
+       // _resizeHandle = [[NXResizeHandle alloc] initWithFrame:CGRectMake(_contentStack.frame.size.width - 44, _contentStack.frame.size.height - 44, 44, 44)];
+       // [_resizeHandle addGestureRecognizer:resizeGesture];
+       // [_contentStack addSubview:_resizeHandle];
+   // }
+   // else
+   // {
         /* this is to close the app on iPhone lol */
-        UIPanGestureRecognizer *pullDownGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(minimizeWindow:)];
-        [_windowBar addGestureRecognizer:pullDownGesture];
-    }
-    */
+       // UIPanGestureRecognizer *pullDownGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(minimizeWindow:)];
+       // [_windowBar addGestureRecognizer:pullDownGesture];
+   // }
+    
     _contentStack.layer.borderWidth = 0.5;
     _contentStack.layer.borderColor = UIColor.systemGray3Color.CGColor;
     
