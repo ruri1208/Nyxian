@@ -29,7 +29,11 @@
     self = [super init];
     if(self)
     {
-        _startWindowRect = CGRectMake(50, 50, 375, 667);
+        //_startWindowRect = CGRectMake(50, 50, 375, 667);
+        UIView *view = self.view; 
+        CGRect bounds = view.bounds;
+        UIEdgeInsets insets = view.safeAreaInsets;
+        _startWindowRect = UIEdgeInsetsInsetRect(bounds, insets);
     }
     return self;
 }
