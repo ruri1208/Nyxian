@@ -82,20 +82,20 @@
     _contentStack.backgroundColor = UIColor.systemBackgroundColor;
     
     _contentStack.layer.cornerRadius = 20;
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
-        _contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
-    }
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    //{
+        //_contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
+    //}
     _contentStack.layer.masksToBounds = YES;
     [self.view addSubview:_contentStack];
-    
+    /*
     _windowBar = [[NXWindowBar alloc] initWithTitle:self.session.windowName withCloseCallback:^{
         [weakSelf closeWindowWithCompletion:nil];
     } withMaximizeCallback:^{
         [weakSelf maximizeWindow:YES];
     }];
-    self.session.window = self;
     
+    self.session.window = self;
     [_contentStack addArrangedSubview:_windowBar];
     
     [NSLayoutConstraint activateConstraints:@[
@@ -103,13 +103,15 @@
         [_windowBar.leadingAnchor constraintEqualToAnchor:_contentStack.leadingAnchor],
         [_windowBar.trailingAnchor constraintEqualToAnchor:_contentStack.trailingAnchor],
     ]];
-    
+    */
+    _windowBar = nil;
+    self.session.window = self;
     [self addChildViewController:_session];
     _session.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [_contentStack addArrangedSubview:_session.view];
     [_contentStack sendSubviewToBack:_session.view];
     [_session didMoveToParentViewController:self];
-    
+    /*
     if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
     {
         /* this is to move the window obviously */
@@ -149,7 +151,7 @@
         UIPanGestureRecognizer *pullDownGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(minimizeWindow:)];
         [_windowBar addGestureRecognizer:pullDownGesture];
     }
-    
+    */
     _contentStack.layer.borderWidth = 0.5;
     _contentStack.layer.borderColor = UIColor.systemGray3Color.CGColor;
     
@@ -205,11 +207,12 @@
 - (void)changeFocus:(BOOL)focused
 {
     assert([NSThread isMainThread]);
-    
+    /*
     if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
     {
         return;
     }
+    */
     if(!_focusHitView)
     {
         _focusHitView = [[UIView alloc] init];
@@ -279,11 +282,12 @@
         changes = ^{
             self.view.frame = newFrame;
             [self.view layoutIfNeeded];
-            
+            /*
             if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
             {
                 self->_contentStack.layer.cornerRadius = 20;
             }
+            */
             self->_contentStack.layer.borderWidth = 0.5;
             [self refreshEffects];
             self->_resizeHandle.hidden = NO;
@@ -475,10 +479,10 @@
     
     dispatch_once(&_viewDidAppearOnceDispatch, ^{
         // MARK: Suppose to only run on phones
-        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        {
+        //if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        //{
             [self maximizeWindow:NO];
-        }
+        //}
     });
 }
 
@@ -544,6 +548,18 @@
 - (void)setWindowName:(NSString *)windowName
 {
     _windowBar.title = windowName;
+}
+
+- (void)viewDidLayoutSubviews
+{
+    [super viewDidLayoutSubviews];   
+    self.session.additionalSafeAreaInsets = UIEdgeInsetsZero;  
+}
+
+- (void)viewSafeAreaInsetsDidChange
+{
+    [super viewSafeAreaInsetsDidChange];
+    [self.view setNeedsLayout];     
 }
 
 - (void)deinit
