@@ -314,11 +314,12 @@
         changes = ^{
             self.view.frame = newFrame;
             [self.view layoutIfNeeded];
-            
+            /*
             if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
             {
                 self->_contentStack.layer.cornerRadius = 0;
             }
+            */
             self->_contentStack.layer.borderWidth = 0;
             self.view.layer.shadowOpacity = 0;
             self->_resizeHandle.hidden = YES;
