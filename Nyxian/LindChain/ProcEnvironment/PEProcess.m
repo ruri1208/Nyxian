@@ -80,24 +80,13 @@
         return nil;
     }
     
-    if(identity->trustLevel == kPETrustLevelTrusted)
+    /* TODO: later on we need to drop allow it to become tighter by using the still not existing trust_identity_create_from_path_with_parent_identity */
+    ksurface_trust_identity_t *sb_identity = (proc == kernel_proc_) ? identity : proc->nyx.identity;    /* dont allow sandbox escape by spawning children */
+    if(sb_identity->filePermissions != NULL)
     {
         NSMutableDictionary *mutableItems = [items mutableCopy];
-        [mutableItems setObject:@[
-            [NXBootstrap issueSandboxFileExtensionForURL:[[NXBootstrap shared] rootfsURL] readWrite:YES],
-        ] forKey:@"PEFilePermissions"];
+        [mutableItems setObject:(__bridge NSArray*)sb_identity->filePermissions forKey:@"PEFilePermissions"];
         items = mutableItems;
-    }
-    else
-    {
-        /* TODO: later on we need to drop allow it to become tighter by using the still not existing trust_identity_create_from_path_with_parent_identity */
-        ksurface_trust_identity_t *sb_identity = (proc == kernel_proc_) ? identity : proc->nyx.identity;    /* dont allow sandbox escape by spawning children */
-        if(sb_identity->filePermissions != NULL)
-        {
-            NSMutableDictionary *mutableItems = [items mutableCopy];
-            [mutableItems setObject:(__bridge NSArray*)sb_identity->filePermissions forKey:@"PEFilePermissions"];
-            items = mutableItems;
-        }
     }
     
     /* assigning potential bundle information */

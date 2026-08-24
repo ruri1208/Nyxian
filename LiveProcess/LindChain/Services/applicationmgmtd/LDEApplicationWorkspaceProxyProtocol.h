@@ -23,12 +23,12 @@
 #define LDEAPPLICATIONWORKSPACEPROXYPROTOCOL_H
 
 #import <Foundation/Foundation.h>
-#import <LindChain/ProcEnvironment/Object/ArchiveObject.h>
+#import <LindChain/ProcEnvironment/PEArchiveHandle.h>
 
 @protocol LDEApplicationWorkspaceProxyProtocol
 
 - (void)ping;
-- (void)installApplicationWithArchiveObject:(ArchiveObject*)archiveObject withReply:(void (^)(BOOL))reply;
+- (void)installApplicationWithArchiveHandle:(PEArchiveHandle*)archiveHandle withReply:(void (^)(BOOL))reply;
 - (void)deleteApplicationWithBundleID:(NSString*)bundleID withReply:(void (^)(BOOL))reply;
 - (void)applicationInstalledWithBundleID:(NSString*)bundleID withReply:(void (^)(BOOL))reply;
 - (void)applicationObjectForBundleID:(NSString*)bundleID withReply:(void (^)(LDEApplicationObject*))reply;

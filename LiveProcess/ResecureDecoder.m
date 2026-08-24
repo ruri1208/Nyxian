@@ -19,12 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/Foundation.h>
-#import <objc/runtime.h>
 #import <ResecureDecoder.h>
-#import <LindChain/ProcEnvironment/Object/ArchiveObject.h>
+#import <Foundation/Foundation.h>
+#import <LindChain/ProcEnvironment/PEArchiveHandle.h>
 #import <LindChain/ProcEnvironment/PEFileTable.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
+#import <objc/runtime.h>
 
 void ResecureDecoder(void)
 {
@@ -48,7 +48,7 @@ void ResecureDecoder(void)
         static NSSet *allowedClasses = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            allowedClasses = [NSSet setWithObjects: [NSXPCListenerEndpoint class], [ArchiveObject class], [PEMachPort class], [PEFileTable class], [PEFileHandle class], nil];
+            allowedClasses = [NSSet setWithObjects: [NSXPCListenerEndpoint class], [PEArchiveHandle class], [PEMachPort class], [PEFileTable class], [PEFileHandle class], nil];
         });
         
         if([allowedClasses containsObject:cls])

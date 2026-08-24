@@ -19,27 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HWHKHOOKTHREADCONTEXT_H
-#define HWHKHOOKTHREADCONTEXT_H
+#ifndef TRUST_PRESENTS_H
+#define TRUST_PRESENTS_H
 
-#import <Foundation/Foundation.h>
-#import "HWHookThreadContext.h"
-#import "HWHKCFType.h"
-#import "HWHKHook.h"
+#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 
-@interface HWHKHookThreadContext : HWHKCFType
+CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
+CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemon;
 
-+ (instancetype)current;
-+ (instancetype)context;
-
-- (BOOL)enter;
-- (BOOL)exit;
-
-- (BOOL)enableHooks;
-- (BOOL)disableHooks;
-
-- (BOOL)addHook:(HWHKHook*)hook;
-
-@end
-
-#endif /* HWHKHOOKTHREADCONTEXT_H */
+#endif /* TRUST_PRESENTS_H */

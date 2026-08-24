@@ -97,25 +97,32 @@ static int hook_fcntl(int fildes,
 {
     dyld_hook_log("[hook_fcntl:args] (fildes = %d, cmd: %d, param: %p)\n", fildes, cmd, param);
     int ret = orig_dyld_fcntl(fildes, cmd, param);
-#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
-    char path[PATH_MAX];
-    if(orig_dyld_fcntl(fildes, F_GETPATH, path) != -1)
+    if(cmd == F_GETPATH)
     {
-        dyld_hook_log("[hook_fcntl:return] (ret = %d, path: %s)\n", ret, path);
+        dyld_hook_log("[hook_fcntl:orig_return] (ret = %d, path: %s)\n", ret, (char*)param);
+        dyld_hook_log("[hook_fcntl] [library validation bypass] fooling da cutie dyld >:3\n");
+        if(inode_bank_get_path(inode_for_fd(fildes), param, MAXPATHLEN))
+        {
+            dyld_hook_log("[hook_fcntl] [library validation bypass] redirecting (fd = %d) to (path = %s)\n", fildes, (char*)param);
+        }
+    }
+#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
+    else
+    {
+        dyld_hook_log("[hook_fcntl:orig_return] (ret = %d)\n", ret);
+    }
+#endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
+    
+#if KSURFACE_DYLD_HOOK_LOGGING_ENABLED
+    if(cmd == F_GETPATH)
+    {
+        dyld_hook_log("[hook_fcntl:return] (ret = %d, path: %s)\n", ret, (char*)param);
     }
     else
     {
         dyld_hook_log("[hook_fcntl:return] (ret = %d)\n", ret);
     }
 #endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
-    
-    if(cmd == F_GETPATH)
-    {
-        if(inode_bank_get_path(inode_for_fd(fildes), param, MAXPATHLEN))
-        {
-            dyld_hook_log("[hook_fcntl:fool] fooling da cutie dyld >:3\n");
-        }
-    }
     
     return ret;
 }
@@ -157,30 +164,39 @@ static int hook_open(const char *path,
             char newTmpPath[PATH_MAX];
             snprintf(newTmpPath, sizeof(newTmpPath),  "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
             
+            dyld_hook_log("[hook_open] [library validation bypass] new path: %s\n", newTmpPath);
+            dyld_hook_log("[hook_open] [library validation bypass] dyld needs to think %s -> %s\n", path, newTmpPath);
+            
             int copyfd = open(newTmpPath, flags);
             if(copyfd >= 0)
             {
                 close(fd);
                 dup2(copyfd, fd);
                 close(copyfd);
+                dyld_hook_log("[hook_open] [library validation bypass] path already has APFS inode\n");
                 goto skip_inode_setup;
             }
             
+            dyld_hook_log("[hook_open] [library validation bypass] APFS CoW copy needed\n");
             if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)   /* APFS CoW */
             {
+                dyld_hook_log("[hook_open] [library validation bypass] APFS CoW copy succeeded\n");
                 copyfd = open(newTmpPath, flags);
                 if(copyfd < 0)
                 {
+                    dyld_hook_log("[hook_open] [library validation bypass] couldn't open file descriptor\n");
                     goto skip_inode_setup;
                 }
             }
             else
             {
+                dyld_hook_log("[hook_open] [library validation bypass] APFS CoW copy failed\n");
                 goto skip_inode_setup;
             }
             
             /* this to orient or selfs */
             ino_t inode = inode_for_fd(copyfd);
+            dyld_hook_log("[hook_open] [library validation bypass] seting up inode redirection for inode: 0x%llx\n", inode);
             inode_bank_put(inode, newTmpPath);
             inode_bank_set_redirect(inode, actualPath);
             
@@ -200,7 +216,7 @@ static int hook_open(const char *path,
                 /* need to get cdhash and then reset it's position */
                 
                 char *cdhash = cdhash_of_fd(fd);
-                dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
+                dyld_hook_log("[hook_open] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
                 
                 /* match */
                 if(cdhash == NULL ||
@@ -208,7 +224,7 @@ static int hook_open(const char *path,
                    memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
                 {
                     cdhash_verified = false;
-                    dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
+                    dyld_hook_log("[hook_open] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
                     
 #if KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER
                     open_hardlock = true;
@@ -222,7 +238,7 @@ static int hook_open(const char *path,
                     /* callback can set open hardlock */
                     if(open_hardlock)
                     {
-                        dyld_hook_log("[hook_open:args] [error: hard locked]\n");
+                        dyld_hook_log("[hook_open] [error: hard locked]\n");
                         errno = EACCES;
                         close(fd);
                         fd = -1;
@@ -230,7 +246,7 @@ static int hook_open(const char *path,
                 }
                 else
                 {
-                    dyld_hook_log("[hook_open:cdhash] [nyxian cdhash verifier] cdhash valid!\n");
+                    dyld_hook_log("[hook_open] [nyxian cdhash verifier] cdhash valid!\n");
                     cdhash_verified = true;
                     lseek(fd, 0, SEEK_SET);
                 }
@@ -275,7 +291,10 @@ static int hook_openat(int dirfd,
         {
             /* need a new path */
             char newTmpPath[PATH_MAX];
-            snprintf(newTmpPath, sizeof(newTmpPath), "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
+            snprintf(newTmpPath, sizeof(newTmpPath),  "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
+            
+            dyld_hook_log("[hook_open_at] [library validation bypass] new path: %s\n", newTmpPath);
+            dyld_hook_log("[hook_open_at] [library validation bypass] dyld needs to think %s -> %s\n", path, newTmpPath);
             
             int copyfd = open(newTmpPath, flags);
             if(copyfd >= 0)
@@ -283,24 +302,30 @@ static int hook_openat(int dirfd,
                 close(fd);
                 dup2(copyfd, fd);
                 close(copyfd);
+                dyld_hook_log("[hook_open_at] [library validation bypass] path already has APFS inode\n");
                 goto skip_inode_setup;
             }
             
-            if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)  /* APFS CoW */
+            dyld_hook_log("[hook_open_at] [library validation bypass] APFS CoW copy needed\n");
+            if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)   /* APFS CoW */
             {
+                dyld_hook_log("[hook_open_at] [library validation bypass] APFS CoW copy succeeded\n");
                 copyfd = open(newTmpPath, flags);
                 if(copyfd < 0)
                 {
+                    dyld_hook_log("[hook_open_at] [library validation bypass] couldn't open file descriptor\n");
                     goto skip_inode_setup;
                 }
             }
             else
             {
+                dyld_hook_log("[hook_open_at] [library validation bypass] APFS CoW copy failed\n");
                 goto skip_inode_setup;
             }
             
             /* this to orient or selfs */
             ino_t inode = inode_for_fd(copyfd);
+            dyld_hook_log("[hook_open] [library validation bypass] seting up inode redirection for inode: 0x%llx\n", inode);
             inode_bank_put(inode, newTmpPath);
             inode_bank_set_redirect(inode, actualPath);
             
@@ -342,7 +367,7 @@ static int hook_openat(int dirfd,
                     /* callback can set open hardlock */
                     if(open_hardlock)
                     {
-                        dyld_hook_log("[hook_openat:args] [error: hard locked]\n");
+                        dyld_hook_log("[hook_openat] [error: hard locked]\n");
                         errno = EACCES;
                         close(fd);
                         fd = -1;
@@ -379,17 +404,24 @@ static int hook_fstat64(int fd,
         if(inode_bank_get_path(buf->st_ino, canon, sizeof(canon)) || orig_dyld_fcntl(fd, F_GETPATH, canon) != -1)
         {
             ino_t fake_ino = fake_inode_for_path(canon);
-            dyld_hook_log("[hook_fstat64] changing inode: 0x%llx -> 0x%llx\n", buf->st_ino, fake_ino);
+            dyld_hook_log("[hook_fstat64] [library validation bypass] changing inode:\n");
+            dyld_hook_log("    st_ino: %llu -> %llu\n", buf->st_ino, fake_ino);
             buf->st_ino = fake_ino;
         }
         
-        dyld_hook_log("[hook_stat64] playing a bit with the clock so DYLD thinks the file never changed =3 (1700000000)\n");
+        dyld_hook_log("[hook_fstat64] [library validation bypass] changing times:\n");
+        dyld_hook_log("    st_mtimespec: %lu -> %lu\n", buf->st_mtimespec.tv_sec, fake_time);
         buf->st_mtimespec.tv_sec = fake_time;
         buf->st_mtimespec.tv_nsec = 0;
+        dyld_hook_log("    st_ctimespec: %lu -> %lu\n", buf->st_ctimespec.tv_sec, fake_time);
         buf->st_ctimespec.tv_sec = fake_time;
         buf->st_ctimespec.tv_nsec = 0;
+        dyld_hook_log("    st_birthtimespec: %lu -> %lu\n", buf->st_birthtimespec.tv_sec, fake_time);
         buf->st_birthtimespec.tv_sec = fake_time;
         buf->st_birthtimespec.tv_nsec = 0;
+        
+        dyld_hook_log("[hook_fstat64] [library validation bypass] zeroing out dev device:\n");
+        dyld_hook_log("    st_dev: %d -> %d\n", buf->st_dev, 0);
     }
     dyld_hook_log("[hook_fstat64:return] (ret = %d)\n", ret);
     return ret;
@@ -403,14 +435,23 @@ static int hook_stat64(const char *path,
     if(ret == 0)
     {
         ino_t fake_ino = fake_inode_for_path(path);
-        dyld_hook_log("[hook_stat64] changing inode: 0x%llx -> 0x%llx\n", buf->st_ino, fake_ino);
+        dyld_hook_log("[hook_stat64] [library validation bypass] changing inode:\n");
+        dyld_hook_log("    st_ino: %llu -> %llu\n", buf->st_ino, fake_ino);
         buf->st_ino = fake_ino;   /* canonicalizes internally */
         
-        dyld_hook_log("[hook_stat64] playing a bit with the clock so DYLD thinks the file never changed =3 (1700000000)\n");
+        dyld_hook_log("[hook_stat64] [library validation bypass] changing times:\n");
+        dyld_hook_log("    st_mtimespec: %lu -> %lu\n", buf->st_mtimespec.tv_sec, fake_time);
         buf->st_mtimespec.tv_sec = fake_time;
         buf->st_mtimespec.tv_nsec = 0;
-        buf->st_ctimespec.tv_sec = fake_time; buf->st_ctimespec.tv_nsec = 0;
-        buf->st_birthtimespec.tv_sec = fake_time; buf->st_birthtimespec.tv_nsec = 0;
+        dyld_hook_log("    st_ctimespec: %lu -> %lu\n", buf->st_ctimespec.tv_sec, fake_time);
+        buf->st_ctimespec.tv_sec = fake_time;
+        buf->st_ctimespec.tv_nsec = 0;
+        dyld_hook_log("    st_birthtimespec: %lu -> %lu\n", buf->st_birthtimespec.tv_sec, fake_time);
+        buf->st_birthtimespec.tv_sec = fake_time;
+        buf->st_birthtimespec.tv_nsec = 0;
+        
+        dyld_hook_log("[hook_stat64] [library validation bypass] zeroing out dev device:\n");
+        dyld_hook_log("    st_dev: %d -> %d\n", buf->st_dev, 0);
     }
     dyld_hook_log("[hook_stat64:return] (ret = %d)\n", ret);
     return ret;

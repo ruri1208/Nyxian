@@ -203,6 +203,7 @@
 		79AA11C62F7FFF12002FEAF2 /* Exceptions for "Nyxian" folder in "nxtool" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				LindChain/ProcEnvironment/Surface/trust/signing.c,
 				LindChain/Utils/Zip.m,
 			);
 			target = 79AA11BB2F7FFE24002FEAF2 /* nxtool */;
@@ -242,7 +243,7 @@
 				"LindChain/ProcEnvironment/LiveContainer/Tweaks/UIKit+GuestHooksInit.m",
 				LindChain/ProcEnvironment/LiveContainer/utils.m,
 				LindChain/ProcEnvironment/LiveContainer/ZSign/Utils.mm,
-				LindChain/ProcEnvironment/Object/ArchiveObject.m,
+				LindChain/ProcEnvironment/PEArchiveHandle.m,
 				LindChain/ProcEnvironment/PEFileHandle.m,
 				LindChain/ProcEnvironment/PEFileTable.m,
 				LindChain/ProcEnvironment/PEMachPort.m,
@@ -445,9 +446,6 @@
 		8FF32E1A3036F5F500C46FE4 /* Exceptions for "Frameworks" folder in "HWHook" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				HWHook/HWHKCFType.m,
-				HWHook/HWHKHook.m,
-				HWHook/HWHKHookThreadContext.m,
 				HWHook/HWHook.c,
 				HWHook/HWHookThreadContext.c,
 			);
@@ -1064,8 +1062,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				HEADER_SEARCH_PATHS = Nyxian/;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				OTHER_CFLAGS = "-D__NXTOOL";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 			};
@@ -1077,8 +1079,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
-				HEADER_SEARCH_PATHS = Nyxian/;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				OTHER_CFLAGS = "-D__NXTOOL";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 			};

@@ -44,30 +44,46 @@ DEFINE_SYSCALL_HANDLER(gettask)
      */
     if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, name_only ? kPEEntitlementNone : kPEEntitlementTaskForPid, name_only ? kPEEntitlementNone : kPEEntitlementGetTaskAllowed))
     {
+        if(errno != ESRCH)
+        {
+            /* check for system task ports entitlement */
+            kvo_rdlock(sys_proc_);
+            if(CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS) == kCFBooleanTrue &&
+               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID) == kCFBooleanTrue &&
+               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM) == kCFBooleanTrue)
+            {
+                kvo_unlock(sys_proc_);
+                goto skip_bsd_permission_checks;
+            }
+            kvo_unlock(sys_proc_);
+        }
         kvo_release(target);
         sys_return_failure(errno);
     }
     
-    /* getting task port of flavour */
-    task_t exportTask = MACH_PORT_NULL;
-    kern_return_t ksr = proc_task_for_proc(target, name_only ? TASK_NAME_PORT : TASK_KERNEL_PORT, &exportTask);
-    kvo_release(target);
-    if(ksr != KERN_SUCCESS)
+skip_bsd_permission_checks:
     {
-        sys_return_failure(EACCES);
+        /* getting task port of flavour */
+        task_t exportTask = MACH_PORT_NULL;
+        kern_return_t ksr = proc_task_for_proc(target, name_only ? TASK_NAME_PORT : TASK_KERNEL_PORT, &exportTask);
+        kvo_release(target);
+        if(ksr != KERN_SUCCESS)
+        {
+            sys_return_failure(EACCES);
+        }
+        
+        /* allocating syscall payload, so we can export it to the syscall caller */
+        kern_return_t kr = mach_syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
+        if(kr != KERN_SUCCESS)
+        {
+            mach_port_deallocate(mach_task_self(), exportTask);
+            sys_return_failure(ENOMEM);
+        }
+        
+        /* set task port to be send */
+        (*out_ports)[0] = exportTask;
+        *out_ports_cnt = 1;
+        
+        sys_return;
     }
-    
-    /* allocating syscall payload, so we can export it to the syscall caller */
-    kern_return_t kr = mach_syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
-    if(kr != KERN_SUCCESS)
-    {
-        mach_port_deallocate(mach_task_self(), exportTask);
-        sys_return_failure(ENOMEM);
-    }
-    
-    /* set task port to be send */
-    (*out_ports)[0] = exportTask;
-    *out_ports_cnt = 1;
-    
-    sys_return;
 }

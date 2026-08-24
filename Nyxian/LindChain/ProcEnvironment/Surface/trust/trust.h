@@ -34,6 +34,7 @@
 #include <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
+#include <LindChain/ProcEnvironment/Surface/trust/presets.h>
 
 /* ----------------------------------------------------------------------
  *  Types

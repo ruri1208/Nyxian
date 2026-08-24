@@ -328,14 +328,24 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                     return
                 }
                 
-                var wasSignedLocally: Bool = false
-                var ent: PEEntitlement = entitlement_get_path((executablePath as NSString).utf8String, &wasSignedLocally)
-                
-                // We have to make sure the app is only signed with entitlements known at that time, otherwise a app could contain way more entitlements currently reserved and used by nothing
-                ent = PEEntitlement(rawValue: ent.rawValue & PEEntitlement.all.rawValue)
+                var ent: [String: Any] = [:]
+                var trust_nxt2 = ksurface_nxt2()
+                let kr: kern_return_t = trust_nxt2_read(bundle.executablePath, &trust_nxt2)
+                if(kr != 0) {
+                    trust_nxt2.entitlements.release()
+                    return
+                } else {
+                    let unmanagedDict: Unmanaged<CFDictionary>? = trust_nxt2.entitlements
+                    if let cfDict = unmanagedDict?.takeRetainedValue() {
+                        let nsDict = cfDict as NSDictionary
+                        if let swiftDict = nsDict as? [String: Any] {
+                            ent = swiftDict
+                        }
+                    }
+                }
                 
                 // Gated :3
-                let proceedWithInstall = {
+                let proceedWithInstall: () -> Void = {
                     DispatchQueue.main.async {
                         let alert = UIAlertController(title: nil, message: "Installing", preferredStyle: .alert)
                         
@@ -363,9 +373,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                                     if result {
                                         PEProcessManager.shared().closeIfRunning(usingBundleIdentifier: bundle.bundleIdentifier)
                                         
-                                        if !wasSignedLocally {
-                                            entitlement_set_path((executablePath as NSString).utf8String, ent)
-                                        }
+                                        trust_nxt2_sign((executablePath as NSString).utf8String, ent as CFDictionary, true)
                                         
                                         if LDEApplicationWorkspace.shared().installApplication(atBundlePath: bundle.bundleURL.path) {
                                             DispatchQueue.main.async {
@@ -397,16 +405,9 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                         let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Unknown"
                         let alert = UIAlertController(
                             title: "Install \"\(displayName)\"?",
-                            message: nil,
+                            message: "Entitlements application contains: \(ent)",
                             preferredStyle: .alert
                         )
-                        
-                        // Build the full attributed message
-                        let fullMessage = NSMutableAttributedString()
-                        
-                        fullMessage.append(ent.displayAttributedString)
-                        
-                        alert.setValue(fullMessage, forKey: "attributedMessage")
                         
                         alert.addAction(UIAlertAction(title: "Install", style: .default) { _ in
                             DispatchQueue.global().async {

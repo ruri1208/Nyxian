@@ -146,7 +146,7 @@
         }
     }
     
-    self.workspaceQueue = dispatch_queue_create("org.emexlabs.installd.workspace", DISPATCH_QUEUE_SERIAL);
+    self.workspaceQueue = dispatch_queue_create("org.emexlabs.bootstrapd.workspace", DISPATCH_QUEUE_SERIAL);
     
     return self;
 }
@@ -524,10 +524,10 @@ create_home:
     reply([[LDEApplicationWorkspaceInternal shared] deleteApplicationWithBundleID:bundleID]);
 }
 
-- (void)installApplicationWithArchiveObject:(ArchiveObject*)archiveObject
+- (void)installApplicationWithArchiveHandle:(PEArchiveHandle*)archiveHandle
                                   withReply:(void (^)(BOOL))reply {
     /* validate object*/
-    if(archiveObject == NULL)
+    if(archiveHandle == NULL)
     {
         reply(NO);
         return;
@@ -540,7 +540,7 @@ create_home:
         BOOL didInstall = NO;
         
         @try {
-            tempBundle = [archiveObject extractArchive];
+            tempBundle = [archiveHandle extractArchive];
             if(tempBundle != NULL)
             {
                 didInstall = [[LDEApplicationWorkspaceInternal shared]
@@ -626,7 +626,7 @@ create_home:
 
 + (NSString*)servcieIdentifier
 {
-    return @"org.emexlabs.installd";
+    return @"org.emexlabs.bootstrapd";
 }
 
 + (Protocol*)serviceProtocol

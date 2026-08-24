@@ -41,9 +41,9 @@
 /* ----------------------------------------------------------------------
  *  Constants
  * -------------------------------------------------------------------- */
-const char *trustDaemonPath[] = {
+const char *trustDaemonPath[] = {   /* those paths are immutable */
     "/sbin/launchd",
-    "/usr/libexec/installd",
+    "/usr/libexec/bootstrapd",
 };
 
 /* ----------------------------------------------------------------------
@@ -135,6 +135,7 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         { KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW,      CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID,        CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_SUGID,               CFBooleanGetTypeID() },
+        { KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS,   CFBooleanGetTypeID() },
         
         /* dyld */
         { KSURFACE_NXT2_ENTITLEMENT_ID_DYLD_HIDE_LP,        CFBooleanGetTypeID() },
@@ -161,6 +162,7 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         /* sandbox */
         { KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ,        CFArrayGetTypeID()   },
         { KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE,  CFArrayGetTypeID()   },
+        { KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER,     CFBooleanGetTypeID() },
     };
     const size_t schema_count = sizeof(schema) / sizeof(schema[0]);
     
@@ -216,21 +218,16 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
     
     if(rwPaths && roPaths)
     {
-        /* the dyld patches currently need the node to be writable */
+        /* dyld needs to see the executable */
         CFArrayAppendValue(roPaths, CFSTR("$(EXECUTABLE)"));
+        CFArrayAppendValue(roPaths, CFSTR("$(BUNDLE)"));    /* if it is a bundle and bootstrapd has the same opinion about it */
         
-        @autoreleasepool {
-            LDEApplicationObject *applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:(__bridge NSString*)executablePath];
-            if(applicationObject != NULL && applicationObject.bundlePath != NULL && applicationObject.containerPath != NULL)
-            {
-                CFArrayAppendValue(roPaths, (__bridge CFStringRef)applicationObject.bundlePath);
-                CFArrayAppendValue(roPaths, (__bridge CFStringRef)applicationObject.containerPath);
-                CFArrayAppendValue(rwPaths, (__bridge CFStringRef)[applicationObject.containerPath stringByAppendingString:@"/*"]);
-            }
-            else
-            {
-                CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/blastbox"));
-            }
+        /* some random entitlement */
+        if(CFDictionaryGetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER) != kCFBooleanTrue)
+        {
+            /* grant container access */
+            CFArrayAppendValue(roPaths, CFSTR("$(CONTAINER)"));
+            CFArrayAppendValue(rwPaths, CFSTR("$(CONTAINER)/*"));
         }
         
         CFDictionarySetValue(clean, KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ, roPaths);
@@ -292,47 +289,62 @@ static NSString *PECanonicalizePath(NSString *path)
 static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableString,
                                                        CFDictionaryRef entitlements)
 {
-    NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
-    NSDictionary *vars = @{
-        @"ROOTFS": NXBootstrap.shared.rootfsURL.path,
-        @"EXECUTABLE": (__bridge NSString*)executableString,
-    };
-    NSDictionary *nsEntitlements = (__bridge NSDictionary*)entitlements;
-    NSArray<NSString*> *readFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ];
-    NSArray<NSString*> *readWriteFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE];
-    for(NSString *readWriteFilePermission in readWriteFilePermissions)
+    @autoreleasepool
     {
-        NSArray<NSString*> *paths = PEResolveEntitlementPaths(readWriteFilePermission, vars);
-        for(NSString *path in paths)
+        NSMutableArray<NSData*> *filePermissions = [[NSMutableArray alloc] init];
+        
+        /* prepare variables */
+        NSMutableDictionary *vars = [@{
+            @"ROOTFS": NXBootstrap.shared.rootfsURL.path,
+            @"EXECUTABLE": (__bridge NSString*)executableString,
+        } mutableCopy];
+        
+        /* append applicable variables */
+        LDEApplicationObject *applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:(__bridge NSString*)executableString];
+        if(applicationObject != nil && applicationObject.bundlePath != nil && applicationObject.containerPath != nil)
         {
-            NSString *actualPath = PECanonicalizePath(path);
-            if(actualPath)
+            /* is a application bundle */
+            vars[@"CONTAINER"] = applicationObject.containerPath;
+            vars[@"BUNDLE"] = applicationObject.bundlePath;
+        }
+        
+        NSDictionary *nsEntitlements = (__bridge NSDictionary*)entitlements;
+        NSArray<NSString*> *readFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ];
+        NSArray<NSString*> *readWriteFilePermissions = nsEntitlements[(__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE];
+        for(NSString *readWriteFilePermission in readWriteFilePermissions)
+        {
+            NSArray<NSString*> *paths = PEResolveEntitlementPaths(readWriteFilePermission, vars);
+            for(NSString *path in paths)
             {
-                NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:YES];
-                if(sandboxExtension != nil)
+                NSString *actualPath = PECanonicalizePath(path);
+                if(actualPath)
                 {
-                    [filePermissions addObject:sandboxExtension];
+                    NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:YES];
+                    if(sandboxExtension != nil)
+                    {
+                        [filePermissions addObject:sandboxExtension];
+                    }
                 }
             }
         }
-    }
-    for(NSString *readFilePermission in readFilePermissions)
-    {
-        NSArray<NSString*> *paths = PEResolveEntitlementPaths(readFilePermission, vars);
-        for(NSString *path in paths)
+        for(NSString *readFilePermission in readFilePermissions)
         {
-            NSString *actualPath = PECanonicalizePath(path);
-            if(actualPath)
+            NSArray<NSString*> *paths = PEResolveEntitlementPaths(readFilePermission, vars);
+            for(NSString *path in paths)
             {
-                NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:NO];
-                if(sandboxExtension != nil)
+                NSString *actualPath = PECanonicalizePath(path);
+                if(actualPath)
                 {
-                    [filePermissions addObject:sandboxExtension];
+                    NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:NO];
+                    if(sandboxExtension != nil)
+                    {
+                        [filePermissions addObject:sandboxExtension];
+                    }
                 }
             }
         }
+        return (__bridge_retained CFArrayRef)filePermissions;
     }
-    return (__bridge_retained CFArrayRef)filePermissions;
 }
 
 static PEEntitlement trust_identity_legacy_entitlements_from_entitlements(CFDictionaryRef entitlements)
@@ -387,13 +399,10 @@ ksurface_trust_identity_t *trust_identity_get_kernel(void)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         identity = calloc(1, sizeof(ksurface_trust_identity_t));
-        identity->legacyEntitlements = kPEEntitlementPlatform | kPEEntitlementPlatformRoot;
-        identity->maxLegacyEntitlements = kPEEntitlementPlatform | kPEEntitlementPlatformRoot;
         identity->trustLevel = kPETrustLevelTrusted;
-        identity->entitlements = (__bridge_retained CFDictionaryRef)[@{
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM: @(YES),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT: @(YES),
-        } copy];
+        identity->entitlements = CFDictionaryCreateCopy(kCFAllocatorDefault, kPEEntitlementsNXT2PresetsKernel);
+        identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(identity->entitlements);
+        identity->maxLegacyEntitlements = identity->legacyEntitlements;
         
         uint32_t bufsize = PATH_MAX;
         if(_NSGetExecutablePath(identity->path, &bufsize) > 0)
@@ -413,6 +422,12 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
         return NULL;
     }
     
+    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
+    if(executableString == NULL)
+    {
+        return NULL;
+    }
+    
     /* daemon trustpath validation */
     for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
     {
@@ -429,19 +444,15 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
                  * 3. now it runs with fallback entitlements.
                  */
                 errno = ENOMEM;
+                CFRelease(executableString);
                 return NULL;
             }
             strlcpy(identity->path, path, MAXPATHLEN);
             identity->trustLevel = kPETrustLevelTrusted;
-            identity->legacyEntitlements = kPEEntitlementSystemDaemon;
-            identity->maxLegacyEntitlements = kPEEntitlementSystemDaemon;
-            identity->entitlements = trust_identity_entitlements_from_legacy_entitlements(kPEEntitlementSystemDaemon);
-            if(identity->entitlements == NULL)
-            {
-                free(identity);
-                errno = ENOMEM;
-                return NULL;
-            }
+            identity->entitlements = kPEEntitlementsNXT2PresetsDaemon;
+            identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(kPEEntitlementsNXT2PresetsDaemon);
+            identity->legacyEntitlements = identity->legacyEntitlements;
+            identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
             return identity;
         }
     }
@@ -449,12 +460,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     /* check if path is readable and signed (required for trust levels lower than kPETrustLevelTrusted, because paths are attacker controlled) */
     if(access(path, R_OK) != 0)
     {
-        return NULL;
-    }
-    
-    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
-    if(executableString == NULL)
-    {
+        CFRelease(executableString);
         return NULL;
     }
     
@@ -666,6 +672,8 @@ ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(
         /* not inheriting anything */
         CFDictionaryRemoveAllValues(parentMergingEntitlements);
     }
+    
+    /* TODO: merging remaining parent entitlements */
     
     /* refreshing childIdentity */
     CFRelease(childIdentity->entitlements);

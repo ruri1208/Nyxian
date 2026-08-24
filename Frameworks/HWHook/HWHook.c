@@ -29,6 +29,7 @@ struct __HWHook {
     void *symbol;
     void *replacement;
     Boolean disableContextHooksInFrame;
+    Boolean disableHookInFrame;
 };
 
 static const CFRuntimeClass gHWHook = {

@@ -22,7 +22,7 @@
 #import "LDEApplicationWorkspace.h"
 #import <LindChain/Private/FoundationPrivate.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
-#import <LindChain/ProcEnvironment/Object/ArchiveObject.h>
+#import <LindChain/ProcEnvironment/PEArchiveHandle.h>
 #import <LindChain/Utils/Zip.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
 #import <Nyxian-Swift.h>
@@ -63,7 +63,7 @@
     }
     
     PELaunchServiceManager *serviceManager = [PELaunchServiceManager shared];
-    _connection = [serviceManager connectToService:@"org.emexlabs.installd" protocol:@protocol(LDEApplicationWorkspaceProxyProtocol) observer:self observerProtocol:@protocol(LDEApplicationWorkspaceProtocol)];
+    _connection = [serviceManager connectToService:@"org.emexlabs.bootstrapd" protocol:@protocol(LDEApplicationWorkspaceProxyProtocol) observer:self observerProtocol:@protocol(LDEApplicationWorkspaceProtocol)];
     return _connection != nil;
 }
 
@@ -79,7 +79,7 @@
     [self connect];
     
     __block BOOL result = NO;
-    ArchiveObject *archiveObject = [ArchiveObject objectForDirectoryAtPath:bundlePath];
+    PEArchiveHandle *archiveObject = [PEArchiveHandle objectForDirectoryAtPath:bundlePath];
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     
     id proxy = [_connection remoteObjectProxyWithErrorHandler:^(NSError *error) {
@@ -94,7 +94,7 @@
     }
     else
     {
-        [proxy installApplicationWithArchiveObject:archiveObject withReply:^(BOOL replyResult){
+        [proxy installApplicationWithArchiveHandle:archiveObject withReply:^(BOOL replyResult){
             result = replyResult;
             dispatch_semaphore_signal(sema);
         }];
@@ -109,7 +109,7 @@
     [self connect];
     
     __block BOOL result = NO;
-    ArchiveObject *archiveObject = [ArchiveObject handleForFileAtPath:packagePath];
+    PEArchiveHandle *handle = [PEArchiveHandle handleForFileAtPath:packagePath];
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     
     id proxy = [_connection remoteObjectProxyWithErrorHandler:^(NSError *error) {
@@ -124,7 +124,7 @@
     }
     else
     {
-        [proxy installApplicationWithArchiveObject:archiveObject withReply:^(BOOL replyResult){
+        [proxy installApplicationWithArchiveHandle:handle withReply:^(BOOL replyResult){
             result = replyResult;
             dispatch_semaphore_signal(sema);
         }];

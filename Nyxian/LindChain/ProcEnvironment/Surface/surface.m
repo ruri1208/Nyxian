@@ -269,8 +269,6 @@ static inline void ksurface_kinit_kproc(void)
 #endif /* KSURFACE_EMIT_KERNEL_TASK */
     
     kproc->bsd.kp_proc.p_flag = P_SYSTEM | P_LP64;
-    proc_setentitlements(kproc, kPEEntitlementKernel);
-    proc_setmaxentitlements(kproc, kPEEntitlementKernel);
     
     /* storing kernel proc */
     klog_log("ksurface:kinit:kproc", "inserting kernel process");

@@ -26,10 +26,19 @@
 #include <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#if __has_include(<OpenSSL/evp.h>)
+#define HAS_OPENSSL 1
 #include <OpenSSL/evp.h>
 #include <OpenSSL/err.h>
 #include <OpenSSL/ec.h>
 #include <OpenSSL/pem.h>
+#else
+#define HAS_OPENSSL 0
+#endif /* __has_include(<OpenSSL/evp.h>) */
+
+#ifndef __NXTOOL
+#define __NXTOOL 0
+#endif /* !__NXTOOL */
 
 /* ----------------------------------------------------------------------
  *  Constants
@@ -40,14 +49,49 @@
 /* ----------------------------------------------------------------------
  *  Functions
  * -------------------------------------------------------------------- */
-ssize_t read_at(int fd, off_t offset, void *buf, size_t len)
+static CFDataRef trust_dict_to_plist(CFDictionaryRef dict)
 {
-    if(lseek(fd, offset, SEEK_SET) < 0)
+    CFErrorRef err = NULL;
+    CFDataRef data = CFPropertyListCreateData(kCFAllocatorDefault, dict, kCFPropertyListXMLFormat_v1_0, 0, &err);
+    if(!data)
     {
-        return KERN_FAILURE;
+        if(err)
+        {
+            CFStringRef desc = CFErrorCopyDescription(err);
+            CFRelease(desc);
+            CFRelease(err);
+        }
+        return NULL;
+    }
+    return data;
+}
+
+static CFDictionaryRef trust_plist_to_dict(CFDataRef data)
+{
+    if(!data)
+    {
+        return NULL;
     }
     
-    return read(fd, buf, len);
+    CFErrorRef err = NULL;
+    CFPropertyListFormat fmt;
+    CFPropertyListRef plist = CFPropertyListCreateWithData(kCFAllocatorDefault, data, kCFPropertyListImmutable, &fmt, &err);
+    
+    if(!plist)
+    {
+        if(err)
+        {
+            CFRelease(err);
+        }
+        return NULL;
+    }
+    
+    if(CFGetTypeID(plist) != CFDictionaryGetTypeID())
+    {
+        CFRelease(plist);
+        return NULL;
+    }
+    return (CFDictionaryRef)plist;
 }
 
 kern_return_t trust_remove_blob(const char *path)
@@ -130,6 +174,7 @@ kern_return_t trust_nxtr_sign(const char *path,
 kern_return_t trust_nxtr_sign_fd(int fd,
                                  PEEntitlement entitlement)
 {
+#if !__NXTOOL
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
     {
@@ -145,6 +190,11 @@ kern_return_t trust_nxtr_sign_fd(int fd,
         return KERN_FAILURE;
     }
     free(cdhash);
+#else
+    ksurface_nxtr_blob_t token;
+    bzero((void*)&token, sizeof(token));
+    token.entitlement = entitlement;
+#endif /* !__NXTOOL */
     
     /* cut down to eof */
     trust_remove_blob_fd(fd);
@@ -229,6 +279,7 @@ kern_return_t trust_nxtr_read_fd(int fd,
         return KERN_FAILURE;
     }
     
+#if !__NXTOOL
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
     {
@@ -244,6 +295,10 @@ kern_return_t trust_nxtr_read_fd(int fd,
     }
     
     free(hash);
+#else
+    result->blob_valid = false;
+    result->cdhash_valid = false;
+#endif /* !__NXTOOL */
     return KERN_SUCCESS;
 }
 
@@ -267,6 +322,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
                                  CFDictionaryRef entitlements,
                                  bool signBlob)
 {
+#if !__NXTOOL
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
     {
@@ -274,6 +330,10 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     }
     char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
     LCUnmapMachO(machO);
+#else
+    char *cdhash = NULL;    /* free() is null safe */
+    signBlob = false;
+#endif /* !__NXTOOL */
     
     /* cut down to eof */
     trust_remove_blob_fd(fd);
@@ -281,7 +341,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     lseek(fd, 0, SEEK_END);
     
     /* generate nxt2 blob (nxt2 unlike nxtr requires us to do it our selves and not entitlements api) */
-    CFDataRef entitlementsData = entitlement_dict_to_plist(entitlements);
+    CFDataRef entitlementsData = trust_dict_to_plist(entitlements);
     if(entitlementsData == NULL)
     {
         free(cdhash);
@@ -296,7 +356,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     {
         CFRelease(entitlementsData);
         free(cdhash);
-        return KERN_FAILURE;
+        return KERN_RESOURCE_SHORTAGE;
     }
     
     /* writing entitlement data */
@@ -307,6 +367,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     ksurface_nxt2_blob_footer_t *blob_footer = NULL;
     size_t footer_size;
     
+#if HAS_OPENSSL
     /* signing blob if applicable */
     if(signBlob && cdhash != NULL)
     {
@@ -350,7 +411,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
             free(blob_header);
             EVP_MD_CTX_free(mdctx);
             EVP_PKEY_free(priv);
-            return KERN_FAILURE;
+            return KERN_RESOURCE_SHORTAGE;
         }
         
         size_t mac_len = 72;
@@ -366,17 +427,29 @@ kern_return_t trust_nxt2_sign_fd(int fd,
         EVP_MD_CTX_free(mdctx);
         EVP_PKEY_free(priv);
     }
-    else if(cdhash != NULL)
-    {
-        free(cdhash);
-        free(blob_header);
-        return KERN_NOT_SUPPORTED;
-    }
     else
     {
-        free(blob_header);
-        return KERN_NOT_SUPPORTED;
+#endif /* HAS_OPENSSL */
+        if(cdhash != NULL)
+        {
+            free(cdhash);
+        }
+        
+        /* zero out all signing related */
+        bzero((void*)(blob_header->cdhash), sizeof(blob_header->cdhash));
+        footer_size = sizeof(ksurface_nxt2_blob_footer_t);
+        blob_footer = calloc(1, sizeof(ksurface_nxt2_blob_footer_t));
+        if(blob_footer == NULL)
+        {
+            free(blob_header);
+            return KERN_RESOURCE_SHORTAGE;
+        }
+        
+        blob_footer->mac_len = 0;
+        bzero(blob_footer->mac, sizeof(blob_footer->mac));
+#if HAS_OPENSSL
     }
+#endif /* HAS_OPENSSL */
     
     /* write blob */
     if(write(fd, blob_header, header_size) != (ssize_t)header_size)
@@ -534,7 +607,7 @@ kern_return_t trust_nxt2_read_fd(int fd,
         return KERN_NO_SPACE;
     }
     
-    CFDictionaryRef entitlements = entitlement_plist_to_dict(entitlementsData);
+    CFDictionaryRef entitlements = trust_plist_to_dict(entitlementsData);
     CFRelease(entitlementsData);
     if(entitlements == NULL)
     {
@@ -544,6 +617,7 @@ kern_return_t trust_nxt2_read_fd(int fd,
     
     result->isValid = true; /* everything parsed successfully */
     
+#if !__NXTOOL
     memcpy(result->cdhash, blob_header->cdhash, USER_FSIGNATURES_CDHASH_LEN);
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO != NULL)
@@ -555,7 +629,11 @@ kern_return_t trust_nxt2_read_fd(int fd,
         }
         LCUnmapMachO(machO);
     }
+#else
+    result->isCdHashValid = false;
+#endif /* !__NXTOOL */
     
+#if HAS_OPENSSL
     if(result->isCdHashValid && result->isValid)
     {
         /* cdhash and blob must be valid for signature check, some checks are not performed twice */
@@ -588,6 +666,10 @@ kern_return_t trust_nxt2_read_fd(int fd,
         EVP_MD_CTX_free(mdctx);
         EVP_PKEY_free(pub);
     }
+#else
+    /* cannot verify without openssl */
+    result->isSigned = false;
+#endif /* HAS_OPENSSL */
     
 signature_invalid:
     

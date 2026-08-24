@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>PEServiceIdentifier</key>
-	<string>org.emexlabs.installd</string>
+	<string>org.emexlabs.bootstrapd</string>
 	<key>PEShouldAutorestart</key>
 	<true/>
 	<key>PEExecutablePath</key>
-	<string>/usr/libexec/installd</string>
+	<string>/usr/libexec/bootstrapd</string>
 	<key>PEUserIdentifier</key>
 	<integer>0</integer>
 	<key>PEGroupIdentifier</key>
