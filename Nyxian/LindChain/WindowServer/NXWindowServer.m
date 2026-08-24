@@ -84,7 +84,9 @@
 {
     [super layoutSubviews];
     //_windowLayer.frame = self.bounds;
-    [self layoutSimulatorWindow]
+    if (_activeWindow) {
+        [self layoutSimulatorWindow:_activeWindow];
+    }
 }
 
 + (instancetype)sharedWithWindowScene:(UIWindowScene*)windowScene
@@ -374,20 +376,20 @@
     [self addSubview:_windowLayer];
     [self bringSubviewToFront:_windowLayer];
     [_windowLayer setUserInteractionEnabled:YES];
-    /*
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
+    
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    //{
         /* iOS 26 and above uses the tabbar button instead of gesture */
-        if(@available(iOS 26.0, *))
-        {
-            return;
-        }
+        //if(@available(iOS 26.0, *))
+        //{
+            //return;
+        //}
             
         /* add the gesture */
-        UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-        [self addGestureRecognizer:gestureRecognizer];
-    }
-    */
+        //UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+       // [self addGestureRecognizer:gestureRecognizer];
+    //}
+   
 }
 
 // TODO: FRIDA! PLS MAKE LDEWINDOWSERVERTILEVIEW!!!! IM SO LAZY ONG
@@ -958,15 +960,15 @@
             //return allowed;
         //}
     }
-    /*
-    else
-    {
+    
+    //else
+    //{
         /* fixing non maximised constraints */
-        allowed.origin.x -= (rect.size.width - 50);
-        allowed.size.width += ((rect.size.width * 2) - 100);
-        allowed.size.height += (rect.size.height - 50);
-    }
-    */
+        //allowed.origin.x -= (rect.size.width - 50);
+        //allowed.size.width += ((rect.size.width * 2) - 100);
+        //allowed.size.height += (rect.size.height - 50);
+   // }
+    
     /* a lot of math */
     if(rect.size.height > boundsInset.size.height)
     {
