@@ -81,22 +81,6 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
             
             var menu: [UIMenuElement] = [openMenu]
             
-            let entitlementsPatchAction = UIAction(title: "Patch Entitlements", image: UIImage(systemName: "bandage.fill")) { _ in
-                guard let application = application else { return }
-                if application.isLaunchAllowed {
-                    let machOViewController: MachOPatcherViewController = MachOPatcherViewController(machOPath: application.executablePath) {
-                        if let process = PEProcessManager.shared().process(forBundleIdentifier: application.bundleIdentifier) {
-                            process.sendSignal(SIGKILL)
-                        }
-                    }
-                    let navMachOViewController: UINavigationController = UINavigationController(rootViewController: machOViewController)
-                    navMachOViewController.modalPresentationStyle = .formSheet
-                    self.present(navMachOViewController, animated: true)
-                } else {
-                    NotificationServer.NotifyUser(level: .error, notification: "\"\(application.localizedName ?? "Unknown")\" Is No Longer Available")
-                }
-            }
-            
             let clearContainerAction = UIAction(title: "Clear Data Container", image: UIImage(systemName: "arrow.up.trash.fill")) { _ in
                 guard let application = application else { return }
                 if let process = PEProcessManager.shared().process(forBundleIdentifier: application.bundleIdentifier) {
@@ -118,7 +102,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                 }
             }
             
-            menu.append(contentsOf: [entitlementsPatchAction, clearContainerAction, deleteAction])
+            menu.append(contentsOf: [clearContainerAction, deleteAction])
             
             return UIMenu(title: "", children: menu)
         }
@@ -184,20 +168,47 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                     return
                 }
                 
-                var ent: [String: Any] = [:]
-                var trust_nxt2 = ksurface_nxt2()
-                let kr: kern_return_t = trust_nxt2_read(bundle.executablePath, &trust_nxt2)
-                if(kr != 0) {
-                    if trust_nxt2.entitlements != nil {
-                        trust_nxt2.entitlements.release()
+                var final: [String: Any] = [:]
+                if let executablePath = bundle.executablePath {
+                    var ent: [String: Any] = [:]
+                    var trust_nxt2 = ksurface_nxt2()
+                    let kr: kern_return_t = trust_nxt2_read(bundle.executablePath, &trust_nxt2)
+                    if(kr != 0) {
+                        if trust_nxt2.entitlements != nil {
+                            trust_nxt2.entitlements.release()
+                        }
+                    } else {
+                        let unmanagedDict: Unmanaged<CFDictionary>? = trust_nxt2.entitlements
+                        if let cfDict = unmanagedDict?.takeRetainedValue() {
+                            let nsDict = cfDict as NSDictionary
+                            if let swiftDict = nsDict as? [String: Any] {
+                                ent = swiftDict
+                            }
+                        }
                     }
-                } else {
-                    let unmanagedDict: Unmanaged<CFDictionary>? = trust_nxt2.entitlements
+                    
+                    var appleEnt: [String: Any] = [:]
+                    var outError: OSStatus = 0
+                    let unmanagedDict: Unmanaged<CFDictionary>? = CopyAppleCSEntitlementsForPath(executablePath as CFString, &outError);
                     if let cfDict = unmanagedDict?.takeRetainedValue() {
                         let nsDict = cfDict as NSDictionary
                         if let swiftDict = nsDict as? [String: Any] {
-                            ent = swiftDict
+                            appleEnt = swiftDict
                         }
+                    }
+                    
+                    var extractedEnt: [String: Any] = [:]
+                    let unmanagedDict2: Unmanaged<CFDictionary>? = ExtractNXT2OutOfAppleCSEntitlements(appleEnt as CFDictionary);
+                    if let cfDict = unmanagedDict2?.takeRetainedValue() {
+                        let nsDict = cfDict as NSDictionary
+                        if let swiftDict = nsDict as? [String: Any] {
+                            extractedEnt = swiftDict
+                        }
+                    }
+                    
+                    final = ent
+                    final.merge(extractedEnt) { _, new in
+                        new
                     }
                 }
                 
@@ -230,7 +241,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                                     if result {
                                         PEProcessManager.shared().closeIfRunning(usingBundleIdentifier: bundle.bundleIdentifier)
                                         
-                                        trust_nxt2_sign((executablePath as NSString).utf8String, ent as CFDictionary, true)
+                                        trust_nxt2_sign((executablePath as NSString).utf8String, final as CFDictionary, true)
                                         
                                         if LDEApplicationWorkspace.shared().installApplication(atBundlePath: bundle.bundleURL.path) {
                                             DispatchQueue.main.async {
@@ -267,7 +278,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                         )
                         
                         let fullMessage = NSMutableAttributedString()
-                        fullMessage.append(KSurfaceNXT2CreateEntitlementSummary(ent))
+                        fullMessage.append(KSurfaceNXT2CreateEntitlementSummary(final))
                         alert.setValue(fullMessage, forKey: "attributedMessage")
                         
                         alert.addAction(UIAlertAction(title: "Install", style: .default) { _ in

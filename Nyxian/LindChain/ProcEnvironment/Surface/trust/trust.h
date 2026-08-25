@@ -31,6 +31,7 @@
 /* ----------------------------------------------------------------------
  *  Project Headers
  * -------------------------------------------------------------------- */
+#include <LindChain/ProcEnvironment/Surface/trust/apple.h>
 #include <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
