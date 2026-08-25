@@ -130,7 +130,12 @@ DEFINE_HOOK(dlopen, void *, (const char * __path,
     if(!cs_valid)
     {
         /* sign if invalid */
-        liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, __path, NULL, MACH_PORT_NULL);
+        int fd = open(__path, O_RDWR);
+        if(fd >= 0)
+        {
+            liveshim_syscall(SYS_sign, fd);
+            close(fd);
+        }
     }
     
 just_try:

@@ -75,6 +75,7 @@ syscall_list_item_t sys_list[] = {
     { .name = "SYS_kill",           .sysnum = SYS_kill,         .hndl = GET_SYSCALL_HANDLER(kill)           },
     { .name = "SYS_wait4",          .sysnum = SYS_wait4,        .hndl = GET_SYSCALL_HANDLER(wait4)          },
     { .name = "SYS_waittask",       .sysnum = SYS_waittask,     .hndl = GET_SYSCALL_HANDLER(waittask)       },
+    { .name = "SYS_sign",           .sysnum = SYS_sign,         .hndl = GET_SYSCALL_HANDLER(sign)           },
 #endif /* KSURFACE_SYS_PROC_ENABLED */
 };
 
