@@ -164,10 +164,19 @@ int environment_posix_spawn(pid_t *process_identifier,
     if(!cs_valid)
     {
         /* attempt signing */
-        int ret = (int)liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningSignPath, resolved, NULL, MACH_PORT_NULL);
-        if(ret != 0)
+        int fd = open(path, O_RDWR);
+        if(fd >= 0)
         {
-            /* errno comes from the syscall in this case */
+            int ret = (int)liveshim_syscall(SYS_sign, fd);
+            close(fd);
+            if(ret != 0)
+            {
+                /* errno comes from the syscall in this case */
+                goto out_free_resolved;
+            }
+        }
+        else
+        {
             goto out_free_resolved;
         }
         

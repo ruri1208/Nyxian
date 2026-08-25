@@ -51,6 +51,7 @@
 #define SYS_setent      758     /* MARK: deprecated, use SYS_pectl instead */
 #define SYS_waittask    759     /* waits till task port of a task is available */
 #define SYS_pectl       760     /* utility for many proc environment operations */
+#define SYS_sign        761     /* this is to be able to sign the binary */
 
 /* proc environment control mappings */
 /* categories */

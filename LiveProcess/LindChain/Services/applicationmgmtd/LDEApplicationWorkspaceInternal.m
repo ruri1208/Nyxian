@@ -194,7 +194,7 @@
     /* executable path validation */
     NSString *executableName = bundle.infoDictionary[@"CFBundleExecutable"];
     NSString *lastPathComponent = bundle.executableURL.lastPathComponent;
-
+    
     if(lastPathComponent == nil ||
        ![executableName isEqualToString:lastPathComponent] ||
        ![[NSFileManager defaultManager] isReadableFileAtPath:bundle.executablePath])
@@ -217,15 +217,13 @@
     }
     
     /* bundle identifier validation */
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)+$" options:0 error:nil];
-
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)*$" options:0 error:nil];
     if(regex == nil)
     {
         return NO;
     }
-
+    
     NSUInteger matches = [regex numberOfMatchesInString:bundleIdentifier options:0 range:NSMakeRange(0, bundleIdentifier.length)];
-
     if(matches == 0)
     {
         return NO;
@@ -251,7 +249,7 @@
         components.count > 1 ? [components[1] integerValue] : 0,
         components.count > 2 ? [components[2] integerValue] : 0
     };
-
+    
     if(![[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:requiredVersion])
     {
         return NO;

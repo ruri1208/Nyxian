@@ -45,6 +45,7 @@
 #include <LindChain/ProcEnvironment/Surface/sys/fs/open.h>
 #include <LindChain/ProcEnvironment/Surface/sys/fs/faccessat.h>
 #include <LindChain/ProcEnvironment/Surface/sys/fs/getattrlist.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/sign.h>
 #include <ksurface_config.h>
 
 typedef struct {

@@ -51,4 +51,14 @@
 #define KSURFACE_KLOG_ENABLE_DAEMONS            0
 #define KSURFACE_KLOG_ENABLE_PROCESSES          0
 
+/* in releases these features shall be disabled */
+#if !DEBUG
+#undef KSURFACE_DYLD_HOOK_LOGGING_ENABLED
+#undef KSURFACE_KLOG_ENABLE_DAEMONS
+#undef KSURFACE_KLOG_ENABLE_PROCESSES
+#define KSURFACE_DYLD_HOOK_LOGGING_ENABLED      0
+#define KSURFACE_KLOG_ENABLE_DAEMONS            0
+#define KSURFACE_KLOG_ENABLE_PROCESSES          0
+#endif /* !DEBUG */
+
 #endif /* KSURFACE_CONFIG_H */
