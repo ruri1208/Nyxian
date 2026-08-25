@@ -35,6 +35,7 @@
 @property (nonatomic) NSString *executablePath;
 
 @property (nonatomic) BOOL isLaunchAllowed;
+@property (nonatomic) BOOL isFullscreenRequired;
 
 @property (nonatomic) UIImage *icon;
 

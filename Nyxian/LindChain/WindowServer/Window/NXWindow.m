@@ -40,6 +40,8 @@
 {
     self = [super initWithNibName:nil bundle:nil];
     
+    self.ratioLocked = [session needRatioLocked];
+    
     __weak typeof(self) weakSelf = self;
     [self registerForTraitChanges:@[UITraitUserInterfaceStyle.class] withHandler:^(__kindof id<UITraitChangeObservable> _Nonnull target, UITraitCollection * _Nonnull previousTraitCollection) {
         __strong typeof(self) strongSelf = weakSelf;
@@ -382,10 +384,33 @@
     }
 }
 
+static inline CGSize EVSizeForAspect(CGSize base,
+                                     CGPoint delta,
+                                     CGFloat aspect,
+                                     CGSize minSize)
+{
+    CGFloat t = (aspect * delta.x + delta.y) / (aspect * aspect + 1.0);
+    CGSize s = CGSizeMake(base.width + aspect * t, base.height + t);
+
+    if(s.width < minSize.width)
+    {
+        s.width = minSize.width;
+        s.height = s.width / aspect;
+    }
+    if(s.height < minSize.height)
+    {
+        s.height = minSize.height;
+        s.width = s.height * aspect;
+    }
+
+    s.width = round(s.width);
+    s.height = round(s.width / aspect);
+    return s;
+}
+
 - (void)resizeWindow:(UIPanGestureRecognizer*)gesture
 {
     if(_isMaximized) return;
-    
     switch(gesture.state)
     {
         case UIGestureRecognizerStateBegan:
@@ -393,32 +418,74 @@
             [gesture setTranslation:CGPointZero inView:self.view.superview];
             [self.session beginInteractiveResize];
             [_windowBar collapseIsland];
+            if(self.ratioLocked)
+            {
+                self.lockedAspect = self.originalFrame.size.width / MAX(1.0, self.originalFrame.size.height);
+                self.lastValidFrame = self.view.frame;
+            }
             break;
         case UIGestureRecognizerStateChanged:
         {
             CGPoint delta = [gesture translationInView:self.view.superview];
-            CGRect oldFrame = self.view.frame;
-            CGRect proposed = oldFrame;
-            proposed.size.width  = MAX(300, self.originalFrame.size.width  + delta.x);
-            proposed.size.height = MAX(200, self.originalFrame.size.height + delta.y);
-            
-            CGRect corrected = [self.delegate window:self wantsToChangeToRect:proposed];
-            BOOL widthBlocked  = (corrected.origin.x != proposed.origin.x);
-            BOOL heightBlocked = (corrected.origin.y != proposed.origin.y);
-            
-            if(widthBlocked)
+            if(self.ratioLocked)
             {
-                corrected.size.width = oldFrame.size.width;
-                corrected.origin.x = oldFrame.origin.x;
+                CGRect  proposed = self.view.frame;
+                proposed.size = self.ratioLocked ? EVSizeForAspect(self.originalFrame.size, delta, self.lockedAspect, CGSizeMake(300, 200)) : CGSizeMake(MAX(300, self.originalFrame.size.width  + delta.x), MAX(200, self.originalFrame.size.height + delta.y));
+                
+                CGRect corrected = [self.delegate window:self wantsToChangeToRect:proposed];
+                BOOL widthBlocked = (corrected.origin.x != proposed.origin.x);
+                BOOL heightBlocked = (corrected.origin.y != proposed.origin.y);
+                
+                if(self.ratioLocked)
+                {
+                    if(widthBlocked || heightBlocked)
+                    {
+                        corrected = self.lastValidFrame;
+                    }
+                }
+                else
+                {
+                    CGRect oldFrame = self.view.frame;
+                    if(widthBlocked)
+                    {
+                        corrected.size.width = oldFrame.size.width;
+                        corrected.origin.x = oldFrame.origin.x;
+                    }
+                    if(heightBlocked)
+                    {
+                        corrected.size.height = oldFrame.size.height;
+                        corrected.origin.y = oldFrame.origin.y;
+                    }
+                }
+                
+                self.view.frame = corrected;
+                self.lastValidFrame = corrected;
             }
-            
-            if(heightBlocked)
+            else
             {
-                corrected.size.height = oldFrame.size.height;
-                corrected.origin.y = oldFrame.origin.y;
+                CGRect oldFrame = self.view.frame;
+                CGRect proposed = oldFrame;
+                proposed.size.width = MAX(300, self.originalFrame.size.width + delta.x);
+                proposed.size.height = MAX(200, self.originalFrame.size.height + delta.y);
+                
+                CGRect corrected = [self.delegate window:self wantsToChangeToRect:proposed];
+                BOOL widthBlocked = (corrected.origin.x != proposed.origin.x);
+                BOOL heightBlocked = (corrected.origin.y != proposed.origin.y);
+                
+                if(widthBlocked)
+                {
+                    corrected.size.width = oldFrame.size.width;
+                    corrected.origin.x = oldFrame.origin.x;
+                }
+                
+                if(heightBlocked)
+                {
+                    corrected.size.height = oldFrame.size.height;
+                    corrected.origin.y = oldFrame.origin.y;
+                }
+                
+                self.view.frame = corrected;
             }
-            
-            self.view.frame = corrected;
             break;
         }
         case UIGestureRecognizerStateEnded:

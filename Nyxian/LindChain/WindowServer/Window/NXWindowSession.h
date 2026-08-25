@@ -41,6 +41,7 @@
 
 - (BOOL)openWindow;
 - (BOOL)closeWindow;
+- (BOOL)needRatioLocked;
 
 - (BOOL)activateWindow;
 - (BOOL)deactivateWindow;
