@@ -29,6 +29,7 @@
 #import <LindChain/ProcEnvironment/PEFileTable.h>
 #import <LindChain/ProcEnvironment/PEProcessObserver.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
+#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 
 @interface PEProcess : NSObject <FBProcessObserver>
 
@@ -37,6 +38,7 @@
 @property (nonatomic,strong) FBProcess *process;
 @property (nonatomic,strong) UIImage *snapshot;
 
+@property (nonatomic,strong) LDEApplicationObject *applicationObject;
 @property (nonatomic,strong) NSString *bundleIdentifier;
 @property (nonatomic,strong) NSString *displayName;
 @property (nonatomic,strong) NSString *executablePath;

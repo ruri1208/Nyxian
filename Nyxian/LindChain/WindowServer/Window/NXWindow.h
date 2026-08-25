@@ -48,6 +48,9 @@
 @property (nonatomic) CGRect originalFrame;
 @property (nonatomic) NXWindowSession *session;
 @property (nonatomic, weak) id<NXWindowDelegate> delegate;
+@property (nonatomic) CGRect lastValidFrame;
+@property (nonatomic) CGFloat lockedAspect;
+@property (nonatomic) BOOL ratioLocked;
 
 - (instancetype)initWithSession:(NXWindowSession*)session withDelegate:(id<NXWindowDelegate>)delegate;
 

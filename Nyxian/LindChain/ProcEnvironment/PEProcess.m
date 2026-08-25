@@ -22,7 +22,6 @@
 #import <LindChain/ProcEnvironment/PEProcess.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/PEExtension.h>
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
@@ -90,13 +89,13 @@
     }
     
     /* assigning potential bundle information */
-    LDEApplicationObject *applicationObject = nil;
+    self.applicationObject = nil;
     if(PEUserspaceManager.shared.isLaunchServiceManagerStable)
     {
-        applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
+        self.applicationObject = [[LDEApplicationWorkspace shared] applicationObjectForExecutablePath:self.executablePath];
     }
-    self.bundleIdentifier = applicationObject ? applicationObject.bundleIdentifier : nil;
-    self.displayName = applicationObject ? applicationObject.localizedName : [self.executablePath lastPathComponent];
+    self.bundleIdentifier = self.applicationObject ? self.applicationObject.bundleIdentifier : nil;
+    self.displayName = self.applicationObject ? self.applicationObject.localizedName : [self.executablePath lastPathComponent];
     
     /* spawning process */
     self.process = PESpawnFBProcess(items);

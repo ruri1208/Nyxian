@@ -30,151 +30,7 @@ extension UTType {
         UTType(importedAs: "com.cr4zy.nyxian.tipa", conformingTo: .zip)
     }
     static var nipa: UTType {
-        UTType(importedAs: "com.cr4zy.nyxian.nipa", conformingTo: .data)
-    }
-}
-
-extension UIColor {
-    static let customGold: UIColor = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.90, green: 0.65, blue: 0.10, alpha: 1.0)
-            : UIColor(red: 0.75, green: 0.50, blue: 0.05, alpha: 1.0)
-    }
-}
-
-typealias EntitlementItem = (entitlement: PEEntitlement?, description: String, color: UIColor)
-
-extension PEEntitlement {
-    var displayAttributedString: NSAttributedString {
-        // Resolve tfp capability based on what else is granted
-        let taskForPidEntry: EntitlementItem? = {
-            if self.contains(.processElevate) || (self.contains(.platformRoot) && self.contains(.platform)) {
-                if self.contains(.processEnumeration) {
-                    return (.taskForPid, "obtain task ports of any process running inside Nyxian without restriction", .systemRed)
-                }
-            } else if self.contains(.processEnumeration) {
-                return (.taskForPid, "obtain task ports of processes running as the same user that explicitly allow it via allowing it or are child processes in the same session", .customGold)
-            } else if self.contains(.processSpawn) || self.contains(.processSpawnSignedOnly) {
-                return (nil, "obtain task ports of child processes in the same session", .systemGray)
-            }
-            return nil
-        }()
-        
-        let platformItems: [EntitlementItem] = {
-            let hasRoot = self.contains(.platformRoot)
-            let hasPlatform = self.contains(.platform)
-
-            if hasRoot && hasPlatform {
-                return [(.platformRoot, "platformized as root user", .systemRed)]
-            } else if hasPlatform {
-                return [(.platform, "platformized", .systemOrange)]
-            } else {
-                return []
-            }
-        }()
-        
-        var runtimeItems: [EntitlementItem] = platformItems
-        if self.contains(.dyldHideLiveProcess) {
-            runtimeItems.append((.dyldHideLiveProcess, "with the NSExtension spawn helper hidden from DYLD", .secondaryLabel))
-        }
-        
-        var taskAndProcessItems: [EntitlementItem] = [
-            (.getTaskAllowed, "allow other processes to obtain it's task port", .systemGray),
-            (.processEnumeration, "enumerate all running processes inside Nyxian", .customGold),
-        ]
-        if let taskForPid = taskForPidEntry {
-            taskAndProcessItems.insert(taskForPid, at: 1)
-        }
-        
-        let sections: [(title: String, prefix: String, items: [EntitlementItem])] = [
-            (
-                title: "Task & Process Access",
-                prefix: "Can",
-                items: taskAndProcessItems
-            ),
-            (
-                title: "Process Control",
-                prefix: "Can",
-                items: [
-                    (.processKill, "kill processes", .customGold),
-                    (.processSpawn, "spawn arbitrary unsigned binaries", .systemOrange),
-                    (.processSpawnSignedOnly, "spawn signed binaries only", .customGold),
-                    (.processElevate, "elevate it's own credentials (to the root user for instance)", .systemRed),
-                    (.processSpawnInheriteEntitlements, "pass its entitlements to spawned children", .systemOrange),
-                ]
-            ),
-            (
-                title: "Launch Services",
-                prefix: "Can",
-                items: [
-                    (.launchServicesStart, "start services", .customGold),
-                    (.launchServicesStop, "stop services", .systemOrange),
-                    (.launchServicesToggle, "toggle services on or off", .systemOrange),
-                    (.launchServicesGetEndpoint, "read service endpoints", .customGold),
-                    (.launchServicesSetEndpoint, "set endpoints of not pre-registered services", .customGold),
-                ]
-            ),
-            (
-                title: "Host & Credentials",
-                prefix: "Can",
-                items: [
-                    (.hostManager, "override host properties such as hostname", .systemOrange),
-                    (.credentialsManager, "manage system users and groups", .systemRed),
-                ]
-            ),
-            (
-                title: "Security & Runtime",
-                prefix: "Runs",
-                items: runtimeItems
-            ),
-        ]
-        
-        let result = NSMutableAttributedString()
-        
-        for section in sections {
-            var matched = section.items.filter {
-                guard let entitlement = $0.entitlement else { return true }
-                return self.contains(entitlement)
-            }
-            guard !matched.isEmpty else { continue }
-            
-            if matched.contains(where: { $0.0 == .processSpawn }) {
-                matched.removeAll { $0.0 == .processSpawnSignedOnly }
-            }
-            
-            result.append(NSAttributedString(
-                string: "\n\(section.title)\n",
-                attributes: [
-                    .font: UIFont.systemFont(ofSize: 13, weight: .bold),
-                    .foregroundColor: UIColor.label
-                ]
-            ))
-            
-            let dominantColor: UIColor = {
-                if matched.contains(where: { $0.2 == .systemRed })    { return .systemRed }
-                if matched.contains(where: { $0.2 == .systemOrange }) { return .systemOrange }
-                if matched.contains(where: { $0.2 == .customGold }) { return .customGold }
-                return .secondaryLabel // For non true capabilities
-            }()
-            
-            let parts = matched.map { $0.1 }
-            let joined: String
-            if parts.count == 1 {
-                joined = parts[0]
-            } else {
-                joined = parts.dropLast().joined(separator: ", ") + " and \(parts.last!)"
-            }
-            
-            result.append(NSAttributedString(
-                string: "\(section.prefix) \(joined).\n",
-                attributes: [
-                    .font: UIFont.systemFont(ofSize: 11, weight: .medium),
-                    .foregroundColor: dominantColor
-                ]
-            ))
-        }
-        
-        return result
+        UTType(importedAs: "com.cr4zy.nyxian.nipa", conformingTo: .zip)
     }
 }
 
@@ -406,9 +262,13 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                         let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Unknown"
                         let alert = UIAlertController(
                             title: "Install \"\(displayName)\"?",
-                            message: "Entitlements application contains: \(ent)",
+                            message: nil,
                             preferredStyle: .alert
                         )
+                        
+                        let fullMessage = NSMutableAttributedString()
+                        fullMessage.append(KSurfaceNXT2CreateEntitlementSummary(ent))
+                        alert.setValue(fullMessage, forKey: "attributedMessage")
                         
                         alert.addAction(UIAlertAction(title: "Install", style: .default) { _ in
                             DispatchQueue.global().async {

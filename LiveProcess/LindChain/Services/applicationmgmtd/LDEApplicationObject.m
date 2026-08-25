@@ -37,6 +37,16 @@
     
     self.bundleIdentifier = bundle.bundleIdentifier;
     
+    id fullScreen = [bundle objectForInfoDictionaryKey:@"UIRequiresFullScreen"];
+    if([fullScreen isKindOfClass:[NSNumber class]])
+    {
+        self.isFullscreenRequired = [fullScreen boolValue];
+    }
+    else
+    {
+        self.isFullscreenRequired = NO;
+    }
+    
     NSString *localizedDisplayName = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
     if(!localizedDisplayName)
     {
@@ -87,6 +97,7 @@
     [coder encodeObject:self.containerPath forKey:@"containerPath"];
     [coder encodeObject:self.icon forKey:@"icon"];
     [coder encodeObject:@(self.isLaunchAllowed) forKey:@"isLaunchAllowed"];
+    [coder encodeObject:@(self.isFullscreenRequired) forKey:@"isFullscreenRequired"];
 }
 
 - (nullable instancetype)initWithCoder:(nonnull NSCoder *)coder
@@ -100,6 +111,7 @@
         _containerPath = [coder decodeObjectOfClass:[NSString class] forKey:@"containerPath"];
         _icon = [coder decodeObjectOfClass:[UIImage class] forKey:@"icon"];
         _isLaunchAllowed = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isLaunchAllowed"] boolValue];
+        _isFullscreenRequired = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isFullscreenRequired"] boolValue];
     }
     return self;
 }

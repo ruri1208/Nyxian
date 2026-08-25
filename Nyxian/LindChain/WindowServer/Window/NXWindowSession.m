@@ -44,6 +44,11 @@
     return YES;
 }
 
+- (BOOL)needRatioLocked
+{
+    return NO;
+}
+
 - (BOOL)activateWindow
 {
     return YES;

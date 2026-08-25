@@ -35,6 +35,9 @@
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <LindChain/ProcEnvironment/Surface/trust/presets.h>
+#if __OBJC__
+#import <LindChain/ProcEnvironment/Surface/trust/summary.h>
+#endif /* __OBJC__ */
 
 /* ----------------------------------------------------------------------
  *  Types

@@ -254,6 +254,26 @@
         return NO;
     }
     
+    if(self.process.applicationObject != nil && self.process.applicationObject.isFullscreenRequired)
+    {
+        CGRect screenRect = UIScreen.mainScreen.bounds;
+        
+        if(NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeLeft ||
+           NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeRight)
+        {
+            /* they have to be flipped */
+            CGFloat heigth = screenRect.size.height;
+            screenRect.size.height = screenRect.size.width;
+            screenRect.size.width = heigth;
+        }
+        
+        screenRect.size.width = screenRect.size.width / 2;
+        screenRect.size.height = screenRect.size.height / 2;
+        screenRect.origin.x = 50;
+        screenRect.origin.y = 50;
+        self.startWindowRect = screenRect;
+    }
+    
     return [self bindInApplicationWindow];
 }
 
@@ -269,6 +289,15 @@
     [_process terminate];
     
     return YES;
+}
+
+- (BOOL)needRatioLocked
+{
+    if(self.process.applicationObject == nil)
+    {
+        return NO;
+    }
+    return self.process.applicationObject.isFullscreenRequired;
 }
 
 - (UIImage*)snapshotWindow
