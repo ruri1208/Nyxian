@@ -30,27 +30,27 @@ void TrustPresetsInit(void)
 {
     kPEEntitlementsNXT2PresetsKernel = (__bridge CFDictionaryRef)@{
         /* platformization */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM: @(YES),
+        (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
     };
     
     kPEEntitlementsNXT2PresetsDaemon = (__bridge CFDictionaryRef)@{
         /* platformization */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM: @(YES),
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER: @(0),   /* make sure once set they cannot go back up */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP: @(0),
+        (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
+        (__bridge NSString*)kNXT2EntitlementPlatformUser: @(0), /* make sure once set they cannot go back up */
+        (__bridge NSString*)kNXT2EntitlementPlatformGroup: @(0),
         
         /* process */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM: @(YES),
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED: @(YES),
+        (__bridge NSString*)kNXT2EntitlementProcessEnumeration: @(YES),
+        (__bridge NSString*)kNXT2EntitlementProcessSpawnSignedOnly: @(YES),
         
         /* management */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST: @(YES),
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE: @(YES),
+        (__bridge NSString*)kNXT2EntitlementManagementHost: @(YES),
+        (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpoint: @(YES),
         
         /* sandbox */
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE: @[
+        (__bridge NSString*)kNXT2EntitlementSandboxFileReadWrite: @[
             @"$(ROOTFS)"
         ],
-        (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER: @(YES),
+        (__bridge NSString*)kNXT2EntitlementSandboxNoContainer: @(YES),
     };
 }

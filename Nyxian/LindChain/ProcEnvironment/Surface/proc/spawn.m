@@ -58,20 +58,20 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
 #if KSURFACE_SYS_UCRED_ENABLED
     
     /* only platform processes can use those */
-    if(CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM) == kCFBooleanTrue)
+    if(CFDictionaryGetValue(identity->entitlements, kNXT2EntitlementPlatform) == kCFBooleanTrue)
     {
         /*
          * child process exeuctable is platform binary and has
          * the special platform root entitlement.
          */
-        if(CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT) == kCFBooleanTrue)
+        if(CFDictionaryGetValue(identity->entitlements, kNXT2EntitlementPlatformRoot) == kCFBooleanTrue)
         {
             proc_setrootcred(child_new);
         }
         
         /* special user and group entitlement */
-        CFNumberRef entitlementUserIdentifier = CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER);
-        CFNumberRef entitlementGroupIdentifier = CFDictionaryGetValue(identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP);
+        CFNumberRef entitlementUserIdentifier = CFDictionaryGetValue(identity->entitlements, kNXT2EntitlementPlatformUser);
+        CFNumberRef entitlementGroupIdentifier = CFDictionaryGetValue(identity->entitlements, kNXT2EntitlementPlatformGroup);
         int32_t identifier;
         if(entitlementUserIdentifier != NULL && CFNumberGetValue(entitlementUserIdentifier, kCFNumberSInt32Type, &identifier))
         {

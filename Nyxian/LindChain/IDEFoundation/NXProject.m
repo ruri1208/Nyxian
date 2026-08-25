@@ -282,39 +282,39 @@
         @"/Config/Project.plist": projConfigPlist,
         @"/Config/Entitlements.plist": @{
             /* foundational */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW: @(YES),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SUGID: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS: @(NO),
+            (__bridge NSString*)kNXT2EntitlementPlatform: @(NO),
+            (__bridge NSString*)kNXT2EntitlementPlatformRoot: @(NO),
+            (__bridge NSString*)kNXT2EntitlementGetTaskAllow: @(YES),
+            (__bridge NSString*)kNXT2EntitlementTaskForPid: @(NO),
+            (__bridge NSString*)kNXT2EntitlementSUGID: @(NO),
+            (__bridge NSString*)kNXT2EntitlementSystemTaskPorts: @(NO),
             
             /* dyld */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_DYLD_HIDE_LP: @(NO),
+            (__bridge NSString*)kNXT2EntitlementDYLDHideLP: @(NO),
             
             /* process */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT: @(NO),
+            (__bridge NSString*)kNXT2EntitlementProcessEnumeration: @(NO),
+            (__bridge NSString*)kNXT2EntitlementProcessKill: @(NO),
+            (__bridge NSString*)kNXT2EntitlementProcessSpawn: @(NO),
+            (__bridge NSString*)kNXT2EntitlementProcessSpawnSignedOnly: @(NO),
+            (__bridge NSString*)kNXT2EntitlementProcessSpawnInheriteEntitlements: @(NO),
             
             /* management */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_CREDENTIALS: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE: @(NO),
+            (__bridge NSString*)kNXT2EntitlementManagementHost: @(NO),
+            (__bridge NSString*)kNXT2EntitlementManagementCredentials: @(NO),
+            (__bridge NSString*)kNXT2EntitlementManagementLaunchServices: @(NO),
             
             /* launch services */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_LS_START: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_LS_STOP: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_LS_TOGGLE: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_LS_GET_ENDPOINT: @(NO),
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_LS_SET_ENDPOINT: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesStart: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesStop: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesToggle: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesGetEndpoint: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpoint: @(NO),
             
             /* sandbox */
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ: @[],
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE: @[],
-            (__bridge NSString*)KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER: @(NO),
+            (__bridge NSString*)kNXT2EntitlementSandboxFileRead: @[],
+            (__bridge NSString*)kNXT2EntitlementSandboxFileReadWrite: @[],
+            (__bridge NSString*)kNXT2EntitlementSandboxNoContainer: @(NO),
         }
     };
     
