@@ -41,10 +41,15 @@ bool wait4_proc_event_handler(uint32_t type,
     wait4_payload_t *payload = (wait4_payload_t*)(event->ctx);
     ksurface_proc_t *child = (ksurface_proc_t*)(uintptr_t)val;
     
-    if(child == NULL)
+    if(type == kvObjEventUnregister)
     {
         mach_port_deallocate(mach_task_self(), payload->task);
         free(payload);
+        return true;
+    }
+    
+    if(child == NULL)
+    {
         return true;
     }
     
@@ -91,12 +96,6 @@ bool wait4_proc_event_handler(uint32_t type,
             }
             
             break;
-        case kvObjEventUnregister:
-            kvo_unlock(child);
-            pthread_mutex_unlock(&(parent->children.mutex));
-            mach_port_deallocate(mach_task_self(), payload->task);
-            free(payload);
-            return true;
         default:
             break;
     }

@@ -125,13 +125,7 @@ void kvobject_event_trigger(kvobject_t *kvo,
         }
         
         /* unlocking again to allow recurse */
-        PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(&(kvo->event_rwlock));
         bool will_remove = current->handler(type, value, current);
-        PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(kvo->event_rwlock));
-        
-        pthread_mutex_unlock(&(current->in_use));
-        
-        /* remove if applicable */
         if(will_remove || type == kvObjEventDeinit)
         {
             /* triggering unregistration event */
@@ -154,8 +148,13 @@ void kvobject_event_trigger(kvobject_t *kvo,
             
             /* removing event */
             kvo->event_count--;
+            pthread_mutex_unlock(&(current->in_use));
             pthread_mutex_destroy(&(current->in_use));
             free(current);
+        }
+        else
+        {
+            pthread_mutex_unlock(&(current->in_use));
         }
     }
     
