@@ -72,7 +72,7 @@ static CFDictionaryRef trust_identity_entitlements_from_legacy_entitlements(PEEn
     CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL, entitlement_got_entitlement(entitlement, kPEEntitlementProcessKill) ? kCFBooleanTrue : kCFBooleanFalse);
     CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN, entitlement_got_entitlement(entitlement, kPEEntitlementProcessSpawn) ? kCFBooleanTrue : kCFBooleanFalse);
     CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED, entitlement_got_entitlement(entitlement, kPEEntitlementProcessSpawnSignedOnly) ? kCFBooleanTrue : kCFBooleanFalse);
-    CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT, entitlement_got_entitlement(entitlement, kPEEntitlementProcessSpawnInheriteEntitlements) ? kCFBooleanTrue : kCFBooleanFalse);
+    CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT, entitlement_got_entitlement(entitlement, kPEEntitlementProcessSpawnInheriteEntitlements) ? kCFBooleanTrue : kCFBooleanFalse);
     
     /* management */
     CFDictionaryAddValue(dictionary, KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST, entitlement_got_entitlement(entitlement, kPEEntitlementHostManager) ? kCFBooleanTrue : kCFBooleanFalse);
@@ -145,7 +145,7 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL,           CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN,          CFBooleanGetTypeID() },
         { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED,   CFBooleanGetTypeID() },
-        { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT,   CFBooleanGetTypeID() },
+        { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT, CFBooleanGetTypeID() },
         
         /* management */
         { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST,           CFBooleanGetTypeID() },
@@ -375,7 +375,7 @@ static PEEntitlement trust_identity_legacy_entitlements_from_entitlements(CFDict
     if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL)) legacyEntitlements |= kPEEntitlementProcessKill;
     if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN)) legacyEntitlements |= kPEEntitlementProcessSpawn;
     if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED)) legacyEntitlements |= kPEEntitlementProcessSpawnSignedOnly;
-    if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT)) legacyEntitlements |= kPEEntitlementProcessSpawnInheriteEntitlements;
+    if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT)) legacyEntitlements |= kPEEntitlementProcessSpawnInheriteEntitlements;
     
     /* management */
     if(ENT_IS_TRUE(entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST)) legacyEntitlements |= kPEEntitlementHostManager;
@@ -667,7 +667,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(
     }
     
     if(parentIdentity != trust_identity_get_kernel() && /* the kernel cannot inherite entitlements */
-       CFDictionaryGetValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT) == kCFBooleanTrue)
+       CFDictionaryGetValue(parentMergingEntitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT) == kCFBooleanTrue)
     {
         /*
          * entitlements which shall be stripped from parent

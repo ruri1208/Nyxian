@@ -27,18 +27,20 @@
 
 bool vnode_refresh_at_path(const char* path)
 {
-    int fd = open(path, O_RDWR, 0777);
+    int fd = open(path, O_RDWR);
     if(fd < 0)
     {
         return false;
     }
     
+    /* destroys existing VFS node */
     if(unlink(path) != 0)
     {
         close(fd);
         return false;
     }
     
+    /* creates new node at zero cost */
     if(fclonefileat(fd, AT_FDCWD, path, 0) == 0)
     {
         /* yayyy =3 */
@@ -50,11 +52,12 @@ bool vnode_refresh_at_path(const char* path)
     int copyfd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0777);
     if(copyfd < 0)
     {
-        /* shit */
+        /* something went terribly wrong */
         close(fd);
         return false;
     }
     
+    /* more expensive, but more efficient than nothing */
     if(fcopyfile(fd, copyfd, NULL, COPYFILE_DATA) == 0)
     {
         /* atleast this worked :3 */
@@ -63,5 +66,7 @@ bool vnode_refresh_at_path(const char* path)
         return true;
     }
     
+    close(copyfd);
+    close(fd);
     return false;
 }

@@ -143,7 +143,7 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
 #define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL          CFSTR("org.emexlabs.nyxian.process.kill")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN         CFSTR("org.emexlabs.nyxian.process.spawn")
 #define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED  CFSTR("org.emexlabs.nyxian.process.spawn.signed-only")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_INHERITE_ENT  CFSTR("org.emexlabs.nyxian.process.inherite-entitlements")
+#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT    CFSTR("org.emexlabs.nyxian.process.spawn.inherite-entitlements")
 
 /* management */
 #define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST          CFSTR("org.emexlabs.nyxian.management.host")

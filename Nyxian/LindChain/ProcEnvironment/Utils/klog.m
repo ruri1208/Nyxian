@@ -41,7 +41,7 @@ static void init_process_start_time(void)
 }
 
 /* maximum lines klog can take */
-static const NSUInteger KLOG_MAX_LINES = 500;
+static const NSUInteger KLOG_MAX_LINES = 5000;
 
 static void klog_truncate_if_needed(void)
 {
