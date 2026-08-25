@@ -37,6 +37,43 @@
 #include <OpenSSL/pem.h>
 #include <ksurface_config.h>
 
+/* foundational */
+NXT2Entitlement const kNXT2EntitlementPlatform = CFSTR("org.emexlabs.nyxian.platform");
+NXT2Entitlement const kNXT2EntitlementPlatformRoot = CFSTR("org.emexlabs.nyxian.platform-root");
+NXT2Entitlement const kNXT2EntitlementPlatformUser = CFSTR("org.emexlabs.nyxian.platform.user");
+NXT2Entitlement const kNXT2EntitlementPlatformGroup = CFSTR("org.emexlabs.nyxian.platform.group");
+NXT2Entitlement const kNXT2EntitlementGetTaskAllow = CFSTR("org.emexlabs.nyxian.get-task-allow");
+NXT2Entitlement const kNXT2EntitlementTaskForPid = CFSTR("org.emexlabs.nyxian.task-for-pid");
+NXT2Entitlement const kNXT2EntitlementSUGID = CFSTR("org.emexlabs.nyxian.sugid");
+NXT2Entitlement const kNXT2EntitlementSystemTaskPorts = CFSTR("org.emexlabs.nyxian.system-task-ports");
+
+/* dyld */
+NXT2Entitlement const kNXT2EntitlementDYLDHideLP = CFSTR("org.emexlabs.nyxian.dyld.hide-live-process");
+
+/* process */
+NXT2Entitlement const kNXT2EntitlementProcessEnumeration = CFSTR("org.emexlabs.nyxian.process.enumeration");
+NXT2Entitlement const kNXT2EntitlementProcessKill = CFSTR("org.emexlabs.nyxian.process.kill");
+NXT2Entitlement const kNXT2EntitlementProcessSpawn = CFSTR("org.emexlabs.nyxian.process.spawn");
+NXT2Entitlement const kNXT2EntitlementProcessSpawnSignedOnly = CFSTR("org.emexlabs.nyxian.process.spawn.signed-only");
+NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements = CFSTR("org.emexlabs.nyxian.process.spawn.inherite-entitlements");
+
+/* management */
+NXT2Entitlement const kNXT2EntitlementManagementHost = CFSTR("org.emexlabs.nyxian.management.host");
+NXT2Entitlement const kNXT2EntitlementManagementCredentials = CFSTR("org.emexlabs.nyxian.management.credentials");  /* unimplemented */
+NXT2Entitlement const kNXT2EntitlementManagementLaunchServices = CFSTR("org.emexlabs.nyxian.management.launch-services");
+
+/* launch services */
+NXT2Entitlement const kNXT2EntitlementLaunchServicesStart = CFSTR("org.emexlabs.nyxian.launch-services.start");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesStop = CFSTR("org.emexlabs.nyxian.launch-services.stop");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesToggle = CFSTR("org.emexlabs.nyxian.launch-services.toggle");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpoint = CFSTR("org.emexlabs.nyxian.launch-services.get-endpoint");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpoint = CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint");
+
+/* sandbox */
+NXT2Entitlement const kNXT2EntitlementSandboxFileRead = CFSTR("org.emexlabs.nyxian.sandbox.file.read");
+NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite = CFSTR("org.emexlabs.nyxian.sandbox.file.read-write");
+NXT2Entitlement const kNXT2EntitlementSandboxNoContainer = CFSTR("org.emexlabs.nyxian.sandbox.no-container");
+
 kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob,
                                          const char *cdhash,
                                          PEEntitlement entitlement)

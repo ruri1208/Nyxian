@@ -81,8 +81,8 @@
     
     // Setting up paths
     NSString *homeDir = NSHomeDirectory();
-    self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"Bundle/Application"]];
-    self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"Data/Application"]];
+    self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/containers/Bundle/Application"]];
+    self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile/Containers/Data/Application"]];
     self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"usr/bin"]];
     self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/mobile"]];
     self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"tmp"]];
@@ -112,6 +112,21 @@
         
         NSLog(@"[kupdate:1] old PKHome rootfs recovered");
         self.version = 2;
+    }
+    
+    if(self.version < 3)
+    {
+        NSLog(@"[kupdate:2] moving those bundle and container dirs to their new path");
+        [fileManager removeItemAtURL:self.applicationsURL error:nil];
+        [fileManager removeItemAtURL:self.containersURL error:nil];
+        [fileManager createDirectoryAtURL:[self.applicationsURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+        [fileManager createDirectoryAtURL:[self.containersURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+        [fileManager moveItemAtPath:[homeDir stringByAppendingPathComponent:@"/Bundle/Application"] toPath:self.applicationsURL.path error:nil];
+        [fileManager moveItemAtPath:[homeDir stringByAppendingPathComponent:@"/Data/Application"] toPath:self.containersURL.path error:nil];
+        [fileManager removeItemAtPath:[homeDir stringByAppendingPathComponent:@"/Bundle"] error:nil];
+        [fileManager removeItemAtPath:[homeDir stringByAppendingPathComponent:@"/Data"] error:nil];
+        NSLog(@"[kupdate:2] moved them");
+        self.version = 3;
     }
     
     // Creating paths if they dont exist

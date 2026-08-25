@@ -105,42 +105,67 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
         return NULL;
     }
     
+    CFMutableArrayRef roPaths = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    if(roPaths == NULL)
+    {
+        return NULL;
+    }
+    
+    CFMutableArrayRef rwPaths = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    if(rwPaths == NULL)
+    {
+        CFRelease(roPaths);
+        return NULL;
+    }
+    
     CFMutableDictionaryRef newNXT2Entitlements = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     if(newNXT2Entitlements == NULL)
     {
+        CFRelease(roPaths);
+        CFRelease(rwPaths);
         return NULL;
     }
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("get-task-allow")) == kCFBooleanTrue)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementGetTaskAllow, kCFBooleanTrue);
     }
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("task_for_pid-allow")) == kCFBooleanTrue)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementTaskForPid, kCFBooleanTrue);
     }
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.system-task-ports")) == kCFBooleanTrue)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSystemTaskPorts, kCFBooleanTrue);
     }
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("platform-application")) == kCFBooleanTrue)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementPlatform, kCFBooleanTrue);
     }
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("proc_info-allow")) == kCFBooleanTrue)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessEnumeration, kCFBooleanTrue);
     }
     
-    if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.no-sandbox")) == kCFBooleanTrue)
+    if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.no-sandbox")) == kCFBooleanTrue ||
+       CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.no-container")) == kCFBooleanTrue ||
+       CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.container-required")) == kCFBooleanFalse)
     {
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM, kCFBooleanTrue);
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL, kCFBooleanTrue);
-        CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessEnumeration, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessKill, kCFBooleanTrue);
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessSpawnSignedOnly, kCFBooleanTrue);
+        
+        /* they can read rootfs */
+        CFArrayAppendValue(roPaths, CFSTR("$(ROOTFS)"));
+    }
+    
+    if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.storage.AppDataContainers")) == kCFBooleanTrue)
+    {
+        CFArrayAppendValue(rwPaths, CFSTR("$(CONTAINER)/../"));
     }
     
     CFArrayRef temporarySBXException = AppleCSTypeSanizizeKey(appleCSEntitlements, CFSTR("com.apple.security.temporary-exception.sbpl"), CFArrayGetTypeID());
@@ -152,16 +177,21 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
             CFTypeRef value = CFArrayGetValueAtIndex(temporarySBXException, index);
             if(CFEqual(value, CFSTR("(allow signal)")))
             {
-                CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL, kCFBooleanTrue);
+                CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessKill, kCFBooleanTrue);
             }
             else if(CFEqual(value, CFSTR("(allow process-info-listpids)")) ||
                     CFEqual(value, CFSTR("(allow process-info)")) ||
                     CFEqual(value, CFSTR("(allow process-info*)")))
             {
-                CFDictionaryAddValue(newNXT2Entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM, kCFBooleanTrue);
+                CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessEnumeration, kCFBooleanTrue);
             }
         }
     }
+    
+    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileRead, roPaths);
+    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileReadWrite, rwPaths);
+    CFRelease(roPaths);
+    CFRelease(rwPaths);
     
     return newNXT2Entitlements;
 }

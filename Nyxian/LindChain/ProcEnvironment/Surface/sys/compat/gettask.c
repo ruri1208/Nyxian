@@ -48,9 +48,9 @@ DEFINE_SYSCALL_HANDLER(gettask)
         {
             /* check for system task ports entitlement */
             kvo_rdlock(sys_proc_);
-            if(CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS) == kCFBooleanTrue &&
-               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID) == kCFBooleanTrue &&
-               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM) == kCFBooleanTrue)
+            if(CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementSystemTaskPorts) == kCFBooleanTrue &&
+               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementTaskForPid) == kCFBooleanTrue &&
+               CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementPlatform) == kCFBooleanTrue)
             {
                 kvo_unlock(sys_proc_);
                 goto skip_bsd_permission_checks;

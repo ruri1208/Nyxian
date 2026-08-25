@@ -125,42 +125,45 @@ typedef CF_OPTIONS(uint64_t, PEEntitlement) {
     kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
 };
 
+/* new NXT2 entitlements */
+typedef CFStringRef NXT2Entitlement CF_TYPED_ENUM;
+
 /* foundational */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM           CFSTR("org.emexlabs.nyxian.platform")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT      CFSTR("org.emexlabs.nyxian.platform-root")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER      CFSTR("org.emexlabs.nyxian.platform.user")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP     CFSTR("org.emexlabs.nyxian.platform.group")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW     CFSTR("org.emexlabs.nyxian.get-task-allow")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID       CFSTR("org.emexlabs.nyxian.task-for-pid")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_SUGID              CFSTR("org.emexlabs.nyxian.sugid")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS  CFSTR("org.emexlabs.nyxian.system-task-ports")
+extern NXT2Entitlement const kNXT2EntitlementPlatform;
+extern NXT2Entitlement const kNXT2EntitlementPlatformRoot;
+extern NXT2Entitlement const kNXT2EntitlementPlatformUser;
+extern NXT2Entitlement const kNXT2EntitlementPlatformGroup;
+extern NXT2Entitlement const kNXT2EntitlementGetTaskAllow;
+extern NXT2Entitlement const kNXT2EntitlementTaskForPid;
+extern NXT2Entitlement const kNXT2EntitlementSUGID;
+extern NXT2Entitlement const kNXT2EntitlementSystemTaskPorts;
 
 /* dyld */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_DYLD_HIDE_LP       CFSTR("org.emexlabs.nyxian.dyld.hide-live-process")
+extern NXT2Entitlement const kNXT2EntitlementDYLDHideLP;
 
 /* process */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM          CFSTR("org.emexlabs.nyxian.process.enumeration")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL          CFSTR("org.emexlabs.nyxian.process.kill")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN         CFSTR("org.emexlabs.nyxian.process.spawn")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED  CFSTR("org.emexlabs.nyxian.process.spawn.signed-only")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT    CFSTR("org.emexlabs.nyxian.process.spawn.inherite-entitlements")
+extern NXT2Entitlement const kNXT2EntitlementProcessEnumeration;
+extern NXT2Entitlement const kNXT2EntitlementProcessKill;
+extern NXT2Entitlement const kNXT2EntitlementProcessSpawn;
+extern NXT2Entitlement const kNXT2EntitlementProcessSpawnSignedOnly;
+extern NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements;
 
 /* management */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST          CFSTR("org.emexlabs.nyxian.management.host")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_CREDENTIALS   CFSTR("org.emexlabs.nyxian.management.credentials")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_LAUNCHSERVICE CFSTR("org.emexlabs.nyxian.management.launch-services")
+extern NXT2Entitlement const kNXT2EntitlementManagementHost;
+extern NXT2Entitlement const kNXT2EntitlementManagementCredentials; /* unimplemented */
+extern NXT2Entitlement const kNXT2EntitlementManagementLaunchServices;
 
 /* launch services */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_START           CFSTR("org.emexlabs.nyxian.launch-services.start")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_STOP            CFSTR("org.emexlabs.nyxian.launch-services.stop")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_TOGGLE          CFSTR("org.emexlabs.nyxian.launch-services.toggle")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_GET_ENDPOINT    CFSTR("org.emexlabs.nyxian.launch-services.get-endpoint")
-#define KSURFACE_NXT2_ENTITLEMENT_ID_LS_SET_ENDPOINT    CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint")
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStart;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStop;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesToggle;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpoint;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpoint;
 
 /* sandbox */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ       CFSTR("org.emexlabs.nyxian.sandbox.file.read")          /* type shall be CFArray */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE CFSTR("org.emexlabs.nyxian.sandbox.file.read-write")    /* type shall be CFArray */
-#define KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER    CFSTR("org.emexlabs.nyxian.sandbox.no-container")
+extern NXT2Entitlement const kNXT2EntitlementSandboxFileRead;
+extern NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite;
+extern NXT2Entitlement const kNXT2EntitlementSandboxNoContainer;
 
 /* ----------------------------------------------------------------------
  *  Types

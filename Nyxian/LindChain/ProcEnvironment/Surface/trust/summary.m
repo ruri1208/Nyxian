@@ -25,117 +25,6 @@
 #include <grp.h>
 #include <errno.h>
 
-static const KSNXT2Descriptor kKSNXT2Descriptors[] = {
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Runs as a platform process and is exempt from some restrictions.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Runs with root privileges.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_USER, KSNXT2SectionIdentity, KSNXT2ValueInteger, KSNXT2SeverityNote, NO, CFSTR("Runs as user %@.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_GROUP, KSNXT2SectionIdentity, KSNXT2ValueInteger, KSNXT2SeverityNote, NO, CFSTR("Runs as group %@.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_SUGID, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can change its own user and group identity while running.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_ENUM, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can see every process running in Nyxian.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_KILL, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can terminate and signal processes.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can launch arbitrary executables.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityInfo, YES, CFSTR("Executables it launches must be signed.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Executables it launches inherit some of its privileges.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_GET_TASK_ALLOW, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Permits other processes to inspect and modify its memory.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can inspect and modify the memory of other apps.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can obtain task ports for system processes.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_SB_NO_CONTAINER, KSNXT2SectionFilesystem, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Runs without a private container.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ, KSNXT2SectionFilesystem, KSNXT2ValuePathArray, KSNXT2SeverityNote, NO, CFSTR("Can read: %@") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_SB_FILE_READ_WRITE, KSNXT2SectionFilesystem, KSNXT2ValuePathArray, KSNXT2SeverityWarn, NO, CFSTR("Can read and modify: %@") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_LS_START, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can start system services.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_LS_STOP, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can stop system services.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_LS_TOGGLE, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can enable and disable system services.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_LS_GET_ENDPOINT, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can look up the endpoint of any service.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_LS_SET_ENDPOINT, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can redirect service endpoints of some 3rd party services to code of its own.") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_MGMT_HOST, KSNXT2SectionManagement, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can overwrite the hostname (as of now).") },
-    { KSURFACE_NXT2_ENTITLEMENT_ID_DYLD_HIDE_LP, KSNXT2SectionStealth, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Runs hidden from DYLD inside of it's own address space.") },
-};
-
-static const size_t kKSNXT2DescriptorCount = sizeof(kKSNXT2Descriptors) / sizeof(kKSNXT2Descriptors[0]);
-
-static const KSNXT2Rule kKSNXT2Rules[] = {
-    {
-        {
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_INHERITE_ENT, NULL },
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-        },
-        KSNXT2SectionProcesses, KSNXT2SeverityCrit,
-        CFSTR("Can run any code it wants as root, with most privileges listed here."),
-    },
-    {
-        {
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_SUGID, KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN, NULL },
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-        },
-        KSNXT2SectionProcesses, KSNXT2SeverityCrit,
-        CFSTR("Can launch executables under any identity, including root."),
-    },
-    {
-        {
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_PROC_SPAWN_SIGNED, NULL },
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-            {
-                .active = NO,
-            },
-        },
-        KSNXT2SectionProcesses, KSNXT2SeverityWarn,
-        CFSTR("Can launch executables, but only signed ones."),
-    },
-    {
-        {
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID, KSURFACE_NXT2_ENTITLEMENT_ID_SYSTEM_TASK_PORTS, NULL },
-            },
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM, KSURFACE_NXT2_ENTITLEMENT_ID_PLATFORM_ROOT, NULL },
-            },
-            {
-                .active = YES,
-                { KSURFACE_NXT2_ENTITLEMENT_ID_TASK_FOR_PID, KSURFACE_NXT2_ENTITLEMENT_ID_SUGID, NULL },
-            },
-            {
-                .active = NO,
-            },
-        },
-        KSNXT2SectionDebugging, KSNXT2SeverityCrit,
-        CFSTR("Can read and modify the memory and state of any process running in Nyxian, including Nyxian's daemons and services."),
-    },
-};
-
-static const size_t kKSNXT2RuleCount = sizeof(kKSNXT2Rules) / sizeof(kKSNXT2Rules[0]);
-
 static BOOL KSNXT2ValueIsAsserted(id value,
                                   KSNXT2ValueKind kind)
 {
@@ -245,6 +134,136 @@ typedef struct {
 
 NSAttributedString *KSurfaceNXT2CreateEntitlementSummary(NSDictionary *entitlements)
 {
+    const KSNXT2Descriptor kKSNXT2Descriptors[] = {
+        { kNXT2EntitlementPlatform, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Runs as a platform process and is exempt from some restrictions.") },
+        { kNXT2EntitlementPlatformRoot, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Runs with root privileges.") },
+        { kNXT2EntitlementPlatformUser, KSNXT2SectionIdentity, KSNXT2ValueInteger, KSNXT2SeverityNote, NO, CFSTR("Runs as user %@.") },
+        { kNXT2EntitlementPlatformGroup, KSNXT2SectionIdentity, KSNXT2ValueInteger, KSNXT2SeverityNote, NO, CFSTR("Runs as group %@.") },
+        { kNXT2EntitlementSUGID, KSNXT2SectionIdentity, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can change its own user and group identity while running.") },
+        { kNXT2EntitlementProcessEnumeration, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can see every process running in Nyxian.") },
+        { kNXT2EntitlementProcessKill, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can terminate and signal processes.") },
+        { kNXT2EntitlementProcessSpawn, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can launch arbitrary executables.") },
+        { kNXT2EntitlementProcessSpawnSignedOnly, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityInfo, YES, CFSTR("Executables it launches must be signed.") },
+        { kNXT2EntitlementProcessSpawnInheriteEntitlements, KSNXT2SectionProcesses, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Executables it launches inherit some of its privileges.") },
+        { kNXT2EntitlementGetTaskAllow, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Permits other processes to inspect and modify its memory.") },
+        { kNXT2EntitlementTaskForPid, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can inspect and modify the memory of other apps.") },
+        { kNXT2EntitlementSystemTaskPorts, KSNXT2SectionDebugging, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can obtain task ports for system processes.") },
+        { kNXT2EntitlementSandboxNoContainer, KSNXT2SectionFilesystem, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Runs without a private container.") },
+        { kNXT2EntitlementSandboxFileRead, KSNXT2SectionFilesystem, KSNXT2ValuePathArray, KSNXT2SeverityNote, NO, CFSTR("Can read: %@") },
+        { kNXT2EntitlementSandboxFileReadWrite, KSNXT2SectionFilesystem, KSNXT2ValuePathArray, KSNXT2SeverityWarn, NO, CFSTR("Can read and modify: %@") },
+        { kNXT2EntitlementLaunchServicesStart, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can start system services.") },
+        { kNXT2EntitlementLaunchServicesStop, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can stop system services.") },
+        { kNXT2EntitlementLaunchServicesToggle, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can enable and disable system services.") },
+        { kNXT2EntitlementLaunchServicesGetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can look up the endpoint of any service.") },
+        { kNXT2EntitlementLaunchServicesSetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can redirect service endpoints of some 3rd party services to code of its own.") },
+        { kNXT2EntitlementManagementHost, KSNXT2SectionManagement, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can overwrite the hostname (as of now).") },
+        { kNXT2EntitlementDYLDHideLP, KSNXT2SectionStealth, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Runs hidden from DYLD inside of it's own address space.") },
+    };
+
+    static const size_t kKSNXT2DescriptorCount = sizeof(kKSNXT2Descriptors) / sizeof(kKSNXT2Descriptors[0]);
+    
+    const KSNXT2Rule kKSNXT2Rules[] = {
+        {
+            {
+                {
+                    .active = YES,
+                    { kNXT2EntitlementPlatform, kNXT2EntitlementPlatformRoot, kNXT2EntitlementProcessSpawn, kNXT2EntitlementProcessSpawnInheriteEntitlements },
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+            },
+            KSNXT2SectionProcesses, KSNXT2SeverityCrit,
+            CFSTR("Can run any code it wants as root, with most privileges listed here."),
+        },
+        {
+            {
+                {
+                    .active = YES,
+                    { kNXT2EntitlementSUGID, kNXT2EntitlementProcessSpawn, NULL },
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+            },
+            KSNXT2SectionProcesses, KSNXT2SeverityCrit,
+            CFSTR("Can launch executables under any identity, including root."),
+        },
+        {
+            {
+                {
+                    .active = YES,
+                    { kNXT2EntitlementProcessSpawnSignedOnly, NULL },
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+            },
+            KSNXT2SectionProcesses, KSNXT2SeverityWarn,
+            CFSTR("Can launch executables, but only signed ones."),
+        },
+        {
+            {
+                {
+                    .active = YES,
+                    { kNXT2EntitlementTaskForPid, kNXT2EntitlementSystemTaskPorts, NULL },
+                },
+                {
+                    .active = YES,
+                    { kNXT2EntitlementTaskForPid, kNXT2EntitlementPlatform, kNXT2EntitlementPlatformRoot, NULL },
+                },
+                {
+                    .active = YES,
+                    { kNXT2EntitlementTaskForPid, kNXT2EntitlementPlatform, kNXT2EntitlementSUGID, NULL },
+                },
+                {
+                    .active = NO,
+                },
+            },
+            KSNXT2SectionDebugging, KSNXT2SeverityCrit,
+            CFSTR("Can read and modify the memory and state of any process running in Nyxian, including Nyxian's daemons and services."),
+        },
+        {
+            {
+                {
+                    .active = YES,
+                    { kNXT2EntitlementTaskForPid, kNXT2EntitlementSUGID, NULL },
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+                {
+                    .active = NO,
+                },
+            },
+            KSNXT2SectionDebugging, KSNXT2SeverityCrit,
+            CFSTR("Can read and modify the memory and state of any process running in Nyxian"),
+        },
+    };
+
+    static const size_t kKSNXT2RuleCount = sizeof(kKSNXT2Rules) / sizeof(kKSNXT2Rules[0]);
+    
     NSMutableArray<NSMutableArray *> *lines = [NSMutableArray array];
     for(NSUInteger i = 0; i < KSNXT2SectionCount; i++)
     {
