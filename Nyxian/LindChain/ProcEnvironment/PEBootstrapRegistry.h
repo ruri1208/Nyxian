@@ -26,13 +26,15 @@
 
 @interface PEBootstrapRegistry : NSObject
 
-@property (nonatomic,strong,readonly) NSMutableDictionary<NSString*,NSXPCListenerEndpoint*> *registry;
+@property (nonatomic,strong,readonly) NSMutableDictionary<NSString*,NSNumber*> *registry;
 
 - (instancetype)init;
 + (instancetype)shared;
 
 - (NSXPCListenerEndpoint*)getEndpointWithServiceIdentifier:(NSString*)serviceIdentifier;
-- (void)setEndpoint:(NSXPCListenerEndpoint*)endpoint forServiceIdentifier:(NSString*)serviceIdentifier;
+
+- (mach_port_name_t)getMachPortNameWithServiceIdentifier:(NSString*)serviceIdentifier;
+- (void)setMachPortName:(mach_port_name_t)port forServiceIdentifier:(NSString*)serviceIdentifier;
 
 @end
 

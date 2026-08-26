@@ -32,6 +32,9 @@
 
 @required
 - (void)ping;
+
+- (void)openApplicationWithBundleID:(NSString*)bundleIdentifier withReply:(void (^)(BOOL))reply;
+
 - (void)installApplicationWithArchiveHandle:(PEArchiveHandle*)archiveHandle withReply:(void (^)(BOOL))reply;
 - (void)deleteApplicationWithBundleID:(NSString*)bundleID withReply:(void (^)(BOOL))reply;
 - (void)applicationInstalledWithBundleID:(NSString*)bundleID withReply:(void (^)(BOOL))reply;

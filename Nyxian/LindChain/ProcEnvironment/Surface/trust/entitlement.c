@@ -59,6 +59,7 @@ NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements = CFSTR("
 
 /* management */
 NXT2Entitlement const kNXT2EntitlementManagementHost = CFSTR("org.emexlabs.nyxian.management.host");
+NXT2Entitlement const kNXT2EntitlementManagementProcEnvironment = CFSTR("org.emexlabs.nyxian.management.proc-environment");
 
 /* launch services */
 NXT2Entitlement const kNXT2EntitlementLaunchServicesStart = CFSTR("org.emexlabs.nyxian.launch-services.start");

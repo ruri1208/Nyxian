@@ -84,6 +84,7 @@ typedef CF_ENUM(UInt16, PECTLCodeSigning) {
 
 typedef CF_ENUM(UInt16, PECTLUserInterface) {
     kPECTLUserInterfaceInit = 0,
+    kPECTLUserInterfaceOpenBundleIdentifier = 1,
 };
 
 typedef CF_ENUM(UInt16, PECTLUserspace) {

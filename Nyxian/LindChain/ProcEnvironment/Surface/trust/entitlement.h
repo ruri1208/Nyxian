@@ -150,6 +150,7 @@ extern NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements;
 
 /* management */
 extern NXT2Entitlement const kNXT2EntitlementManagementHost;
+extern NXT2Entitlement const kNXT2EntitlementManagementProcEnvironment;
 
 /* launch services */
 extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStart;                   /* unimplemented */

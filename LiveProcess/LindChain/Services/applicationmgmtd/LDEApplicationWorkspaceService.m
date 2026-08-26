@@ -23,6 +23,8 @@
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceInternal.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/Utils/vnode.h>
+#import <LiveShim/LiveShimSyscall.h>
+#import <ksurface_abi.h>
 
 @implementation LDEApplicationWorkspaceService
 
@@ -39,6 +41,17 @@
 - (void)ping
 {
     return;
+}
+
+- (void)openApplicationWithBundleID:(NSString*)bundleIdentifier
+                          withReply:(void (^)(BOOL))reply
+{
+    if(liveshim_syscall(SYS_pectl, kPECTLCategoryUserInterface, kPECTLUserInterfaceOpenBundleIdentifier, [bundleIdentifier UTF8String], NULL, MACH_PORT_NULL) != 0)
+    {
+        reply(NO);
+        return;
+    }
+    reply(YES);
 }
 
 - (void)utilityHomePathWithReply:(void (^)(NSString*))reply

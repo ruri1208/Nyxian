@@ -39,6 +39,9 @@ void TrustPresetsInit(void)
         (__bridge NSString*)kNXT2EntitlementPlatformUser: @(0), /* make sure once set they cannot go back up */
         (__bridge NSString*)kNXT2EntitlementPlatformGroup: @(0),
         
+        /* management */
+        (__bridge NSString*)kNXT2EntitlementManagementProcEnvironment: @(YES),
+        
         /* launch services */
         (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpointAllowList: @[
             @"org.emexlabs.bootstrapd",

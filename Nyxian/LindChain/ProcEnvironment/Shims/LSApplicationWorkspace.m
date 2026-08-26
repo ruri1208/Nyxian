@@ -743,6 +743,7 @@
         SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(allInstalledApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(openApplicationWithBundleID:), PrivClass(LSApplicationWorkspace), @selector(hook_openApplicationWithBundleID:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
     });
     return [self hook_defaultWorkspace];
@@ -776,6 +777,11 @@
                        usingBlock:(_Nullable id)arg3 __attribute__((swift_error(nonnull_error)))
 {
     return [[LDEApplicationWorkspace shared] deleteApplicationWithBundleID:bundleID];
+}
+
+- (BOOL)hook_openApplicationWithBundleID:(NSString*)bundleIdentifier
+{
+    return [[LDEApplicationWorkspace shared] openApplicationWithBundleID:bundleIdentifier];
 }
 
 @end

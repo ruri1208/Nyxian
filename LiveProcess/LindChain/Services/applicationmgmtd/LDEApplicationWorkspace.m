@@ -28,6 +28,7 @@
 #if __has_include(<Nyxian-Swift.h>)
 #define LIVEPROCESS 0
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
+#import <LindChain/ProcEnvironment/PEProcessManager.h>
 #else
 #include <ksurface_config.h>
 #include <ksurface_abi.h>
@@ -158,6 +159,43 @@
     [self connect];
     
     [_connection.remoteObjectProxy ping];
+}
+
+- (BOOL)openApplicationWithBundleID:(NSString*)bundleIdentifier
+{
+    [self connect];
+    
+    __block BOOL result = NO;
+    __block BOOL failed = NO;
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    
+    id proxy = [_connection remoteObjectProxyWithErrorHandler:^(NSError *error) {
+        /* semaphores remember the signal, it doesnt have to catch them in time */
+        failed = YES;
+        dispatch_semaphore_signal(sema);
+    }];
+    
+    if(proxy == NULL)
+    {
+        /* semaphores remember the signal, it doesnt have to catch them in time */
+        failed = YES;
+        dispatch_semaphore_signal(sema);
+    }
+    else
+    {
+        [proxy openApplicationWithBundleID:bundleIdentifier withReply:^(BOOL replyResult){
+            result = replyResult;
+            dispatch_semaphore_signal(sema);
+        }];
+    }
+    
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    if(failed)
+    {
+        [self disconnect];
+        return NO;
+    }
+    return result;
 }
 
 - (BOOL)installApplicationAtBundlePath:(NSString*)bundlePath
@@ -538,6 +576,13 @@
 
 - (void)applicationWithBundleIdentifierWasUninstalled:(NSString*)bundleIdentifier
 {
+#if HOST_ENV
+    PEProcess *process = [[PEProcessManager shared] processForBundleIdentifier:bundleIdentifier];
+    if(process)
+    {
+        [process forceTerminate];
+    }
+#endif /* HOST_ENV */
     [self enumerateObservers:^(id<LDEApplicationWorkspaceObserver> observer) {
         [observer applicationWithBundleIdentifierWasUninstalled:bundleIdentifier];
     }];
