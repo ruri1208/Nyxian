@@ -243,7 +243,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
      
         let contentViewController: ContentViewController = ContentViewController()
         let settingsViewController: SettingsViewController = SettingsViewController()
-        let appsViewController: ApplicationManagementViewController = ApplicationManagementViewController()
+        let appsViewController: ApplicationManagementViewController = ApplicationManagementViewController(style: .insetGrouped)
      
         let contentNavigationController: UINavigationController = UINavigationController(rootViewController: contentViewController)
         let settingsNavigationController: UINavigationController = UINavigationController(rootViewController: settingsViewController)
