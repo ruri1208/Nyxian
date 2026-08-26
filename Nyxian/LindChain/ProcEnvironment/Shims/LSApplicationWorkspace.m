@@ -24,6 +24,37 @@
 #import <LindChain/Private/UIKitPrivate.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 
+@implementation UIImage (PrivateHook)
+
++ (void)lazyLoad
+{
+    SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+}
+
++ (UIImage *)hook_iconForBundleID:(NSString *)bundleIdentifier
+                           format:(int)format
+                            scale:(CGFloat)scale
+{
+    LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
+    if(obj)
+    {
+        UIImage *rawIcon = obj.icon;
+        CGRect r = (CGRect){ .size = rawIcon.size };
+        UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:rawIcon.size.width * 0.2237];
+        UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
+        fmt.scale = scale;
+        UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:rawIcon.size format:fmt];
+        UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
+            [mask addClip];
+            [rawIcon drawInRect:r];
+        }];
+        return curvedImage;
+    }
+    return [self hook_iconForBundleID:bundleIdentifier format:format scale:scale];
+}
+
+@end
+
 /* WIP TO A HUGE EXTEND! */
 
 @interface _LSDiskUsage : NSObject
@@ -538,7 +569,7 @@
 
 - (NSString*)sdkVersion
 {
-    return @"nya";
+    return _applicationObject.sdkVersion;
 }
 
 - (NSDictionary<NSString*,id<NSCoding>>*)entitlements
@@ -580,6 +611,33 @@
 - (NSURL*)containerURL
 {
     return [NSURL fileURLWithPath:_applicationObject.containerPath];
+}
+
+- (NSData *)iconDataForVariant:(int)variant
+{
+    UIImage *icon = _applicationObject.icon;
+    return UIImagePNGRepresentation(icon);
+}
+
+- (NSData *)iconDataForVariant:(int)variant
+                   withOptions:(int)options
+{
+    return [self iconDataForVariant:variant];
+}
+
+- (NSString*)bundleVersion
+{
+    return _applicationObject.bundleVersion;
+}
+
+- (NSString*)shortVersionString
+{
+    return _applicationObject.bundleShortVersion;
+}
+
+- (NSDictionary*)iconsDictionary
+{
+    return _applicationObject.iconDictionary;
 }
 
 /*- (id)handlerRankOfClaimForContentType:(id)arg1;
@@ -675,6 +733,11 @@
 
 - (NSArray<LSApplicationSpoofProxy*>*)hook_allApplications
 {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [UIImage lazyLoad];
+    });
+    
     LDEApplicationWorkspace *workspace = [LDEApplicationWorkspace shared];
     [workspace ping];
     
