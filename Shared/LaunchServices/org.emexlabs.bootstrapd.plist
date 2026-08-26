@@ -13,6 +13,6 @@
 	<key>PEGroupIdentifier</key>
 	<integer>0</integer>
 	<key>PEIntegratedServiceClass</key>
-	<string>LDEApplicationWorkspaceProxy</string>
+	<string>LDEApplicationWorkspaceService</string>
 </dict>
 </plist>

@@ -278,10 +278,6 @@ first:
         /* regather them */
         ksurface_kinit_get_keys();
         
-        /* clearing app list TODO: make it a actual "client portal" instead */
-        klog_log(domain, "restored successfully");
-        [[ApplicationManagementViewController shared] removeAllApplications];
-        
         /* we're done, now rebooting back into default mode */
         klog_log(domain, "bringing userspace back into normal mode");
         [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeDefault];

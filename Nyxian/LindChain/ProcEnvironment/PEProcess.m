@@ -113,8 +113,6 @@
          * prevents a race condition, when we add a observer
          * and it already died then we shall handle the exit.
          */
-        FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];
-        [manager _removeProcess:self.process];
         proctil(kProctilActionUnlock);
         return nil;
     }

@@ -23,6 +23,7 @@
 #import "LDEApplicationWorkspaceInternal.h"
 #import "ISIcon.h"
 #import <LindChain/Private/UIKitPrivate.h>
+#import <LindChain/ProcEnvironment/Surface/trust/signing.h>
 
 #import <UIKit/UIKit.h>
 
@@ -35,10 +36,22 @@
 #else
     self = [super init];
     
+    ksurface_nxt2_t result;
+    kern_return_t kr = trust_nxt2_read([[bundle executablePath] UTF8String], &result);
+    if(kr == KERN_SUCCESS)
+    {
+        self.entitlements = (__bridge_transfer NSDictionary*)result.entitlements;
+    }
+    else
+    {
+        self.entitlements = @{};
+    }
+    
     self.iconDictionary = [bundle objectForInfoDictionaryKey:@"CFBundleIcons"];
     self.bundleVersion = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"];
-    self.bundleShortVersion = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"]?: self.bundleVersion;
+    self.shortVersionString = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"]?: self.bundleVersion;
     self.sdkVersion = [bundle objectForInfoDictionaryKey:@"DTPlatformVersion"];
+    self.minimumSystemVersion = [bundle objectForInfoDictionaryKey:@"MinimumOSVersion"];
     
     self.bundleIdentifier = bundle.bundleIdentifier;
     
@@ -103,8 +116,10 @@
     [coder encodeObject:self.icon forKey:@"icon"];
     [coder encodeObject:self.iconDictionary forKey:@"iconDictionary"];
     [coder encodeObject:self.bundleVersion forKey:@"bundleVersion"];
-    [coder encodeObject:self.bundleShortVersion forKey:@"bundleShortVersion"];
+    [coder encodeObject:self.shortVersionString forKey:@"shortVersionString"];
     [coder encodeObject:self.sdkVersion forKey:@"sdkVersion"];
+    [coder encodeObject:self.minimumSystemVersion forKey:@"minimumSystemVersion"];
+    [coder encodeObject:self.entitlements forKey:@"entitlements"];
     [coder encodeObject:@(self.isLaunchAllowed) forKey:@"isLaunchAllowed"];
     [coder encodeObject:@(self.isFullscreenRequired) forKey:@"isFullscreenRequired"];
 }
@@ -121,8 +136,10 @@
         _icon = [coder decodeObjectOfClass:[UIImage class] forKey:@"icon"];
         _iconDictionary = [coder decodeObjectOfClasses:[NSSet setWithArray:@[[NSDictionary class], [NSArray class], [NSString class], [NSNumber class], [NSData class]]] forKey:@"iconDictionary"];
         _bundleVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"bundleVersion"];
-        _bundleShortVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"bundleShortVersion"];
+        _shortVersionString = [coder decodeObjectOfClass:[NSString class] forKey:@"shortVersionString"];
         _sdkVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"sdkVersion"];
+        _minimumSystemVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"minimumSystemVersion"];
+        _entitlements = [coder decodeObjectOfClasses:[NSSet setWithArray:@[[NSDictionary class], [NSArray class], [NSString class], [NSNumber class], [NSData class]]] forKey:@"entitlements"];
         _isLaunchAllowed = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isLaunchAllowed"] boolValue];
         _isFullscreenRequired = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isFullscreenRequired"] boolValue];
     }

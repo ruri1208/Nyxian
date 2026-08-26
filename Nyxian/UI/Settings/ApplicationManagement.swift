@@ -34,8 +34,8 @@ extension UTType {
     }
 }
 
-class ApplicationManagementViewController: UIThemedTableViewController, UITextFieldDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
-    @objc static var shared: ApplicationManagementViewController = ApplicationManagementViewController(style: .insetGrouped)
+class ApplicationManagementViewController: UIThemedTableViewController, UITextFieldDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate, LDEApplicationWorkspaceObserver {
+    
     var applications: [LDEApplicationObject] = []
     
     override init(style: UITableView.Style) {
@@ -52,6 +52,14 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
         LDEApplicationWorkspace.shared().ping()
         self.title = "Apps"
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: nil, image: UIImage(systemName: "square.and.arrow.down.fill"), target: self, action: #selector(plusButtonPressed))
+        
+        DispatchQueue.global().async {
+            self.applications = LDEApplicationWorkspace.shared().allApplicationObjects()
+            LDEApplicationWorkspace.shared().add(self)
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -299,7 +307,19 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
         }
     }
     
-    @objc func applicationWasInstalled(_ app: LDEApplicationObject!) {
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if #available(iOS 26.0, *) {
+            return 80
+        } else {
+            return 70
+        }
+    }
+    
+    func applicationInitialPopulationDone() {
+        self.applications = LDEApplicationWorkspace.shared().allApplicationObjects()
+    }
+    
+    func applicationWasInstalled(_ app: LDEApplicationObject!) {
         DispatchQueue.main.async {
             if let index = self.applications.firstIndex(of: app) {
                 self.applications[index] = app
@@ -318,7 +338,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
         }
     }
     
-    @objc func application(withBundleIdentifierWasUninstalled bundleIdentifier: String!) {
+    func application(withBundleIdentifierWasUninstalled bundleIdentifier: String!) {
         DispatchQueue.main.async {
             let temp = LDEApplicationObject()
             temp.bundleIdentifier = bundleIdentifier
@@ -329,14 +349,6 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                     with: .automatic
                 )
             }
-        }
-    }
-    
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if #available(iOS 26.0, *) {
-            return 80
-        } else {
-            return 70
         }
     }
     

@@ -19,12 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LDEAPPLICATIONWORKSPACEPROTOCOL_H
-#define LDEAPPLICATIONWORKSPACEPROTOCOL_H
+#ifndef LDEAPPLICATIONWORKSPACEOBSERVER_H
+#define LDEAPPLICATIONWORKSPACEOBSERVER_H
 
 #import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
 
-@protocol LDEApplicationWorkspaceProtocol <NSObject>
+@protocol LDEApplicationWorkspaceObserver <NSObject>
 
 @required
 - (void)applicationInitialPopulationDone;
@@ -33,4 +33,4 @@
 
 @end
 
-#endif /* LDEAPPLICATIONWORKSPACEPROTOCOL_H */
+#endif /* LDEAPPLICATIONWORKSPACEOBSERVER_H */

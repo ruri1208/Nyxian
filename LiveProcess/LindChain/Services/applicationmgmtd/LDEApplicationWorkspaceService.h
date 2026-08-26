@@ -19,14 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LDEAPPLICATIONWORKSPACEPROXYPROTOCOL_H
-#define LDEAPPLICATIONWORKSPACEPROXYPROTOCOL_H
+#ifndef LDEAPPLICATIONWORKSPACESERVICE_H
+#define LDEAPPLICATIONWORKSPACESERVICE_H
 
 #import <Foundation/Foundation.h>
+#import <LindChain/ServiceKit/Service.h>
 #import <LindChain/ProcEnvironment/PEArchiveHandle.h>
+#import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
+#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceObserver.h>
 
-@protocol LDEApplicationWorkspaceProxyProtocol
+@protocol LDEApplicationWorkspaceService
 
+@required
 - (void)ping;
 - (void)installApplicationWithArchiveHandle:(PEArchiveHandle*)archiveHandle withReply:(void (^)(BOOL))reply;
 - (void)deleteApplicationWithBundleID:(NSString*)bundleID withReply:(void (^)(BOOL))reply;
@@ -40,4 +44,7 @@
 
 @end
 
-#endif /* LDEAPPLICATIONWORKSPACEPROXYPROTOCOL_H */
+@interface LDEApplicationWorkspaceService : NSObject <LDEApplicationWorkspaceService,PEServiceProtocol>
+@end
+
+#endif /* LDEAPPLICATIONWORKSPACESERVICE_H */
