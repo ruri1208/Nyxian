@@ -44,7 +44,9 @@ static BOOL KSNXT2ValueIsAsserted(id value,
 }
 
 static NSString *KSNXT2FormatPaths(NSArray *raw,
-                                   KSNXT2Severity *severityInOut)
+                                   KSNXT2Severity *severityInOut,
+                                   KSNXT2Section section,
+                                   NXT2Entitlement entitlement)
 {
     NSMutableArray<NSString *> *paths = [NSMutableArray array];
     for(id entry in raw)
@@ -65,15 +67,29 @@ static NSString *KSNXT2FormatPaths(NSArray *raw,
     NSMutableArray<NSString *> *collapsed = [NSMutableArray array];
     for(NSString *p in paths)
     {
-        NSString *prefix = collapsed.lastObject;
-        BOOL covered = prefix && ([p isEqualToString:prefix] || [p hasPrefix:[prefix hasSuffix:@"/"] ? prefix : [prefix stringByAppendingString:@"/"]]);
-        if(!covered)
+        if(section == KSNXT2SectionFilesystem)
         {
+            NSString *prefix = collapsed.lastObject;
+            BOOL covered = prefix && ([p isEqualToString:prefix] || [p hasPrefix:[prefix hasSuffix:@"/"] ? prefix : [prefix stringByAppendingString:@"/"]]);
+            if(!covered)
+            {
+                [collapsed addObject:p];
+            }
+        }
+        else if(section == KSNXT2SectionServices)
+        {
+            if([p hasPrefix:@"org.emexlabs."])
+            {
+                *severityInOut = [(__bridge NSString*)entitlement isEqualToString:(__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpointAllowList] ? KSNXT2SeverityCrit : KSNXT2SeverityWarn;
+            }
             [collapsed addObject:p];
         }
     }
     
-    *severityInOut = KSNXT2SeverityCrit;    /* any appended file system access shall be treated as ab critical entitlement */
+    if(section == KSNXT2SectionFilesystem)
+    {
+        *severityInOut = KSNXT2SeverityCrit;    /* any appended file system access shall be treated as ab critical entitlement */
+    }
     
     return [NSListFormatter localizedStringByJoiningStrings:collapsed];
 }
@@ -154,10 +170,12 @@ NSAttributedString *KSurfaceNXT2CreateEntitlementSummary(NSDictionary *entitleme
         { kNXT2EntitlementLaunchServicesStart, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can start system services.") },
         { kNXT2EntitlementLaunchServicesStop, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can stop system services.") },
         { kNXT2EntitlementLaunchServicesToggle, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can enable and disable system services.") },
-        { kNXT2EntitlementLaunchServicesGetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Can look up the endpoint of any service.") },
-        { kNXT2EntitlementLaunchServicesSetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can redirect service endpoints of some 3rd party services to code of its own.") },
+        { kNXT2EntitlementLaunchServicesGetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can look up the endpoint of arbitary service running in Nyxian.") },
+        { kNXT2EntitlementLaunchServicesSetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can redirect service endpoints of some 3rd party services to code of its own.") },
         { kNXT2EntitlementManagementHost, KSNXT2SectionManagement, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can overwrite the hostname (as of now).") },
         { kNXT2EntitlementDYLDHideLP, KSNXT2SectionStealth, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Runs hidden from DYLD inside of it's own address space.") },
+        { kNXT2EntitlementLaunchServicesGetEndpointAllowList, KSNXT2SectionServices, KSNXT2ValuePathArray, KSNXT2SeverityNote, NO, CFSTR("Can look up service endpoints: %@") },
+        { kNXT2EntitlementLaunchServicesSetEndpointAllowList, KSNXT2SectionServices, KSNXT2ValuePathArray, KSNXT2SeverityWarn, NO, CFSTR("Can redirect service service endpoints: %@") },
     };
 
     static const size_t kKSNXT2DescriptorCount = sizeof(kKSNXT2Descriptors) / sizeof(kKSNXT2Descriptors[0]);
@@ -334,7 +352,7 @@ NSAttributedString *KSurfaceNXT2CreateEntitlementSummary(NSDictionary *entitleme
         switch(desc->kind)
         {
             case KSNXT2ValuePathArray:
-                text = [NSString stringWithFormat:format, KSNXT2FormatPaths(entitlements[ident], &severity)];
+                text = [NSString stringWithFormat:format, KSNXT2FormatPaths(entitlements[ident], &severity, desc->section, desc->identifier)];
                 break;
             case KSNXT2ValueStringArray:
                 text = [NSString stringWithFormat:format, [NSListFormatter localizedStringByJoiningStrings:entitlements[ident]]];

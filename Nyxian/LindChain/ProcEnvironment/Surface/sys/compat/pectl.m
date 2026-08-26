@@ -180,7 +180,8 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                      */
                     if(process == nil)
                     {
-                        sys_return_failure_with_errno(EPERM);
+                        /* slot is reserved */
+                        sys_return_failure_with_errno(EACCES);
                     }
                     
                     /*
@@ -190,7 +191,8 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                      */
                     if(process.pid != proc_getpid(sys_proc_snapshot_))
                     {
-                        sys_return_failure_with_errno(EPERM);
+                        /* slot is reserved */
+                        sys_return_failure_with_errno(EACCES);
                     }
                 }
                 
