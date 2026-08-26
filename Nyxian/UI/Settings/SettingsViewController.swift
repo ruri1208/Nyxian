@@ -67,7 +67,7 @@ class SettingsViewController: UIThemedTableViewController {
                 cell.textLabel?.text = "Credits"
             } else {
                 cell.imageView?.image = UIImage(systemName: "app.badge.fill")
-                cell.textLabel?.text = "Applications"
+                cell.textLabel?.text = "Certificate"
             }
             break
         case 3:
@@ -116,7 +116,7 @@ class SettingsViewController: UIThemedTableViewController {
                 if NXApplicationState.extensionLessMode {
                     return CreditsViewController(style: .insetGrouped)
                 } else {
-                    return ApplicationManagementViewController(style: .insetGrouped)
+                    return CertificateImporter(style: .insetGrouped)
                 }
             case 3:
                 return CustomizationViewController(style: .insetGrouped)
