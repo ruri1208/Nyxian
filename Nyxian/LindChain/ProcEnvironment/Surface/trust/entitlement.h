@@ -150,20 +150,20 @@ extern NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements;
 
 /* management */
 extern NXT2Entitlement const kNXT2EntitlementManagementHost;
-extern NXT2Entitlement const kNXT2EntitlementManagementCredentials; /* unimplemented */
-extern NXT2Entitlement const kNXT2EntitlementManagementLaunchServices;
 
 /* launch services */
-extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStart;
-extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStop;
-extern NXT2Entitlement const kNXT2EntitlementLaunchServicesToggle;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStart;                   /* unimplemented */
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesStop;                    /* unimplemented */
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesToggle;                  /* unimplemented */
 extern NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpoint;
 extern NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpoint;
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpointAllowList;    /* has to be CFArray filled with CFString */
+extern NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpointAllowList;    /* has to be CFArray filled with CFString */
 
 /* sandbox */
-extern NXT2Entitlement const kNXT2EntitlementSandboxFileRead;
-extern NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite;
-extern NXT2Entitlement const kNXT2EntitlementSandboxNoContainer;
+extern NXT2Entitlement const kNXT2EntitlementSandboxFileRead;                       /* has to be CFArray filled with CFString */
+extern NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite;                  /* has to be CFArray filled with CFString */
+extern NXT2Entitlement const kNXT2EntitlementSandboxNoContainer;                    /* unfinished, container path here needs to default to $(ROOTFS)/var/mobile */
 
 /* ----------------------------------------------------------------------
  *  Types

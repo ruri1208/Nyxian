@@ -25,6 +25,6 @@
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 
 CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemon;
+CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonBootstrap;
 
 #endif /* TRUST_PRESENTS_H */

@@ -165,7 +165,7 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
     
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.storage.AppDataContainers")) == kCFBooleanTrue)
     {
-        CFArrayAppendValue(rwPaths, CFSTR("$(CONTAINER)/../"));
+        CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/mobile/Containers/Data/Application"));
     }
     
     CFArrayRef temporarySBXException = AppleCSTypeSanizizeKey(appleCSEntitlements, CFSTR("com.apple.security.temporary-exception.sbpl"), CFArrayGetTypeID());

@@ -301,8 +301,6 @@
             
             /* management */
             (__bridge NSString*)kNXT2EntitlementManagementHost: @(NO),
-            (__bridge NSString*)kNXT2EntitlementManagementCredentials: @(NO),
-            (__bridge NSString*)kNXT2EntitlementManagementLaunchServices: @(NO),
             
             /* launch services */
             (__bridge NSString*)kNXT2EntitlementLaunchServicesStart: @(NO),
@@ -310,6 +308,8 @@
             (__bridge NSString*)kNXT2EntitlementLaunchServicesToggle: @(NO),
             (__bridge NSString*)kNXT2EntitlementLaunchServicesGetEndpoint: @(NO),
             (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpoint: @(NO),
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesGetEndpointAllowList: @[],
+            (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpointAllowList: @[],
             
             /* sandbox */
             (__bridge NSString*)kNXT2EntitlementSandboxFileRead: @[],

@@ -23,7 +23,7 @@
 #import <LindChain/ProcEnvironment/Surface/trust/presets.h>
 
 CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
-CFDictionaryRef kPEEntitlementsNXT2PresetsDaemon;
+CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonBootstrap;
 
 __attribute__((constructor))
 void TrustPresetsInit(void)
@@ -33,24 +33,22 @@ void TrustPresetsInit(void)
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
     };
     
-    kPEEntitlementsNXT2PresetsDaemon = (__bridge CFDictionaryRef)@{
+    kPEEntitlementsNXT2PresetsDaemonBootstrap = (__bridge CFDictionaryRef)@{
         /* platformization */
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
         (__bridge NSString*)kNXT2EntitlementPlatformUser: @(0), /* make sure once set they cannot go back up */
         (__bridge NSString*)kNXT2EntitlementPlatformGroup: @(0),
         
-        /* process */
-        (__bridge NSString*)kNXT2EntitlementProcessEnumeration: @(YES),
-        (__bridge NSString*)kNXT2EntitlementProcessSpawnSignedOnly: @(YES),
-        
-        /* management */
-        (__bridge NSString*)kNXT2EntitlementManagementHost: @(YES),
-        (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpoint: @(YES),
+        /* launch services */
+        (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpointAllowList: @[
+            @"org.emexlabs.bootstrapd",
+        ],
         
         /* sandbox */
         (__bridge NSString*)kNXT2EntitlementSandboxFileReadWrite: @[
             @"$(ROOTFS)"
         ],
+        (__bridge NSString*)kNXT2EntitlementSandboxFileRead: @[],
         (__bridge NSString*)kNXT2EntitlementSandboxNoContainer: @(YES),
     };
 }

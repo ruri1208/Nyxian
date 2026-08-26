@@ -39,12 +39,12 @@
 #import <ksurface_config.h>
 
 /* ----------------------------------------------------------------------
- *  Constants
+ *  Types
  * -------------------------------------------------------------------- */
-const char *trustDaemonPath[] = {   /* those paths are immutable */
-    "/sbin/launchd",
-    "/usr/libexec/bootstrapd",
-};
+typedef struct {
+    const char *path;
+    CFDictionaryRef entitlementPreset;
+} trustDaemonEntry;
 
 /* ----------------------------------------------------------------------
  *  Functions
@@ -76,8 +76,6 @@ static CFDictionaryRef trust_identity_entitlements_from_legacy_entitlements(PEEn
     
     /* management */
     CFDictionaryAddValue(dictionary, kNXT2EntitlementManagementHost, entitlement_got_entitlement(entitlement, kPEEntitlementHostManager) ? kCFBooleanTrue : kCFBooleanFalse);
-    CFDictionaryAddValue(dictionary, kNXT2EntitlementManagementCredentials, entitlement_got_entitlement(entitlement, kPEEntitlementCredentialsManager) ? kCFBooleanTrue : kCFBooleanFalse);
-    CFDictionaryAddValue(dictionary, kNXT2EntitlementManagementLaunchServices, entitlement_got_entitlement(entitlement, kPEEntitlementLaunchServicesManager) ? kCFBooleanTrue : kCFBooleanFalse);
     
     /* launch services */
     CFDictionaryAddValue(dictionary, kNXT2EntitlementLaunchServicesStart, entitlement_got_entitlement(entitlement, kPEEntitlementLaunchServicesStart) ? kCFBooleanTrue : kCFBooleanFalse);
@@ -140,8 +138,6 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         
         /* management */
         { kNXT2EntitlementManagementHost,               CFBooleanGetTypeID() },
-        { kNXT2EntitlementManagementCredentials,        CFBooleanGetTypeID() },
-        { kNXT2EntitlementManagementLaunchServices,     CFBooleanGetTypeID() },
         
         /* launch services */
         { kNXT2EntitlementLaunchServicesStart,          CFBooleanGetTypeID() },
@@ -149,6 +145,8 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         { kNXT2EntitlementLaunchServicesToggle,         CFBooleanGetTypeID() },
         { kNXT2EntitlementLaunchServicesGetEndpoint,    CFBooleanGetTypeID() },
         { kNXT2EntitlementLaunchServicesSetEndpoint,    CFBooleanGetTypeID() },
+        { kNXT2EntitlementLaunchServicesGetEndpointAllowList,   CFArrayGetTypeID() },
+        { kNXT2EntitlementLaunchServicesSetEndpointAllowList,   CFArrayGetTypeID() },
         
         /* sandbox */
         { kNXT2EntitlementSandboxFileRead,              CFArrayGetTypeID()   },
@@ -370,8 +368,6 @@ static PEEntitlement trust_identity_legacy_entitlements_from_entitlements(CFDict
     
     /* management */
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementManagementHost)) legacyEntitlements |= kPEEntitlementHostManager;
-    if(ENT_IS_TRUE(entitlements, kNXT2EntitlementManagementCredentials)) legacyEntitlements |= kPEEntitlementCredentialsManager;
-    if(ENT_IS_TRUE(entitlements, kNXT2EntitlementManagementLaunchServices)) legacyEntitlements |= kPEEntitlementLaunchServicesManager;
     
     /* launch services */
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementLaunchServicesStart)) legacyEntitlements |= kPEEntitlementLaunchServicesStart;
@@ -420,9 +416,16 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     }
     
     /* daemon trustpath validation */
-    for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(const char*); index++)
+    const trustDaemonEntry trustDaemonPath[] = {   /* those paths are immutable */
+        {
+            .path = "/usr/libexec/bootstrapd",
+            .entitlementPreset = kPEEntitlementsNXT2PresetsDaemonBootstrap,
+        }
+    };
+    
+    for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(trustDaemonEntry); index++)
     {
-        if(strncmp(path, trustDaemonPath[index], MAXPATHLEN - 1) == 0)
+        if(strncmp(path, trustDaemonPath[index].path, MAXPATHLEN - 1) == 0)
         {
             ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
             if(identity == NULL)
@@ -440,14 +443,14 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
             }
             strlcpy(identity->path, path, MAXPATHLEN);
             identity->trustLevel = kPETrustLevelTrusted;
-            identity->entitlements = CFDictionaryCreateCopy(kCFAllocatorDefault, kPEEntitlementsNXT2PresetsDaemon);
+            identity->entitlements = CFDictionaryCreateCopy(kCFAllocatorDefault, trustDaemonPath[index].entitlementPreset);
             if(identity->entitlements == NULL)
             {
                 errno = ENOMEM;
                 CFRelease(executableString);
                 return NULL;
             }
-            identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(kPEEntitlementsNXT2PresetsDaemon);
+            identity->legacyEntitlements = trust_identity_legacy_entitlements_from_entitlements(kPEEntitlementsNXT2PresetsDaemonBootstrap);
             identity->legacyEntitlements = identity->legacyEntitlements;
             identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
             return identity;
