@@ -116,7 +116,7 @@ class SettingsViewController: UIThemedTableViewController {
                 if NXApplicationState.extensionLessMode {
                     return CreditsViewController(style: .insetGrouped)
                 } else {
-                    return EmptyView()
+                    return UIViewController()
                 }
             case 3:
                 return CustomizationViewController(style: .insetGrouped)
