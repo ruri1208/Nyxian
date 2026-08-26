@@ -663,6 +663,7 @@ create_home:
             [clientObject applicationWasInstalled:[[LDEApplicationObject alloc] initWithNSBundle:bundle]];
         }
     }
+    [clientObject applicationInitialPopulationDone];
 }
 
 @end

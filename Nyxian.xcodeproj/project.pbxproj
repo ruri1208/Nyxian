@@ -193,7 +193,6 @@
 				"LindChain/ProcEnvironment/LiveContainer/Tweaks/UIKit+GuestHooksInit.m",
 				LindChain/ProcEnvironment/Shims/application.m,
 				LindChain/ProcEnvironment/Shims/libproc.m,
-				LindChain/ProcEnvironment/Shims/LSApplicationWorkspace.m,
 				LindChain/ProcEnvironment/Shims/posix_spawn.m,
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,

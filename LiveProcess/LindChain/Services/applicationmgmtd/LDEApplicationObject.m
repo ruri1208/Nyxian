@@ -35,6 +35,11 @@
 #else
     self = [super init];
     
+    self.iconDictionary = [bundle objectForInfoDictionaryKey:@"CFBundleIcons"];
+    self.bundleVersion = [bundle objectForInfoDictionaryKey:@"CFBundleVersion"];
+    self.bundleShortVersion = [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"]?: self.bundleVersion;
+    self.sdkVersion = [bundle objectForInfoDictionaryKey:@"DTPlatformVersion"];
+    
     self.bundleIdentifier = bundle.bundleIdentifier;
     
     id fullScreen = [bundle objectForInfoDictionaryKey:@"UIRequiresFullScreen"];
@@ -68,7 +73,7 @@
         if(provider.isGenericProvider) return self;
         
         ISAssetCatalogResource *resources = [provider iconResource];
-        if ([resources isKindOfClass:NSClassFromString(@"IFImageBag")])
+        if([resources isKindOfClass:NSClassFromString(@"IFImageBag")])
         {
             IFImageBag *imageBag = (IFImageBag*)resources;
             IFImage *image = [imageBag imageForSize:CGSizeMake(1024, 1024) scale:3.0];
@@ -96,6 +101,10 @@
     [coder encodeObject:self.localizedName forKey:@"localizedName"];
     [coder encodeObject:self.containerPath forKey:@"containerPath"];
     [coder encodeObject:self.icon forKey:@"icon"];
+    [coder encodeObject:self.iconDictionary forKey:@"iconDictionary"];
+    [coder encodeObject:self.bundleVersion forKey:@"bundleVersion"];
+    [coder encodeObject:self.bundleShortVersion forKey:@"bundleShortVersion"];
+    [coder encodeObject:self.sdkVersion forKey:@"sdkVersion"];
     [coder encodeObject:@(self.isLaunchAllowed) forKey:@"isLaunchAllowed"];
     [coder encodeObject:@(self.isFullscreenRequired) forKey:@"isFullscreenRequired"];
 }
@@ -110,6 +119,10 @@
         _localizedName = [coder decodeObjectOfClass:[NSString class] forKey:@"localizedName"];
         _containerPath = [coder decodeObjectOfClass:[NSString class] forKey:@"containerPath"];
         _icon = [coder decodeObjectOfClass:[UIImage class] forKey:@"icon"];
+        _iconDictionary = [coder decodeObjectOfClasses:[NSSet setWithArray:@[[NSDictionary class], [NSArray class], [NSString class], [NSNumber class], [NSData class]]] forKey:@"iconDictionary"];
+        _bundleVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"bundleVersion"];
+        _bundleShortVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"bundleShortVersion"];
+        _sdkVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"sdkVersion"];
         _isLaunchAllowed = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isLaunchAllowed"] boolValue];
         _isFullscreenRequired = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isFullscreenRequired"] boolValue];
     }

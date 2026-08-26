@@ -538,7 +538,7 @@
 
 - (NSString*)sdkVersion
 {
-    return @"nya";
+    return _applicationObject.sdkVersion;
 }
 
 - (NSDictionary<NSString*,id<NSCoding>>*)entitlements
@@ -580,6 +580,33 @@
 - (NSURL*)containerURL
 {
     return [NSURL fileURLWithPath:_applicationObject.containerPath];
+}
+
+- (NSData *)iconDataForVariant:(int)variant
+{
+    UIImage *icon = _applicationObject.icon;
+    return UIImagePNGRepresentation(icon);
+}
+
+- (NSData *)iconDataForVariant:(int)variant
+                   withOptions:(int)options
+{
+    return [self iconDataForVariant:variant];
+}
+
+- (NSString*)bundleVersion
+{
+    return _applicationObject.bundleVersion;
+}
+
+- (NSString*)shortVersionString
+{
+    return _applicationObject.bundleShortVersion;
+}
+
+- (NSDictionary*)iconsDictionary
+{
+    return _applicationObject.iconDictionary;
 }
 
 /*- (id)handlerRankOfClaimForContentType:(id)arg1;
@@ -669,8 +696,19 @@
 {
     [super load];
     
-    SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
-    SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+    SwizzleObjCMethod(@selector(defaultWorkspace), PrivClass(LSApplicationWorkspace), @selector(hook_defaultWorkspace), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeClass);
+}
+
++ (instancetype)hook_defaultWorkspace
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(allInstalledApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+    });
+    return [self hook_defaultWorkspace];
 }
 
 - (NSArray<LSApplicationSpoofProxy*>*)hook_allApplications
@@ -700,6 +738,37 @@
                        usingBlock:(_Nullable id)arg3 __attribute__((swift_error(nonnull_error)))
 {
     return [[LDEApplicationWorkspace shared] deleteApplicationWithBundleID:bundleID];
+}
+
+@end
+
+@implementation UIImage (PrivateHook)
+
++ (void)lazyLoad
+{
+    SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+}
+
++ (UIImage *)hook_iconForBundleID:(NSString *)bundleIdentifier
+                           format:(int)format
+                            scale:(CGFloat)scale
+{
+    LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
+    if(obj)
+    {
+        UIImage *rawIcon = obj.icon;
+        CGRect r = (CGRect){ .size = rawIcon.size };
+        UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:rawIcon.size.width * 0.2237];
+        UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
+        fmt.scale = scale;
+        UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:rawIcon.size format:fmt];
+        UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
+            [mask addClip];
+            [rawIcon drawInRect:r];
+        }];
+        return curvedImage;
+    }
+    return [self hook_iconForBundleID:bundleIdentifier format:format scale:scale];
 }
 
 @end

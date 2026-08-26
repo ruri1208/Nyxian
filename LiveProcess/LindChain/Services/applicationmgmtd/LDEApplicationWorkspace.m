@@ -37,6 +37,8 @@
 
 @interface LDEApplicationWorkspace ()
 
+@property (nonatomic) dispatch_semaphore_t syncSema;
+@property (nonatomic) BOOL syncDone;
 @property (nonatomic,strong) NSMutableDictionary<NSString*,LDEApplicationObject*> *applications;
 
 @end
@@ -48,6 +50,7 @@
     self = [super init];
     if(self)
     {
+        _syncSema = dispatch_semaphore_create(0);
         _applications = [[NSMutableDictionary alloc] init];
     }
     return self;
@@ -81,6 +84,7 @@
     if(liveshim_syscall(SYS_pectl, kPECTLCategoryLaunchService, kPECTLLaunchServiceGetEndpoint, "org.emexlabs.bootstrapd", NULL, MACH_PORT_NULL, &bootstrapd_port) != 0)
     {
         NSLog(@"failed looking up org.emexlabs.bootstrapd port: %s", strerror(errno));
+        dispatch_semaphore_signal(_syncSema);   /* no permission */
         return NO;
     }
     
@@ -89,6 +93,7 @@
     if(endpoint == nil || endpoint._endpoint == nil)
     {
         NSLog(@"failed craft NSXPCListenerEndpoint for org.emexlabs.bootstrapd port");
+        dispatch_semaphore_signal(_syncSema);   /* something terrible happened? */
         return NO;
     }
     
@@ -261,11 +266,20 @@
 - (NSArray<LDEApplicationObject*>*)allApplicationObjects
 {
     [self connect];
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sleep(1);
-    });
-    return _applications.allValues;
+    
+    BOOL done;
+    @synchronized(self)
+    {
+        done = self.syncDone;
+    }
+    if(!done)
+    {
+        dispatch_semaphore_wait(self.syncSema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)));
+    }
+    
+    @synchronized(self.applications) {
+        return [_applications.allValues copy];
+    }
 }
 
 - (BOOL)clearContainerForBundleID:(NSString *)bundleID
@@ -384,9 +398,21 @@
     return utilityHomePath;
 }
 
+- (void)applicationInitialPopulationDone
+{
+    @synchronized(self)
+    {
+        self.syncDone = YES;
+    }
+    dispatch_semaphore_signal(self.syncSema);
+}
+
 - (void)applicationWasInstalled:(LDEApplicationObject*)app
 {
-    [self.applications setObject:app forKey:app.bundleIdentifier];
+    @synchronized(self.applications)
+    {
+        [self.applications setObject:app forKey:app.bundleIdentifier];
+    }
 #if !LIVEPROCESS
     dispatch_async(dispatch_get_main_queue(), ^{
         [[ApplicationManagementViewController shared] applicationWasInstalled:app];
@@ -397,7 +423,10 @@
 
 - (void)applicationWithBundleIdentifierWasUninstalled:(NSString*)bundleIdentifier
 {
-    [self.applications removeObjectForKey:bundleIdentifier];
+    @synchronized(self.applications)
+    {
+        [self.applications removeObjectForKey:bundleIdentifier];
+    }
 #if !LIVEPROCESS
     dispatch_async(dispatch_get_main_queue(), ^{
         [[ApplicationManagementViewController shared] applicationWithBundleIdentifierWasUninstalled:bundleIdentifier];
