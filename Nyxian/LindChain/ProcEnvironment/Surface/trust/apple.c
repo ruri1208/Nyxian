@@ -118,11 +118,20 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
         return NULL;
     }
     
+    CFMutableArrayRef lsGetAllowed = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    if(lsGetAllowed == NULL)
+    {
+        CFRelease(rwPaths);
+        CFRelease(roPaths);
+        return NULL;
+    }
+    
     CFMutableDictionaryRef newNXT2Entitlements = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     if(newNXT2Entitlements == NULL)
     {
-        CFRelease(roPaths);
+        CFRelease(lsGetAllowed);
         CFRelease(rwPaths);
+        CFRelease(roPaths);
         return NULL;
     }
     
@@ -166,6 +175,7 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.storage.AppDataContainers")) == kCFBooleanTrue)
     {
         CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/mobile/Containers/Data/Application"));
+        CFArrayAppendValue(lsGetAllowed, CFSTR("org.emexlabs.bootstrapd"));
     }
     
     CFArrayRef temporarySBXException = AppleCSTypeSanizizeKey(appleCSEntitlements, CFSTR("com.apple.security.temporary-exception.sbpl"), CFArrayGetTypeID());
@@ -190,6 +200,8 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
     
     CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileRead, roPaths);
     CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileReadWrite, rwPaths);
+    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementLaunchServicesGetEndpointAllowList, lsGetAllowed);
+    CFRelease(lsGetAllowed);
     CFRelease(roPaths);
     CFRelease(rwPaths);
     
