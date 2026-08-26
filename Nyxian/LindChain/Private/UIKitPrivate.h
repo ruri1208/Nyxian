@@ -137,6 +137,9 @@
     @property (getter=isLaunchProhibited,nonatomic,readonly) BOOL launchProhibited;
     @property (getter=isPlaceholder,nonatomic,readonly) BOOL placeholder;
     @property (getter=isRemovedSystemApp,nonatomic,readonly) BOOL removedSystemApp;
+
++ (id)applicationProxyForBundleURL:(id)arg1;
+
 @end
 
 @interface BSCornerRadiusConfiguration : NSObject
