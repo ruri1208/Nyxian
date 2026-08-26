@@ -153,6 +153,7 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
         @"HOME": [[[NXBootstrap shared] rootfsURL] path],
         @"CFFIXED_USER_HOME": [[[NXBootstrap shared] rootfsURL] path],
         @"TMPDIR": [[[[NXBootstrap shared] rootfsURL] URLByAppendingPathComponent:@"tmp"] path],
+        @"NXROOT": [[[NXBootstrap shared] rootfsURL] path],
     };
     for(NSString *key in defaults)
     {

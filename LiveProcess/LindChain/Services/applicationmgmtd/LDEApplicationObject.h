@@ -35,8 +35,10 @@
 @property (nonatomic) NSString *executablePath;
 @property (nonatomic) NSDictionary *iconDictionary;
 @property (nonatomic) NSString *bundleVersion;
-@property (nonatomic) NSString *bundleShortVersion;
+@property (nonatomic) NSString *shortVersionString;
 @property (nonatomic) NSString *sdkVersion;
+@property (nonatomic) NSString *minimumSystemVersion;
+@property (nonatomic) NSDictionary *entitlements;
 
 @property (nonatomic) BOOL isLaunchAllowed;
 @property (nonatomic) BOOL isFullscreenRequired;

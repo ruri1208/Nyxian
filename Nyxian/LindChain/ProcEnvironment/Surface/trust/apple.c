@@ -198,9 +198,18 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
         }
     }
     
-    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileRead, roPaths);
-    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileReadWrite, rwPaths);
-    CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementLaunchServicesGetEndpointAllowList, lsGetAllowed);
+    if(CFArrayGetCount(roPaths) > 0)
+    {
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileRead, roPaths);
+    }
+    if(CFArrayGetCount(rwPaths) > 0)
+    {
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementSandboxFileReadWrite, rwPaths);
+    }
+    if(CFArrayGetCount(lsGetAllowed) > 0)
+    {
+        CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementLaunchServicesGetEndpointAllowList, lsGetAllowed);
+    }
     CFRelease(lsGetAllowed);
     CFRelease(roPaths);
     CFRelease(rwPaths);
