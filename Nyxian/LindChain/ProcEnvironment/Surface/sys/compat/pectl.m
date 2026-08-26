@@ -43,13 +43,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
     {
         case kPECTLLaunchServiceGetEndpoint:
         {
-            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesGetEndpoint))
-            {
-                sys_return_failure_with_errno(EPERM);
-            }
-            
             userspace_pointer_t userspace_str = (userspace_pointer_t)args[2];
-            
             char *service_name = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
             if(service_name == NULL)
             {
@@ -63,54 +57,65 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                 sys_return_failure_with_errno(ENOMEM);
             }
             
-            NSXPCListenerEndpoint *endpoint = [[PEBootstrapRegistry shared] getEndpointWithServiceIdentifier:service_nsname];
-            if(endpoint == nil)
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesGetEndpoint))
             {
-                sys_return_failure_with_errno(EACCES);
+                kvo_rdlock(sys_proc_);
+                CFArrayRef allowList = CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementLaunchServicesGetEndpointAllowList);
+                if(allowList != nil)
+                {
+                    CFIndex allowListCount = CFArrayGetCount(allowList);
+                    for(CFIndex index = 0; index < allowListCount; index++)
+                    {
+                        NSString *allowedServiceIdentifier = (__bridge NSString*)CFArrayGetValueAtIndex(allowList, index);
+                        if([service_nsname isEqualToString:allowedServiceIdentifier])
+                        {
+                            kvo_unlock(sys_proc_);
+                            goto allow_get_fastpath;
+                        }
+                    }
+                }
+                kvo_unlock(sys_proc_);
+                sys_return_failure_with_errno(EPERM);
             }
             
-            mach_port_t port = xpc_endpoint_copy_listener_port_4sim(endpoint._endpoint);
-            if(port == MACH_PORT_NULL)
+        allow_get_fastpath:
             {
-                sys_return_failure_with_errno(EACCES);
+                NSXPCListenerEndpoint *endpoint = [[PEBootstrapRegistry shared] getEndpointWithServiceIdentifier:service_nsname];
+                if(endpoint == nil)
+                {
+                    sys_return_failure_with_errno(EACCES);
+                }
+                
+                mach_port_t port = xpc_endpoint_copy_listener_port_4sim(endpoint._endpoint);
+                if(port == MACH_PORT_NULL)
+                {
+                    sys_return_failure_with_errno(EACCES);
+                }
+                
+                kern_return_t kr = mach_port_mod_refs(mach_task_self(), port, MACH_PORT_RIGHT_SEND, 1);
+                if(kr != KERN_SUCCESS)
+                {
+                    sys_return_failure_with_errno(EACCES);
+                }
+                
+                kr = mach_syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
+                if(kr != KERN_SUCCESS)
+                {
+                    mach_port_deallocate(mach_task_self(), port);
+                    sys_return_failure_with_errno(ENOMEM);
+                }
+                
+                (*out_ports)[0] = port;
+                *out_ports_cnt = 1;
+                
+                sys_return;
             }
-            
-            kern_return_t kr = mach_port_mod_refs(mach_task_self(), port, MACH_PORT_RIGHT_SEND, 1);
-            if(kr != KERN_SUCCESS)
-            {
-                sys_return_failure_with_errno(EACCES);
-            }
-            
-            kr = mach_syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
-            if(kr != KERN_SUCCESS)
-            {
-                mach_port_deallocate(mach_task_self(), port);
-                sys_return_failure_with_errno(ENOMEM);
-            }
-            
-            (*out_ports)[0] = port;
-            *out_ports_cnt = 1;
-            
-            sys_return;
         }
         case kPECTLLaunchServiceSetEndpoint:
         {
             sys_need_in_ports(1, MACH_MSG_TYPE_MOVE_SEND);
             
-            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesSetEndpoint))
-            {
-                sys_return_failure_with_errno(EPERM);
-            }
-            
-            NSXPCListenerEndpoint *endpoint = [[NSXPCListenerEndpoint alloc] init];
-            endpoint._endpoint = xpc_endpoint_create_mach_port_4sim(sys_in_ports[0]);
-            if(endpoint == nil || endpoint._endpoint == nil)
-            {
-                sys_return_failure_with_errno(EACCES);
-            }
-            
             userspace_pointer_t userspace_str = (userspace_pointer_t)args[2];
-            
             char *service_name = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
             if(service_name == NULL)
             {
@@ -124,45 +129,76 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                 sys_return_failure_with_errno(ENOMEM);
             }
             
-            /*
-             * getting existing launch service, because we
-             * have ti make sure that its not a attacker
-             * attempting to overwrite a launchservice
-             * endpoint to control it, as Nyxian it self
-             * requires such launch service to be able to
-             * read data from the other container, which
-             * is the reason for this extra layer of trust.
-             */
-            PELaunchService *service = [[PELaunchServiceManager shared] serviceForIdentifier:service_nsname];
-            if(service != nil)
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesSetEndpoint))
             {
-                PEProcess *process = service.process;
-                
-                /*
-                 * in-case there is no process it is
-                 * reserved for the service and cannot
-                 * be overriden by a attacker.
-                 */
-                if(process == nil)
+                kvo_rdlock(sys_proc_);
+                CFArrayRef allowList = CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementLaunchServicesSetEndpointAllowList);
+                if(allowList != nil)
                 {
-                    sys_return_failure_with_errno(EPERM);
+                    CFIndex allowListCount = CFArrayGetCount(allowList);
+                    for(CFIndex index = 0; index < allowListCount; index++)
+                    {
+                        NSString *allowedServiceIdentifier = (__bridge NSString*)CFArrayGetValueAtIndex(allowList, index);
+                        if([service_nsname isEqualToString:allowedServiceIdentifier])
+                        {
+                            kvo_unlock(sys_proc_);
+                            goto allow_set_fastpath;
+                        }
+                    }
                 }
-                
-                /*
-                 * making sure that the right process
-                 * registers the endpoint for the
-                 * service domain.
-                 */
-                if(process.pid != proc_getpid(sys_proc_snapshot_))
-                {
-                    sys_return_failure_with_errno(EPERM);
-                }
+                kvo_unlock(sys_proc_);
+                sys_return_failure_with_errno(EPERM);
             }
             
-            [[PEBootstrapRegistry shared] setEndpoint:endpoint forServiceIdentifier:service_nsname];
-            sys_in_ports[0] = MACH_PORT_NULL;   /* prevent mach port reference leak */
-            
-            sys_return;
+        allow_set_fastpath:
+            {
+                NSXPCListenerEndpoint *endpoint = [[NSXPCListenerEndpoint alloc] init];
+                endpoint._endpoint = xpc_endpoint_create_mach_port_4sim(sys_in_ports[0]);
+                if(endpoint == nil || endpoint._endpoint == nil)
+                {
+                    sys_return_failure_with_errno(EACCES);
+                }
+                
+                /*
+                 * getting existing launch service, because we
+                 * have ti make sure that its not a attacker
+                 * attempting to overwrite a launchservice
+                 * endpoint to control it, as Nyxian it self
+                 * requires such launch service to be able to
+                 * read data from the other container, which
+                 * is the reason for this extra layer of trust.
+                 */
+                PELaunchService *service = [[PELaunchServiceManager shared] serviceForIdentifier:service_nsname];
+                if(service != nil)
+                {
+                    PEProcess *process = service.process;
+                    
+                    /*
+                     * in-case there is no process it is
+                     * reserved for the service and cannot
+                     * be overriden by a attacker.
+                     */
+                    if(process == nil)
+                    {
+                        sys_return_failure_with_errno(EPERM);
+                    }
+                    
+                    /*
+                     * making sure that the right process
+                     * registers the endpoint for the
+                     * service domain.
+                     */
+                    if(process.pid != proc_getpid(sys_proc_snapshot_))
+                    {
+                        sys_return_failure_with_errno(EPERM);
+                    }
+                }
+                
+                [[PEBootstrapRegistry shared] setEndpoint:endpoint forServiceIdentifier:service_nsname];
+                sys_in_ports[0] = MACH_PORT_NULL;   /* prevent mach port reference leak */
+                
+                sys_return;
+            }
         }
         default:
             sys_return_failure_with_errno(ENOSYS);

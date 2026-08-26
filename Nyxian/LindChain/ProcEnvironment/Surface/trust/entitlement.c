@@ -59,8 +59,6 @@ NXT2Entitlement const kNXT2EntitlementProcessSpawnInheriteEntitlements = CFSTR("
 
 /* management */
 NXT2Entitlement const kNXT2EntitlementManagementHost = CFSTR("org.emexlabs.nyxian.management.host");
-NXT2Entitlement const kNXT2EntitlementManagementCredentials = CFSTR("org.emexlabs.nyxian.management.credentials");  /* unimplemented */
-NXT2Entitlement const kNXT2EntitlementManagementLaunchServices = CFSTR("org.emexlabs.nyxian.management.launch-services");
 
 /* launch services */
 NXT2Entitlement const kNXT2EntitlementLaunchServicesStart = CFSTR("org.emexlabs.nyxian.launch-services.start");
@@ -68,6 +66,8 @@ NXT2Entitlement const kNXT2EntitlementLaunchServicesStop = CFSTR("org.emexlabs.n
 NXT2Entitlement const kNXT2EntitlementLaunchServicesToggle = CFSTR("org.emexlabs.nyxian.launch-services.toggle");
 NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpoint = CFSTR("org.emexlabs.nyxian.launch-services.get-endpoint");
 NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpoint = CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesGetEndpointAllowList = CFSTR("org.emexlabs.nyxian.launch-services.get-endpoint.allow-list");
+NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpointAllowList = CFSTR("org.emexlabs.nyxian.launch-services.set-endpoint.allow-list");
 
 /* sandbox */
 NXT2Entitlement const kNXT2EntitlementSandboxFileRead = CFSTR("org.emexlabs.nyxian.sandbox.file.read");
