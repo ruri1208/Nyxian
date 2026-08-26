@@ -21,18 +21,11 @@
 
 #import <LiveShim/LiveShimSyscall.h>
 #import <LindChain/ServiceKit/Service.h>
+#import <LindChain/ProcEnvironment/Server/Server.h>
 #include <dlfcn.h>
 #include <mach/mach.h>
 #include <ksurface_config.h>
 #include <ksurface_abi.h>
-
-@interface NSXPCListenerEndpoint ()
-
-@property(nonatomic, setter=_setEndpoint:) xpc_object_t _endpoint;
-
-@end
-
-extern mach_port_t xpc_endpoint_copy_listener_port_4sim(NSObject<OS_xpc_object>*);
 
 static ServiceServer *singletonServiceServer = nil;
 

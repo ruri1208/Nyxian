@@ -24,6 +24,9 @@
 
 #import <Foundation/Foundation.h>
 
+extern mach_port_t xpc_endpoint_copy_listener_port_4sim(NSObject<OS_xpc_object>*);
+extern NSObject<OS_xpc_object> *xpc_endpoint_create_mach_port_4sim(mach_port_t port);
+
 @interface NSXPCListenerEndpoint ()
 
 @property(nonatomic, setter=_setEndpoint:) xpc_object_t _endpoint;

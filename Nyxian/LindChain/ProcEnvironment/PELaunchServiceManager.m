@@ -67,6 +67,12 @@
                              observer:(id)observer
                      observerProtocol:(Protocol *)observerProtocol
 {
+    mach_port_t port = [[PEBootstrapRegistry shared] getMachPortNameWithServiceIdentifier:serviceIdentifier];
+    if(port)
+    {
+        
+    }
+    
     NSXPCListenerEndpoint *endpoint = [[PEBootstrapRegistry shared] getEndpointWithServiceIdentifier:serviceIdentifier];
     if(!endpoint)
     {

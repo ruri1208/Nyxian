@@ -24,7 +24,6 @@
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
 #import <LindChain/ProcEnvironment/PEUserspaceManager.h>
-#import <LindChain/ProcEnvironment/Server/Server.h>
 #import <Foundation/Foundation.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
@@ -32,9 +31,6 @@
 #include <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
-
-extern mach_port_t xpc_endpoint_copy_listener_port_4sim(NSObject<OS_xpc_object>*);
-extern NSObject<OS_xpc_object> *xpc_endpoint_create_mach_port_4sim(mach_port_t port);
 
 DEFINE_SYSCALL_HANDLER(pectl_launchservice)
 {
@@ -80,13 +76,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             
         allow_get_fastpath:
             {
-                NSXPCListenerEndpoint *endpoint = [[PEBootstrapRegistry shared] getEndpointWithServiceIdentifier:service_nsname];
-                if(endpoint == nil)
-                {
-                    sys_return_failure_with_errno(EACCES);
-                }
-                
-                mach_port_t port = xpc_endpoint_copy_listener_port_4sim(endpoint._endpoint);
+                mach_port_t port = [[PEBootstrapRegistry shared] getMachPortNameWithServiceIdentifier:service_nsname];
                 if(port == MACH_PORT_NULL)
                 {
                     sys_return_failure_with_errno(EACCES);
@@ -152,13 +142,6 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
             
         allow_set_fastpath:
             {
-                NSXPCListenerEndpoint *endpoint = [[NSXPCListenerEndpoint alloc] init];
-                endpoint._endpoint = xpc_endpoint_create_mach_port_4sim(sys_in_ports[0]);
-                if(endpoint == nil || endpoint._endpoint == nil)
-                {
-                    sys_return_failure_with_errno(EACCES);
-                }
-                
                 /*
                  * getting existing launch service, because we
                  * have ti make sure that its not a attacker
@@ -196,7 +179,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                     }
                 }
                 
-                [[PEBootstrapRegistry shared] setEndpoint:endpoint forServiceIdentifier:service_nsname];
+                [[PEBootstrapRegistry shared] setMachPortName:sys_in_ports[0] forServiceIdentifier:service_nsname];
                 sys_in_ports[0] = MACH_PORT_NULL;   /* prevent mach port reference leak */
                 
                 sys_return;
@@ -343,6 +326,38 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                     send_reply(&(recv->header), finished ? 0 : -1, NULL, 0, true, 0);
                 }];
             });
+            sys_return;
+        }
+        case kPECTLUserInterfaceOpenBundleIdentifier:
+        {
+            kvo_rdlock(sys_proc_);
+            if(CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementManagementProcEnvironment) != kCFBooleanTrue)
+            {
+                kvo_unlock(sys_proc_);
+                sys_return_failure_with_errno(EPERM);
+            }
+            kvo_unlock(sys_proc_);
+            
+            userspace_pointer_t bundleid_str = (userspace_pointer_t)args[2];
+            char *bundleid = mach_syscall_copy_str_in(sys_task_, bundleid_str, MAXHOSTNAMELEN);
+            if(bundleid == NULL)
+            {
+                sys_return_failure_with_errno(ENOMEM);
+            }
+            
+            NSString *bundleIdentifier = [NSString stringWithCString:bundleid encoding:NSUTF8StringEncoding];
+            free(bundleid);
+            if(bundleIdentifier == NULL)
+            {
+                sys_return_failure_with_errno(ENOMEM);
+            }
+            
+            pid_t pid = [[PEProcessManager shared] spawnProcessWithBundleIdentifier:bundleIdentifier withItems:@{} withKernelSurfaceProcess:kernel_proc_ doRestartIfRunning:NO];
+            if(pid < 0)
+            {
+                sys_return_failure_with_errno(EAGAIN);
+            }
+            
             sys_return;
         }
         default:

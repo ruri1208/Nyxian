@@ -20,6 +20,7 @@
 */
 
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
+#import <LindChain/ProcEnvironment/Server/Server.h>
 #import <os/lock.h>
 
 @implementation PEBootstrapRegistry {
@@ -53,16 +54,35 @@
 
 - (NSXPCListenerEndpoint*)getEndpointWithServiceIdentifier:(NSString*)serviceIdentifier
 {
-    os_unfair_lock_lock(&_lock);
-    NSXPCListenerEndpoint *endpoint = _registry[serviceIdentifier];
-    os_unfair_lock_unlock(&_lock);
+    mach_port_name_t port = [self getMachPortNameWithServiceIdentifier:serviceIdentifier];
+    if(port == MACH_PORT_NULL)
+    {
+        return nil;
+    }
+    
+    NSXPCListenerEndpoint *endpoint = [[NSXPCListenerEndpoint alloc] init];
+    endpoint._endpoint = xpc_endpoint_create_mach_port_4sim(port);
+    if(endpoint == nil || endpoint._endpoint == nil)
+    {
+        return nil;
+    }
+    
     return endpoint;
 }
 
-- (void)setEndpoint:(NSXPCListenerEndpoint*)endpoint forServiceIdentifier:(NSString*)serviceIdentifier
+- (mach_port_name_t)getMachPortNameWithServiceIdentifier:(NSString*)serviceIdentifier
 {
     os_unfair_lock_lock(&_lock);
-    _registry[serviceIdentifier] = endpoint;
+    NSNumber *number = _registry[serviceIdentifier];
+    os_unfair_lock_unlock(&_lock);
+    return [number unsignedIntValue];
+}
+
+- (void)setMachPortName:(mach_port_name_t)port
+   forServiceIdentifier:(NSString*)serviceIdentifier
+{
+    os_unfair_lock_lock(&_lock);
+    _registry[serviceIdentifier] = [NSNumber numberWithUnsignedLong:port];
     os_unfair_lock_unlock(&_lock);
 }
 
