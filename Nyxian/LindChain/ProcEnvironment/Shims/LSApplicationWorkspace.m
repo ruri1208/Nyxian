@@ -24,37 +24,6 @@
 #import <LindChain/Private/UIKitPrivate.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 
-@implementation UIImage (PrivateHook)
-
-+ (void)lazyLoad
-{
-    SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
-}
-
-+ (UIImage *)hook_iconForBundleID:(NSString *)bundleIdentifier
-                           format:(int)format
-                            scale:(CGFloat)scale
-{
-    LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
-    if(obj)
-    {
-        UIImage *rawIcon = obj.icon;
-        CGRect r = (CGRect){ .size = rawIcon.size };
-        UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:rawIcon.size.width * 0.2237];
-        UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
-        fmt.scale = scale;
-        UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:rawIcon.size format:fmt];
-        UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
-            [mask addClip];
-            [rawIcon drawInRect:r];
-        }];
-        return curvedImage;
-    }
-    return [self hook_iconForBundleID:bundleIdentifier format:format scale:scale];
-}
-
-@end
-
 /* WIP TO A HUGE EXTEND! */
 
 @interface _LSDiskUsage : NSObject
@@ -727,17 +696,23 @@
 {
     [super load];
     
-    SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
-    SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+    SwizzleObjCMethod(@selector(defaultWorkspace), PrivClass(LSApplicationWorkspace), @selector(hook_defaultWorkspace), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeClass);
+}
+
++ (instancetype)hook_defaultWorkspace
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(allInstalledApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+    });
+    return [self hook_defaultWorkspace];
 }
 
 - (NSArray<LSApplicationSpoofProxy*>*)hook_allApplications
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        [UIImage lazyLoad];
-    });
-    
     LDEApplicationWorkspace *workspace = [LDEApplicationWorkspace shared];
     [workspace ping];
     
@@ -763,6 +738,37 @@
                        usingBlock:(_Nullable id)arg3 __attribute__((swift_error(nonnull_error)))
 {
     return [[LDEApplicationWorkspace shared] deleteApplicationWithBundleID:bundleID];
+}
+
+@end
+
+@implementation UIImage (PrivateHook)
+
++ (void)lazyLoad
+{
+    SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+}
+
++ (UIImage *)hook_iconForBundleID:(NSString *)bundleIdentifier
+                           format:(int)format
+                            scale:(CGFloat)scale
+{
+    LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
+    if(obj)
+    {
+        UIImage *rawIcon = obj.icon;
+        CGRect r = (CGRect){ .size = rawIcon.size };
+        UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:rawIcon.size.width * 0.2237];
+        UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
+        fmt.scale = scale;
+        UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:rawIcon.size format:fmt];
+        UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
+            [mask addClip];
+            [rawIcon drawInRect:r];
+        }];
+        return curvedImage;
+    }
+    return [self hook_iconForBundleID:bundleIdentifier format:format scale:scale];
 }
 
 @end

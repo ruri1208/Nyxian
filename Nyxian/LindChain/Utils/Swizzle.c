@@ -75,9 +75,11 @@ SwizzleReturn SwizzleObjCMethod(SEL originalAction,
         return kSwizzleReturnArguments;
     }
     
+    Class targetClass = (swizzleMethodType == kSwizzleMethodTypeClass) ? object_getClass((id)originalClass) : originalClass;
+    
     if(replacementClass)
     {
-        class_addMethod(originalClass, replacementAction, method_getImplementation(replacementMethod.method), method_getTypeEncoding(replacementMethod.method));
+        class_addMethod(targetClass, replacementAction, method_getImplementation(replacementMethod.method), method_getTypeEncoding(replacementMethod.method));
         replacementMethod = SwizzleGetMethod(originalClass, replacementAction, swizzleMethodType);
         if(replacementMethod.method == nil)
         {

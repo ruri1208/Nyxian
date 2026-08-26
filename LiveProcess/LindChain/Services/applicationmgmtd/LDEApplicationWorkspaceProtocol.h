@@ -26,6 +26,8 @@
 
 @protocol LDEApplicationWorkspaceProtocol <NSObject>
 
+@required
+- (void)applicationInitialPopulationDone;
 - (void)applicationWasInstalled:(LDEApplicationObject*)app;
 - (void)applicationWithBundleIdentifierWasUninstalled:(NSString*)bundleIdentifier;
 
