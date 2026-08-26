@@ -193,6 +193,7 @@
 				"LindChain/ProcEnvironment/LiveContainer/Tweaks/UIKit+GuestHooksInit.m",
 				LindChain/ProcEnvironment/Shims/application.m,
 				LindChain/ProcEnvironment/Shims/libproc.m,
+				LindChain/ProcEnvironment/Shims/LSApplicationWorkspace.m,
 				LindChain/ProcEnvironment/Shims/posix_spawn.m,
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,
@@ -213,6 +214,7 @@
 			membershipExceptions = (
 				LindChain/ServiceKit/Service.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationObject.m,
+				LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.m,
 				LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceInternal.m,
 				main.m,
 				ResecureDecoder.m,
@@ -251,6 +253,7 @@
 				LindChain/ProcEnvironment/Shims/attrstrnilfix.m,
 				LindChain/ProcEnvironment/Shims/environment.m,
 				LindChain/ProcEnvironment/Shims/libproc.m,
+				LindChain/ProcEnvironment/Shims/LSApplicationWorkspace.m,
 				LindChain/ProcEnvironment/Shims/posix_spawn.m,
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,
