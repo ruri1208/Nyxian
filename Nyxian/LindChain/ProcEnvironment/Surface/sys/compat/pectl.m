@@ -352,12 +352,17 @@ DEFINE_SYSCALL_HANDLER(pectl_userinterface)
                 sys_return_failure_with_errno(ENOMEM);
             }
             
-            pid_t pid = [[PEProcessManager shared] spawnProcessWithBundleIdentifier:bundleIdentifier withItems:@{} withKernelSurfaceProcess:kernel_proc_ doRestartIfRunning:NO];
-            if(pid < 0)
-            {
-                sys_return_failure_with_errno(EAGAIN);
-            }
-            
+            recv_buffer_t *recv = *recv_buffer;
+            *recv_buffer = NULL;    /* claiming ownership */
+            dispatch_async(dispatch_get_main_queue(), ^{
+                pid_t pid = [[PEProcessManager shared] spawnProcessWithBundleIdentifier:bundleIdentifier withItems:@{} withKernelSurfaceProcess:kernel_proc_ doRestartIfRunning:NO];
+                if(pid < 0)
+                {
+                    send_reply(&(recv->header), -1, NULL, 0, true, EAGAIN);
+                }
+                
+                send_reply(&(recv->header), 0, NULL, 0, true, 0);
+            });
             sys_return;
         }
         default:

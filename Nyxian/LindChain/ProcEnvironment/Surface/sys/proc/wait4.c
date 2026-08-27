@@ -33,6 +33,13 @@ typedef struct wait4_payload {
     pid_t waitonpid;
 } wait4_payload_t;
 
+void *proc_reap_thread(void *ctx)
+{
+    proc_reap((ksurface_proc_t*)ctx);
+    kvo_release(ctx);
+    return NULL;
+}
+
 bool wait4_proc_event_handler(uint32_t type,
                               uint64_t val,
                               kvobject_event_t *event)
@@ -82,9 +89,20 @@ bool wait4_proc_event_handler(uint32_t type,
             else if(child->bsd.kp_proc.p_stat == SZOMB)
             {
                 /* process has already exited, reap it */
-                pthread_mutex_unlock(&(parent->children.mutex));
-                proc_reap(child);
-                pthread_mutex_lock(&(parent->children.mutex));
+                if(!kvo_retain(child))
+                {
+                    environment_panic("failed to retain exited child process");
+                }
+                
+                pthread_t thread;
+                if(pthread_create(&thread, NULL, proc_reap_thread, child) != 0)
+                {
+                    environment_panic("failed to create reap thread for exited child process");
+                }
+                else
+                {
+                    pthread_detach(thread);
+                }
                 
                 /* in-case it did stop but is now zombified */
                 if(!WIFEXITED(child->nyx.p_status))
