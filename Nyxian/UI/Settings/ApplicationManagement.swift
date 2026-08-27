@@ -195,28 +195,28 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                         }
                     }
                     
-                    var appleEnt: [String: Any] = [:]
-                    var outError: OSStatus = 0
-                    let unmanagedDict: Unmanaged<CFDictionary>? = CopyAppleCSEntitlementsForPath(executablePath as CFString, &outError);
-                    if let cfDict = unmanagedDict?.takeRetainedValue() {
-                        let nsDict = cfDict as NSDictionary
-                        if let swiftDict = nsDict as? [String: Any] {
-                            appleEnt = swiftDict
+                    if !ent.isEmpty {
+                        final = ent
+                    } else {
+                        var appleEnt: [String: Any] = [:]
+                        var outError: OSStatus = 0
+                        let unmanagedDict: Unmanaged<CFDictionary>? = CopyAppleCSEntitlementsForPath(executablePath as CFString, &outError);
+                        if let cfDict = unmanagedDict?.takeRetainedValue() {
+                            let nsDict = cfDict as NSDictionary
+                            if let swiftDict = nsDict as? [String: Any] {
+                                appleEnt = swiftDict
+                            }
                         }
-                    }
-                    
-                    var extractedEnt: [String: Any] = [:]
-                    let unmanagedDict2: Unmanaged<CFDictionary>? = ExtractNXT2OutOfAppleCSEntitlements(appleEnt as CFDictionary);
-                    if let cfDict = unmanagedDict2?.takeRetainedValue() {
-                        let nsDict = cfDict as NSDictionary
-                        if let swiftDict = nsDict as? [String: Any] {
-                            extractedEnt = swiftDict
+                        
+                        var extractedEnt: [String: Any] = [:]
+                        let unmanagedDict2: Unmanaged<CFDictionary>? = ExtractNXT2OutOfAppleCSEntitlements(appleEnt as CFDictionary);
+                        if let cfDict = unmanagedDict2?.takeRetainedValue() {
+                            let nsDict = cfDict as NSDictionary
+                            if let swiftDict = nsDict as? [String: Any] {
+                                extractedEnt = swiftDict
+                            }
                         }
-                    }
-                    
-                    final = ent
-                    final.merge(extractedEnt) { _, new in
-                        new
+                        final = extractedEnt
                     }
                 }
                 
