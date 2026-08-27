@@ -53,6 +53,37 @@
     self.sdkVersion = [bundle objectForInfoDictionaryKey:@"DTPlatformVersion"];
     self.minimumSystemVersion = [bundle objectForInfoDictionaryKey:@"MinimumOSVersion"];
     
+    self.supportedInterfaceOrientations = 0;
+    NSArray *orientations;
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+    {
+        orientations = [bundle objectForInfoDictionaryKey:@"UISupportedInterfaceOrientations~ipad"] ?: [bundle objectForInfoDictionaryKey:@"UISupportedInterfaceOrientations"];
+    }
+    else
+    {
+        orientations = [bundle objectForInfoDictionaryKey:@"UISupportedInterfaceOrientations"];
+    }
+    
+    for(NSString *orientation in orientations)
+    {
+        if([orientation isEqualToString:@"UIInterfaceOrientationPortrait"])
+        {
+            self.supportedInterfaceOrientations |= UIInterfaceOrientationMaskPortrait;
+        }
+        else if([orientation isEqualToString:@"UIInterfaceOrientationPortraitUpsideDown"])
+        {
+            self.supportedInterfaceOrientations |= UIInterfaceOrientationMaskPortraitUpsideDown;
+        }
+        else if([orientation isEqualToString:@"UIInterfaceOrientationLandscapeLeft"])
+        {
+            self.supportedInterfaceOrientations |= UIInterfaceOrientationMaskLandscapeLeft;
+        }
+        else if([orientation isEqualToString:@"UIInterfaceOrientationLandscapeRight"])
+        {
+            self.supportedInterfaceOrientations |= UIInterfaceOrientationMaskLandscapeRight;
+        }
+    }
+    
     self.bundleIdentifier = bundle.bundleIdentifier;
     
     id fullScreen = [bundle objectForInfoDictionaryKey:@"UIRequiresFullScreen"];
@@ -120,6 +151,7 @@
     [coder encodeObject:self.sdkVersion forKey:@"sdkVersion"];
     [coder encodeObject:self.minimumSystemVersion forKey:@"minimumSystemVersion"];
     [coder encodeObject:self.entitlements forKey:@"entitlements"];
+    [coder encodeObject:@(self.supportedInterfaceOrientations) forKey:@"supportedInterfaceOrientations"];
     [coder encodeObject:@(self.isLaunchAllowed) forKey:@"isLaunchAllowed"];
     [coder encodeObject:@(self.isFullscreenRequired) forKey:@"isFullscreenRequired"];
 }
@@ -140,6 +172,7 @@
         _sdkVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"sdkVersion"];
         _minimumSystemVersion = [coder decodeObjectOfClass:[NSString class] forKey:@"minimumSystemVersion"];
         _entitlements = [coder decodeObjectOfClasses:[NSSet setWithArray:@[[NSDictionary class], [NSArray class], [NSString class], [NSNumber class], [NSData class]]] forKey:@"entitlements"];
+        _supportedInterfaceOrientations = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"supportedInterfaceOrientations"] unsignedLongValue];
         _isLaunchAllowed = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isLaunchAllowed"] boolValue];
         _isFullscreenRequired = [[coder decodeObjectOfClass:[NSNumber class] forKey:@"isFullscreenRequired"] boolValue];
     }

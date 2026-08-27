@@ -88,14 +88,12 @@
 #if !LIVEPROCESS
     PELaunchServiceManager *serviceManager = [PELaunchServiceManager shared];
     _connection = [serviceManager connectToService:@"org.emexlabs.bootstrapd" protocol:@protocol(LDEApplicationWorkspaceService) observer:self observerProtocol:@protocol(LDEApplicationWorkspaceObserver)];
-    os_unfair_lock_unlock(&_connectLock);
     
     os_unfair_lock_lock(&_applicationsLock);
     self.syncDone = NO;
     _syncSema = dispatch_semaphore_create(0);
     [_applications removeAllObjects];
     os_unfair_lock_unlock(&_applicationsLock);
-    return _connection != nil;
 #else
     extern NSObject<OS_xpc_object> *xpc_endpoint_create_mach_port_4sim(mach_port_t port);
     
@@ -124,9 +122,23 @@
         _connection.remoteObjectInterface = [NSXPCInterface interfaceWithProtocol:@protocol(LDEApplicationWorkspaceService)];
         _connection.exportedInterface = [NSXPCInterface interfaceWithProtocol:@protocol(LDEApplicationWorkspaceObserver)];
         _connection.exportedObject = self;
-        [_connection resume];
     }
 #endif /* !LIVEPROCESS */
+    
+    if(_connection)
+    {
+        __weak typeof(self) weakSelf = self;
+        _connection.interruptionHandler = ^{
+            [weakSelf disconnect];
+        };
+        
+        _connection.invalidationHandler = ^{
+            [weakSelf disconnect];
+        };
+        
+        [_connection resume];
+    }
+    
     os_unfair_lock_unlock(&_connectLock);
     
     os_unfair_lock_lock(&_applicationsLock);

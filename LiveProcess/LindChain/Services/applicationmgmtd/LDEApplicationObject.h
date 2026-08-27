@@ -42,6 +42,7 @@
 
 @property (nonatomic) BOOL isLaunchAllowed;
 @property (nonatomic) BOOL isFullscreenRequired;
+@property (nonatomic) UIInterfaceOrientationMask supportedInterfaceOrientations;
 
 @property (nonatomic) UIImage *icon;
 

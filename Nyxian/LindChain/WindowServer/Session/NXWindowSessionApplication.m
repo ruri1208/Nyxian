@@ -254,17 +254,38 @@
         return NO;
     }
     
-    if(self.process.applicationObject != nil && self.process.applicationObject.isFullscreenRequired)
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad &&
+       self.process.applicationObject != nil && self.process.applicationObject.isFullscreenRequired)
     {
         CGRect screenRect = UIScreen.mainScreen.bounds;
+        UIInterfaceOrientationMask mask = self.process.applicationObject.supportedInterfaceOrientations;
         
-        if(NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeLeft ||
-           NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeRight)
+        BOOL supportsPortrait = (mask & (UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown)) != 0;
+        BOOL supportsLandscape = (mask & UIInterfaceOrientationMaskLandscape) != 0;
+        BOOL isLandscapeOnly = supportsLandscape && !supportsPortrait;
+        BOOL isCurrentlyLandscape = (NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeLeft || NXWindowServer.shared.rootViewController.interfaceOrientation == UIInterfaceOrientationLandscapeRight);
+        BOOL needsFlip = NO;
+        
+        if(isLandscapeOnly)
         {
-            /* they have to be flipped */
-            CGFloat heigth = screenRect.size.height;
+            if(!isCurrentlyLandscape)
+            {
+                needsFlip = YES;
+            }
+        }
+        else
+        {
+            if(isCurrentlyLandscape)
+            {
+                needsFlip = YES;
+            }
+        }
+        
+        if(needsFlip)
+        {
+            CGFloat height = screenRect.size.height;
             screenRect.size.height = screenRect.size.width;
-            screenRect.size.width = heigth;
+            screenRect.size.width = height;
         }
         
         screenRect.size.width = screenRect.size.width / 2;
