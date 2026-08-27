@@ -31,13 +31,13 @@
 /// Helper macros
 #define proc_getpid(proc) ((proc)->bsd.kp_proc.p_pid)
 #define proc_getppid(proc) ((proc)->bsd.kp_eproc.e_ppid)
-#define proc_getentitlements(proc) ((proc)->nyx.identity->legacyEntitlements)
-#define proc_getmaxentitlements(proc) ((proc)->nyx.identity->maxLegacyEntitlements)
+#define proc_getentitlements(proc) ((proc)->nyx.entitlements)
+#define proc_getmaxentitlements(proc) ((proc)->nyx.maxEntitlements)
 
 #define proc_setpid(proc, pid) (proc)->bsd.kp_proc.p_pid = pid
 #define proc_setppid(proc, ppid) (proc)->bsd.kp_proc.p_oppid = ppid; (proc)->bsd.kp_eproc.e_ppid = ppid; (proc)->bsd.kp_eproc.e_pgid = ppid
-#define proc_setentitlements(proc, entitlement) (proc)->nyx.identity->legacyEntitlements = entitlement
-#define proc_setmaxentitlements(proc, entitlement) (proc)->nyx.identity->maxLegacyEntitlements = entitlement
+#define proc_setentitlements(proc, entitlement) (proc)->nyx.entitlements = entitlement
+#define proc_setmaxentitlements(proc, entitlement) (proc)->nyx.maxEntitlements = entitlement
 
 #define proc_did_change_credentials(proc) ((proc)->bsd.kp_proc.p_flag & P_SUGID)
 
@@ -133,7 +133,11 @@ struct ksurface_proc {
         /* wait4 markers */
         int64_t p_status;
         
+        /* for creation from it, please hold lock to the proc object */
         ksurface_trust_identity_t *identity;
+        
+        PEEntitlementFlags entitlements;
+        PEEntitlementFlags maxEntitlements;
     } nyx;
 };
 

@@ -19,8 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
 #include <LindChain/ProcEnvironment/Surface/trust/apple.h>
 
+/* ----------------------------------------------------------------------
+ *  Types
+ * -------------------------------------------------------------------- */
 typedef const struct __SecCode *SecStaticCodeRef;
 typedef uint32_t SecCSFlags;
 
@@ -32,9 +38,15 @@ enum {
     kSecCSRequirementInformation = 1 << 2,
 };
 
+/* ----------------------------------------------------------------------
+ *  Function Prototypes
+ * -------------------------------------------------------------------- */
 OSStatus SecStaticCodeCreateWithPath(CFURLRef path, SecCSFlags flags, SecStaticCodeRef *staticCode);
 OSStatus SecCodeCopySigningInformation(SecStaticCodeRef code, SecCSFlags flags, CFDictionaryRef *information);
 
+/* ----------------------------------------------------------------------
+ *  Functions
+ * -------------------------------------------------------------------- */
 CFDictionaryRef CopyAppleCSEntitlementsForPath(CFStringRef path,
                                                OSStatus *outErr)
 {

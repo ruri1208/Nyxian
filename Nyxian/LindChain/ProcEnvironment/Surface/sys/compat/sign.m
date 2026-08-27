@@ -37,7 +37,7 @@ DEFINE_SYSCALL_HANDLER(sign)
      * used to only allow the spawn of binaries which are already signed.
      * all this is done to ensure the user does consent do these things!
      */
-    if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_), kPEEntitlementProcessSpawn))
+    if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_), kPEEntitlementFlagProcessSpawn))
     {
         sys_return_failure_with_errno(EPERM);
     }

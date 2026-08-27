@@ -72,9 +72,9 @@
     
     kvo_rdlock(proc);
     ksurface_trust_identity_t *identity = trust_identity_create_from_path_with_parent_identity([self.executablePath UTF8String], proc->nyx.identity);
-    kvo_unlock(proc);
     if(identity == NULL)
     {
+        kvo_unlock(proc);
         proctil(kProctilActionUnlock);
         return nil;
     }
@@ -87,6 +87,7 @@
         [mutableItems setObject:(__bridge NSArray*)sb_identity->filePermissions forKey:@"PEFilePermissions"];
         items = mutableItems;
     }
+    kvo_unlock(proc);
     
     /* assigning potential bundle information */
     self.applicationObject = nil;

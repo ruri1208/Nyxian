@@ -26,26 +26,26 @@
 #include <sys/syscall.h>
 
 /* headers to all syscall handlers */
-#include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
+#include <LindChain/ProcEnvironment/Surface/sys/host/ioctl.h>
+#include <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/gettask.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/procpath.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/waittask.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/pectl.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/sign.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setuid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setgid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getppid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getuid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getgid.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/gettask.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/procpath.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getsid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setsid.h>
-#include <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
+#include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/wait4.h>
-#include <LindChain/ProcEnvironment/Surface/sys/host/ioctl.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/waittask.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/pectl.h>
 #include <LindChain/ProcEnvironment/Surface/sys/fs/open.h>
 #include <LindChain/ProcEnvironment/Surface/sys/fs/faccessat.h>
 #include <LindChain/ProcEnvironment/Surface/sys/fs/getattrlist.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/sign.h>
 #include <ksurface_config.h>
 
 typedef struct {

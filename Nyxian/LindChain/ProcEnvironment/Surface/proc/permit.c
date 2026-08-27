@@ -26,8 +26,8 @@
 
 bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
                                               pid_t targetPid,
-                                              PEEntitlement entitlementsNeeded,
-                                              PEEntitlement targetEntitlementsNeeded)
+                                              PEEntitlementFlags entitlementsNeeded,
+                                              PEEntitlementFlags targetEntitlementsNeeded)
 {
     assert(proc != NULL);
     
@@ -79,8 +79,8 @@ bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * and therefore can only be decided at by a other process
      * that is platformised
      */
-    if(entitlement_got_entitlement(proc_getmaxentitlements(targetProc), kPEEntitlementPlatform) &&
-       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatform))
+    if(entitlement_got_entitlement(proc_getmaxentitlements(targetProc), kPEEntitlementFlagPlatform) &&
+       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementFlagPlatform))
     {
         goto out_eperm_no;
     }
@@ -122,14 +122,14 @@ bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc,
      * doesnt meet any bypassing requirements or
      * bypassing might be NO on all types.
      */
-    if(targetEntitlementsNeeded != kPEEntitlementNone &&
-       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementPlatform) &&
+    if(targetEntitlementsNeeded != kPEEntitlementFlagNone &&
+       !entitlement_got_entitlement(proc_getmaxentitlements(proc), kPEEntitlementFlagPlatform) &&
        !entitlement_got_entitlement(proc_getentitlements(targetProc), targetEntitlementsNeeded))
     {
         goto out_eperm_no;
     }
     
-    if(entitlementsNeeded != kPEEntitlementNone &&
+    if(entitlementsNeeded != kPEEntitlementFlagNone &&
        !entitlement_got_entitlement(proc_getentitlements(proc), entitlementsNeeded))
     {
         goto out_eperm_no;

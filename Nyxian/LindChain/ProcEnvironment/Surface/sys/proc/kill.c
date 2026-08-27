@@ -40,7 +40,7 @@ DEFINE_SYSCALL_HANDLER(kill)
      * also checks if the caller process has the entitlement to kill
      * and checks if the process has primitive over the other process.
      */
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, kPEEntitlementProcessKill, kPEEntitlementNone))
+    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
     {
         sys_return_failure_with_errno(errno);
     }
