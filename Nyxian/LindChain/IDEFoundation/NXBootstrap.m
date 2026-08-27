@@ -27,8 +27,8 @@
 #import <UI/XCodeButton.h>
 #import <Nyxian-Swift.h>
 
-static BOOL urlIsContainedIn(NSURL *candidate,
-                             NSURL *root)
+BOOL PEURLIsContainedIn(NSURL *candidate,
+                        NSURL *root)
 {
     NSURL *candidateSatnderized = candidate.URLByResolvingSymlinksInPath.URLByStandardizingPath;
     NSURL *rootSatnderized = root.URLByResolvingSymlinksInPath.URLByStandardizingPath;
@@ -410,7 +410,7 @@ static BOOL urlIsContainedIn(NSURL *candidate,
 + (NSData*)issueSandboxFileExtensionForURL:(NSURL*)url
                                  readWrite:(BOOL)readWrite
 {
-    if(!urlIsContainedIn(url, [[NXBootstrap shared] rootfsURL]))
+    if(!PEURLIsContainedIn(url, [[NXBootstrap shared] rootfsURL]))
     {
         return nil;
     }

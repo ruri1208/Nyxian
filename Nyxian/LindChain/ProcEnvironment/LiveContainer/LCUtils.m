@@ -30,6 +30,8 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import <dlfcn.h>
 
+extern BOOL PEURLIsContainedIn(NSURL *candidate, NSURL *root);
+
 @implementation LCUtils
 
 #pragma mark Certificate & password
@@ -114,6 +116,18 @@
     
     /* patching arm64e things */
     LCPatchAppBundleFixupARM64eSlice(bundle);
+    
+    /* checking for root binaries */
+    NSArray<NSString*> *tsRootBinaries = [bundle objectForInfoDictionaryKey:@"TSRootBinaries"];
+    for(NSString *rootBinary in tsRootBinaries)
+    {
+        NSURL *urlToRootBinary = [bundle.bundleURL URLByAppendingPathComponent:rootBinary];
+        if(!PEURLIsContainedIn(urlToRootBinary, bundle.bundleURL) || ![LCUtils signMachOAtURL:urlToRootBinary])
+        {
+            completionHandler(NO, [NSError errorWithDomain:@"org.emexlabs.nyxian.lcutils.signapp" code:1 userInfo:@{ NSLocalizedDescriptionKey: @"Failed to sign all TSRootBinaries contained in the app." }]);
+            return nil;
+        }
+    }
     
     return [ZSigner signWithAppPath:[path path] prov:self.profileData key: self.certificateData pass:self.certificatePassword completionHandler:completionHandler];
 }

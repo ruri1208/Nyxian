@@ -184,10 +184,61 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
         CFArrayAppendValue(roPaths, CFSTR("$(ROOTFS)"));
     }
     
+    CFArrayRef absoluteRwPaths = CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.security.exception.files.absolute-path.read-write"));
+    if(absoluteRwPaths != NULL && CFGetTypeID(absoluteRwPaths) == CFArrayGetTypeID())
+    {
+        CFIndex count = CFArrayGetCount(absoluteRwPaths);
+        for(CFIndex index = 0; index < count; index++)
+        {
+            CFStringRef absoluteRwPath = CFArrayGetValueAtIndex(absoluteRwPaths, index);
+            if(CFGetTypeID(absoluteRwPath) == CFStringGetTypeID())
+            {
+                CFMutableStringRef pathStr = CFStringCreateMutable(kCFAllocatorDefault, 0);
+                if(pathStr != NULL)
+                {
+                    CFStringAppend(pathStr, CFSTR("$(ROOTFS)"));
+                    CFStringAppend(pathStr, absoluteRwPath);
+                    CFArrayAppendValue(rwPaths, pathStr);
+                    CFRelease(pathStr);
+                }
+            }
+        }
+    }
+    
+    CFArrayRef absoluteRoPaths = CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.security.exception.files.absolute-path.read-only"));
+    if(absoluteRoPaths != NULL && CFGetTypeID(absoluteRoPaths) == CFArrayGetTypeID())
+    {
+        CFIndex count = CFArrayGetCount(absoluteRoPaths);
+        for(CFIndex index = 0; index < count; index++)
+        {
+            CFStringRef absoluteRoPath = CFArrayGetValueAtIndex(absoluteRoPaths, index);
+            if(CFGetTypeID(absoluteRoPath) == CFStringGetTypeID())
+            {
+                CFMutableStringRef pathStr = CFStringCreateMutable(kCFAllocatorDefault, 0);
+                if(pathStr != NULL)
+                {
+                    CFStringAppend(pathStr, CFSTR("$(ROOTFS)"));
+                    CFStringAppend(pathStr, absoluteRoPath);
+                    CFArrayAppendValue(roPaths, pathStr);
+                    CFRelease(pathStr);
+                }
+            }
+        }
+    }
+    
+    if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.MobileContainerManager.allowed")) == kCFBooleanTrue)
+    {
+        CFArrayAppendValue(lsGetAllowed, CFSTR("org.emexlabs.bootstrapd"));
+    }
+    
     if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.storage.AppDataContainers")) == kCFBooleanTrue)
     {
         CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/mobile/Containers/Data/Application"));
-        CFArrayAppendValue(lsGetAllowed, CFSTR("org.emexlabs.bootstrapd"));
+    }
+    
+    if(CFDictionaryGetValue(appleCSEntitlements, CFSTR("com.apple.private.security.storage.AppBundles")) == kCFBooleanTrue)
+    {
+        CFArrayAppendValue(rwPaths, CFSTR("$(ROOTFS)/var/containers/Bundle/Application"));
     }
     
     CFArrayRef temporarySBXException = AppleCSTypeSanizizeKey(appleCSEntitlements, CFSTR("com.apple.security.temporary-exception.sbpl"), CFArrayGetTypeID());
@@ -201,9 +252,7 @@ CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntit
             {
                 CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessKill, kCFBooleanTrue);
             }
-            else if(CFEqual(value, CFSTR("(allow process-info-listpids)")) ||
-                    CFEqual(value, CFSTR("(allow process-info)")) ||
-                    CFEqual(value, CFSTR("(allow process-info*)")))
+            else if(CFStringHasPrefix(value, CFSTR("(allow process-info")))
             {
                 CFDictionaryAddValue(newNXT2Entitlements, kNXT2EntitlementProcessEnumeration, kCFBooleanTrue);
             }
