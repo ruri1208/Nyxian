@@ -23,8 +23,15 @@
 #ifndef TRUST_APPLE_H
 #define TRUST_APPLE_H
 
+/* ----------------------------------------------------------------------
+ *  System Headers
+ * -------------------------------------------------------------------- */
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
+
+/* ----------------------------------------------------------------------
+ *  Project Headers
+ * -------------------------------------------------------------------- */
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 
 CFDictionaryRef CopyAppleCSEntitlementsForPath(CFStringRef path, OSStatus *outErr);

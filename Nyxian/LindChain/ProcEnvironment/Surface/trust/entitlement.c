@@ -37,6 +37,10 @@
 #include <OpenSSL/pem.h>
 #include <ksurface_config.h>
 
+/* ----------------------------------------------------------------------
+ *  Constants
+ * -------------------------------------------------------------------- */
+
 /* foundational */
 NXT2Entitlement const kNXT2EntitlementPlatform = CFSTR("org.emexlabs.nyxian.platform");
 NXT2Entitlement const kNXT2EntitlementPlatformRoot = CFSTR("org.emexlabs.nyxian.platform-root");
@@ -75,175 +79,39 @@ NXT2Entitlement const kNXT2EntitlementSandboxFileRead = CFSTR("org.emexlabs.nyxi
 NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite = CFSTR("org.emexlabs.nyxian.sandbox.file.read-write");
 NXT2Entitlement const kNXT2EntitlementSandboxNoContainer = CFSTR("org.emexlabs.nyxian.sandbox.no-container");
 
-kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob,
-                                         const char *cdhash,
-                                         PEEntitlement entitlement)
-{
-    blob->entitlement = entitlement;
-    
-    /* copy cdhash and entitlements over */
-    if(cdhash != NULL)
-    {
-        memcpy((void*)(blob->cdhash), cdhash, USER_FSIGNATURES_CDHASH_LEN);
-    }
-    else
-    {
-        /* dont sign at all (just containing entitlements) */
-        bzero((void*)(blob->cdhash), USER_FSIGNATURES_CDHASH_LEN);
-        return KERN_SUCCESS;
-    }
-    
-    /* generating nonce so it's harder to crack */
-    arc4random_buf(&(blob->nonce), sizeof(uint64_t));
-
-    /* signing blob */
-    const uint8_t *p = ksurface->priv_key;
-    EVP_PKEY *priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
-    if(!priv)
-    {
-        return KERN_FAILURE;
-    }
-    
-    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-    if(!mdctx)
-    {
-        EVP_PKEY_free(priv);
-        return KERN_FAILURE;
-    }
-    
-    if(EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, priv) != 1)
-    {
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(priv);
-        return KERN_FAILURE;
-    }
-
-    size_t mac_len = sizeof(blob->mac);
-    if(EVP_DigestSign(mdctx, blob->mac, &mac_len, (unsigned char*)blob, offsetof(ksurface_nxtr_blob_t, mac)) != 1)
-    {
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(priv);
-        return KERN_FAILURE;
-    }
-    blob->mac_len = mac_len;
-    
-    EVP_MD_CTX_free(mdctx);
-    EVP_PKEY_free(priv);
-    
-    return KERN_SUCCESS;
-}
-
-kern_return_t entitlement_mach_verify(ksurface_nxtr_result_t *mach,
-                                      uint8_t *pub_key,
-                                      size_t pub_key_len)
-{
-    assert(mach != NULL);
-    
-    /* the blob's mac length can never exceed the size of mach->blob.mac */
-    if(mach->blob.mac_len > sizeof(mach->blob.mac))
-    {
-        return KERN_DENIED;
-    }
-    
-    /* verify signature from blob */
-    const uint8_t *p = pub_key;
-    EVP_PKEY *pub = d2i_PUBKEY(NULL, &p, pub_key_len);
-    if(!pub)
-    {
-        return KERN_DENIED;
-    }
-    
-    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-    if(!mdctx)
-    {
-        EVP_PKEY_free(pub);
-        return KERN_DENIED;
-    }
-    
-    if(EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pub) != 1)
-    {
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(pub);
-        return KERN_DENIED;
-    }
-    
-    int ret = EVP_DigestVerify(mdctx, mach->blob.mac, mach->blob.mac_len, (unsigned char *)&mach->blob, offsetof(ksurface_nxtr_blob_t, mac));
-    
-    EVP_MD_CTX_free(mdctx);
-    EVP_PKEY_free(pub);
-    
-    if(ret != 1)
-    {
-        return KERN_DENIED;
-    }
-    
-    mach->blob_valid = true;
-    if(!mach->cdhash_valid)
-    {
-        return KERN_DENIED;
-    }
-    
-    return KERN_SUCCESS;
-}
-
-PEEntitlement entitlement_get_path(const char *path,
-                                   bool *wasLocallySigned)
-{
-    ksurface_nxtr_result_t mach;
-    if(trust_nxtr_read(path, &mach) != KERN_SUCCESS)
-    {
-        *wasLocallySigned = false;
-        return kPEEntitlementNone;
-    }
-    
-    kern_return_t kr = entitlement_mach_verify(&mach, ksurface->pub_key, ksurface->pub_key_len);
-    *wasLocallySigned = (kr == KERN_SUCCESS);
-    return mach.blob.entitlement;
-}
-
-bool entitlement_set_path(const char *path,
-                          PEEntitlement entitlement)
-{
-    int fd = open(path, O_RDWR);
-    if(fd < 0)
-    {
-        return false;
-    }
-    
-    kern_return_t kr = trust_nxtr_sign_fd(fd, entitlement);
-    fsync(fd);
-    close(fd);
-    return (kr == KERN_SUCCESS);
-}
+/* ----------------------------------------------------------------------
+ *  Functions
+ * -------------------------------------------------------------------- */
 
 #if KSURFACE_CS_SANITIZE_ENTITLEMENTS
-PEEntitlement entitlement_sanitize(PEEntitlement base)
+PEEntitlementFlags entitlement_sanitize(PEEntitlementFlags base)
 {
-    base &= kPEEntitlementAll;  /* making sure no unused bit fields are enabled */
+    base &= kPEEntitlementFlagAll;  /* making sure no unused bit fields are enabled */
     
     /* can it see a other process ever? */
-    if(!entitlement_got_entitlement(base, kPEEntitlementProcessSpawn) &&
-       !entitlement_got_entitlement(base, kPEEntitlementProcessSpawnSignedOnly) &&
-       !entitlement_got_entitlement(base, kPEEntitlementProcessEnumeration))
+    if(!entitlement_got_entitlement(base, kPEEntitlementFlagProcessSpawn) &&
+       !entitlement_got_entitlement(base, kPEEntitlementFlagProcessSpawnSignedOnly) &&
+       !entitlement_got_entitlement(base, kPEEntitlementFlagProcessEnumeration))
     {
         /* you cannot do much when you cannot see the target */
-        entitlement_strip(base, kPEEntitlementTaskForPid | kPEEntitlementProcessKill);
+        entitlement_strip(base, kPEEntitlementFlagTaskForPid | kPEEntitlementFlagProcessKill);
     }
     
     /* can it spawn a other process ever? */
-    if(!entitlement_got_entitlement(base, kPEEntitlementProcessSpawn) &&
-       !entitlement_got_entitlement(base, kPEEntitlementProcessSpawnSignedOnly))
+    if(!entitlement_got_entitlement(base, kPEEntitlementFlagProcessSpawn) &&
+       !entitlement_got_entitlement(base, kPEEntitlementFlagProcessSpawnSignedOnly))
     {
-        entitlement_strip(base, kPEEntitlementProcessSpawnInheriteEntitlements);
+        entitlement_strip(base, kPEEntitlementFlagProcessSpawnInheriteEntitlements);
     }
     
     /* can it be platform root? */
-    if(entitlement_got_entitlement(base, kPEEntitlementPlatformRoot) &&
-       !entitlement_got_entitlement(base, kPEEntitlementPlatform))
+    if(entitlement_got_entitlement(base, kPEEntitlementFlagPlatformRoot) &&
+       !entitlement_got_entitlement(base, kPEEntitlementFlagPlatform))
     {
         /* you cannot be platformized as root user if you're not platform */
-        entitlement_strip(base, kPEEntitlementPlatformRoot);
+        entitlement_strip(base, kPEEntitlementFlagPlatformRoot);
     }
     return base;
 }
+
 #endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */

@@ -39,11 +39,6 @@
 kern_return_t trust_remove_blob(const char *path);
 kern_return_t trust_remove_blob_fd(int fd);
 
-kern_return_t trust_nxtr_sign(const char *path, PEEntitlement entitlement);
-kern_return_t trust_nxtr_sign_fd(int fd, PEEntitlement entitlement);
-kern_return_t trust_nxtr_read(const char *path, ksurface_nxtr_result_t *result);
-kern_return_t trust_nxtr_read_fd(int fd, ksurface_nxtr_result_t *result);
-
 kern_return_t trust_nxt2_sign(const char *path, CFDictionaryRef entitlements, bool signBlob);
 kern_return_t trust_nxt2_sign_fd(int fd, CFDictionaryRef entitlements, bool signBlob);
 kern_return_t trust_nxt2_read(const char *path, ksurface_nxt2_t *result);

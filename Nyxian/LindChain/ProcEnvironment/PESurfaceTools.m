@@ -141,30 +141,30 @@
     kvo_unlock(_rawProc);
 }
 
-- (PEEntitlement)entitlement
+- (PEEntitlementFlags)entitlement
 {
     kvo_rdlock(_rawProc);
-    PEEntitlement entitlement = proc_getentitlements(_rawProc);
+    PEEntitlementFlags entitlement = proc_getentitlements(_rawProc);
     kvo_unlock(_rawProc);
     return entitlement;
 }
 
-- (PEEntitlement)maxEntitlement
+- (PEEntitlementFlags)maxEntitlement
 {
     kvo_rdlock(_rawProc);
-    PEEntitlement entitlement = proc_getmaxentitlements(_rawProc);
+    PEEntitlementFlags entitlement = proc_getmaxentitlements(_rawProc);
     kvo_unlock(_rawProc);
     return entitlement;
 }
 
-- (void)setEntitlement:(PEEntitlement)entitlement
+- (void)setEntitlement:(PEEntitlementFlags)entitlement
 {
     kvo_wrlock(_rawProc);
     proc_setentitlements(_rawProc, entitlement);
     kvo_unlock(_rawProc);
 }
 
-- (void)setMaxEntitlement:(PEEntitlement)maxEntitlement
+- (void)setMaxEntitlement:(PEEntitlementFlags)maxEntitlement
 {
     kvo_wrlock(_rawProc);
     proc_setmaxentitlements(_rawProc, maxEntitlement);

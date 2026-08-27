@@ -40,7 +40,6 @@
 
 /* codesigning feature configuration */
 #define KSURFACE_CS_SANITIZE_ENTITLEMENTS       1   /* strips unecessary entitlements at launch time */
-#define KSURFACE_CS_ALLOW_NXTR                  1   /* enables compatibility with the legacy code signature format NXTR */
 #define KSURFACE_CS_ALLOW_NXT2                  1   /* enables compatibility with the new code signature format NXT2 (in case we have to disable this some day) */
 
 /* dyld feature configuration */

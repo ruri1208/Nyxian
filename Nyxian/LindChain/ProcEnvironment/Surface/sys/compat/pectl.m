@@ -53,7 +53,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                 sys_return_failure_with_errno(ENOMEM);
             }
             
-            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesGetEndpoint))
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementFlagLaunchServicesGetEndpoint))
             {
                 kvo_rdlock(sys_proc_);
                 CFArrayRef allowList = CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementLaunchServicesGetEndpointAllowList);
@@ -119,7 +119,7 @@ DEFINE_SYSCALL_HANDLER(pectl_launchservice)
                 sys_return_failure_with_errno(ENOMEM);
             }
             
-            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementLaunchServicesSetEndpoint))
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementFlagLaunchServicesSetEndpoint))
             {
                 kvo_rdlock(sys_proc_);
                 CFArrayRef allowList = CFDictionaryGetValue(sys_proc_->nyx.identity->entitlements, kNXT2EntitlementLaunchServicesSetEndpointAllowList);
@@ -246,7 +246,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             sys_return;
         }
         case kPECTLCodeSigningAllEntitlements:
-            return kPEEntitlementAll;
+            return kPEEntitlementFlagAll;
         case kPECTLCodeSigningGetEntitlements:
         {
             return proc_getentitlements(sys_proc_snapshot_);
@@ -256,10 +256,10 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             kvo_wrlock(sys_proc_);
             
             /* MARK: THIS IS USER SUPPLIED */
-            PEEntitlement userPassed = (PEEntitlement)args[2];
+            PEEntitlementFlags userPassed = (PEEntitlementFlags)args[2];
             
             /* getting the added mask out of entitlements */
-            PEEntitlement added = (~proc_getentitlements(sys_proc_)) & userPassed;
+            PEEntitlementFlags added = (~proc_getentitlements(sys_proc_)) & userPassed;
             
             /* deny adding entitlements not present in max entitlements */
             if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_), added))
@@ -276,8 +276,8 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
         case kPECTLCodeSigningDropAllEntitlements:
         {
             kvo_wrlock(sys_proc_);
-            proc_setmaxentitlements(sys_proc_, kPEEntitlementNone);
-            proc_setentitlements(sys_proc_, kPEEntitlementNone);
+            proc_setmaxentitlements(sys_proc_, kPEEntitlementFlagNone);
+            proc_setentitlements(sys_proc_, kPEEntitlementFlagNone);
             kvo_unlock(sys_proc_);
             sys_return;
         }
@@ -376,7 +376,7 @@ DEFINE_SYSCALL_HANDLER(pectl_userspace)
     switch(action)
     {
         case kPECTLUserspaceReboot:
-            if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_snapshot_), kPEEntitlementPlatform))
+            if(!entitlement_got_entitlement(proc_getmaxentitlements(sys_proc_snapshot_), kPEEntitlementFlagPlatform))
             {
                 sys_return_failure_with_errno(EPERM);
             }

@@ -45,8 +45,8 @@
 @property (nonatomic,readwrite) gid_t svgid;
 
 /* entitlements */
-@property (nonatomic,readwrite) PEEntitlement entitlement;
-@property (nonatomic,readwrite) PEEntitlement maxEntitlement;
+@property (nonatomic,readwrite) PEEntitlementFlags entitlement;
+@property (nonatomic,readwrite) PEEntitlementFlags maxEntitlement;
 
 @end
 

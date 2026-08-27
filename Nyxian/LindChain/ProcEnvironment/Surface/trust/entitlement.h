@@ -42,87 +42,70 @@
  * -------------------------------------------------------------------- */
 /*!
  @enum PEEntitlement
- @abstract Entitlements which are responsible for the permitives of the environment hostsided
+ @abstract Entitlements which are responsible for the primitives of the environment
  */
-typedef CF_OPTIONS(uint64_t, PEEntitlement) {
+typedef CF_OPTIONS(uint64_t, PEEntitlementFlags) {
     /*! No entitlements at all */
-    kPEEntitlementNone                              = 0,
+    kPEEntitlementFlagNone                          = 0,
     
     /*! Grants other processes with appropriate permitives to get task port of process .*/
-    kPEEntitlementGetTaskAllowed                    = 1ull << 0,
+    kPEEntitlementFlagGetTaskAllowed                = 1ull << 0,
     
     /*! Grants process to get task port of processes. */
-    kPEEntitlementTaskForPid                        = 1ull << 1,
-    
-    /*
-     * MARK: banned, because too powerful and replaced with PEEntitlementPlatform
-     *
-     * PEEntitlementTaskForPidHost                  = 1ull << 2,
-     */
+    kPEEntitlementFlagTaskForPid                    = 1ull << 1,
     
     /*! Grants process to enumerate processes. */
-    kPEEntitlementProcessEnumeration                = 1ull << 3,
+    kPEEntitlementFlagProcessEnumeration            = 1ull << 3,
     
     /*! Grants process to kill other processes. */
-    kPEEntitlementProcessKill                       = 1ull << 5,
+    kPEEntitlementFlagProcessKill                   = 1ull << 5,
     
     /*! Grants process to spawn other processes. */
-    kPEEntitlementProcessSpawn                      = 1ull << 6,
+    kPEEntitlementFlagProcessSpawn                  = 1ull << 6,
     
     /*! Grants process to spawn other processes, under the condition that the binary must be signed. */
-    kPEEntitlementProcessSpawnSignedOnly            = 1ull << 7,
+    kPEEntitlementFlagProcessSpawnSignedOnly        = 1ull << 7,
     
     /*! Grants process to elevate permitive. */
-    kPEEntitlementProcessElevate                    = 1ull << 8,
+    kPEEntitlementFlagProcessElevate                = 1ull << 8,
     
     /*! Grants process to manage host. */
-    kPEEntitlementHostManager                       = 1ull << 9,
+    kPEEntitlementFlagHostManager                   = 1ull << 9,
     
     /*! Grants process to manage credentials. */
-    kPEEntitlementCredentialsManager                = 1ull << 10,
+    kPEEntitlementFlagCredentialsManager            = 1ull << 10,
     
     /*! Grants process to start launch services. */
-    kPEEntitlementLaunchServicesStart               = 1ull << 11,
+    kPEEntitlementFlagLaunchServicesStart           = 1ull << 11,
     
     /*! Grants process to stop launch services. */
-    kPEEntitlementLaunchServicesStop                = 1ull << 12,
+    kPEEntitlementFlagLaunchServicesStop            = 1ull << 12,
     
     /*! Grants process to manage launch services. */
-    kPEEntitlementLaunchServicesToggle              = 1ull << 13,
+    kPEEntitlementFlagLaunchServicesToggle          = 1ull << 13,
     
     /*! Grants process to get endpoint of launch services. */
-    kPEEntitlementLaunchServicesGetEndpoint         = 1ull << 14,
+    kPEEntitlementFlagLaunchServicesGetEndpoint     = 1ull << 14,
     
     /*! Grants process to set endpoint of launch services. */
-    kPEEntitlementLaunchServicesSetEndpoint         = 1ull << 15,
-    
-    /*! Grants process to manage launch services. */
-    kPEEntitlementLaunchServicesManager             = kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementLaunchServicesGetEndpoint,
-    
-    /*
-     * MARK: there is no device spoofing currently, but preserving for the future
-     *
-     * PEEntitlementEnforceDeviceSpoof                 = 1ull << 17,
-     */
+    kPEEntitlementFlagLaunchServicesSetEndpoint     = 1ull << 15,
     
     /*! Hides LiveProcess in DYLD Api. (recommended) */
-    kPEEntitlementDyldHideLiveProcess               = 1ull << 18,   /* TODO: this is the opposite of a capability, better rename to PEEntitlementDyldDontHideEnvironment */
+    kPEEntitlementFlagDyldHideLiveProcess           = 1ull << 18,   /* TODO: this is the opposite of a capability, better rename to PEEntitlementDyldDontHideEnvironment */
     
     /*! Makes a process retain entitlements across processes, made for sandboxed applications and such. Its a security feature. */
-    kPEEntitlementProcessSpawnInheriteEntitlements  = 1ull << 19,
+    kPEEntitlementFlagProcessSpawnInheriteEntitlements  = 1ull << 19,
     
     /*! Security feature for daemons and such */
-    kPEEntitlementPlatform                          = 1ull << 20,
+    kPEEntitlementFlagPlatform                      = 1ull << 20,
     
     /*! Security feature for daemons to start as root process, requires `PEEntitlementPlatform` to be present */
-    kPEEntitlementPlatformRoot                      = 1ull << 21,
+    kPEEntitlementFlagPlatformRoot                  = 1ull << 21,
     
-    /*! New experimentation flags   */
-    kPEEntitlementFileRootRW                        = 1ull << 22,
-    kPEEntitlementFileBundleRW                      = 1ull << 23,
-    kPEEntitlementFileContainerRW                   = 1ull << 24,
+    /*! Grants process to get task port of any process. */
+    kPEEntitlementFlagSystemTaskPorts               = 1ull << 22,
     
-    kPEEntitlementAll                               = kPEEntitlementGetTaskAllowed | kPEEntitlementTaskForPid | kPEEntitlementProcessEnumeration | kPEEntitlementProcessKill | kPEEntitlementProcessSpawn | kPEEntitlementProcessSpawnSignedOnly | kPEEntitlementProcessElevate | kPEEntitlementHostManager | kPEEntitlementCredentialsManager | kPEEntitlementLaunchServicesStart | kPEEntitlementLaunchServicesStop | kPEEntitlementLaunchServicesToggle | kPEEntitlementLaunchServicesGetEndpoint | kPEEntitlementLaunchServicesSetEndpoint | kPEEntitlementDyldHideLiveProcess | kPEEntitlementProcessSpawnInheriteEntitlements | kPEEntitlementPlatform | kPEEntitlementPlatformRoot | kPEEntitlementFileRootRW | kPEEntitlementFileBundleRW | kPEEntitlementFileContainerRW,
+    kPEEntitlementFlagAll                           = kPEEntitlementFlagGetTaskAllowed | kPEEntitlementFlagTaskForPid | kPEEntitlementFlagProcessEnumeration | kPEEntitlementFlagProcessKill | kPEEntitlementFlagProcessSpawn | kPEEntitlementFlagProcessSpawnSignedOnly | kPEEntitlementFlagProcessElevate | kPEEntitlementFlagHostManager | kPEEntitlementFlagCredentialsManager | kPEEntitlementFlagLaunchServicesStart | kPEEntitlementFlagLaunchServicesStop | kPEEntitlementFlagLaunchServicesToggle | kPEEntitlementFlagLaunchServicesGetEndpoint | kPEEntitlementFlagLaunchServicesSetEndpoint | kPEEntitlementFlagDyldHideLiveProcess | kPEEntitlementFlagProcessSpawnInheriteEntitlements | kPEEntitlementFlagPlatform | kPEEntitlementFlagPlatformRoot | kPEEntitlementFlagSystemTaskPorts,
 };
 
 /* new NXT2 entitlements */
@@ -177,7 +160,7 @@ typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
 typedef struct ksurface_nxt2 ksurface_nxt2_t;
     
 struct __attribute__((packed)) ksurface_nxtr_blob {
-    PEEntitlement entitlement;
+    PEEntitlementFlags entitlement;
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     uint64_t nonce;
     uint8_t mac[72];
@@ -221,13 +204,9 @@ struct ksurface_nxtr_result {
 /* ----------------------------------------------------------------------
  *  Function Prototypes
  * -------------------------------------------------------------------- */
-kern_return_t entitlement_token_mach_gen(ksurface_nxtr_blob_t *blob, const char *cdhash, PEEntitlement entitlement);
-kern_return_t entitlement_mach_verify(ksurface_nxtr_result_t *mach, uint8_t *pub_key, size_t pub_key_len);
-PEEntitlement entitlement_get_path(const char *path, bool *wasLocallySigned);
-bool entitlement_set_path(const char *path, PEEntitlement entitlement);
 
 #if KSURFACE_CS_SANITIZE_ENTITLEMENTS
-PEEntitlement entitlement_sanitize(PEEntitlement base);
+PEEntitlementFlags entitlement_sanitize(PEEntitlementFlags base);
 #else
 #define entitlement_sanitize(base) (base)
 #endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */

@@ -42,7 +42,7 @@ proc_visibility_t proc_get_proc_visibility(ksurface_proc_snapshot_t *caller)
      * if its a entitled process the ofc show em
      * all we got.
      */
-    if(entitlement_got_entitlement(proc_getentitlements(caller), kPEEntitlementProcessEnumeration))
+    if(entitlement_got_entitlement(proc_getentitlements(caller), kPEEntitlementFlagProcessEnumeration))
     {
         return PROC_VIS_ALL;
     }

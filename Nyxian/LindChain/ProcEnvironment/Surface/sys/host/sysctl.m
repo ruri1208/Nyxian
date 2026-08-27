@@ -283,7 +283,7 @@ int sysctl_kernhostname(sysctl_req_t *req)
     
     if(req->newp && req->newlen)
     {
-        if(!entitlement_got_entitlement(proc_getentitlements(req->proc_snapshot), kPEEntitlementHostManager))
+        if(!entitlement_got_entitlement(proc_getentitlements(req->proc_snapshot), kPEEntitlementFlagHostManager))
         {
             req->err = EPERM;
             return -1;

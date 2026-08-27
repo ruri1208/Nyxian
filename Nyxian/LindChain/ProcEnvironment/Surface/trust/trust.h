@@ -54,8 +54,6 @@ typedef struct {
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     CFDictionaryRef entitlements;
     CFArrayRef filePermissions;
-    PEEntitlement legacyEntitlements;
-    PEEntitlement maxLegacyEntitlements;
     PETrustLevel trustLevel;
 } ksurface_trust_identity_t;
 
@@ -69,5 +67,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path);
 ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(const char *path, ksurface_trust_identity_t *parentIdentity);
 
 void trust_identity_destroy(ksurface_trust_identity_t *identity);
+
+PEEntitlementFlags trust_identity_entitlement_flags_from_entitlements(CFDictionaryRef entitlements);
 
 #endif /* TRUST_TRUST_H */
