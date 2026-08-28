@@ -27,6 +27,7 @@
 #import <LindChain/ProcEnvironment/Surface/sys/syscall.h>
 #import <LindChain/ProcEnvironment/LiveContainer/utils.h>
 #import <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
+#import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
 
@@ -78,7 +79,6 @@ syscall_list_item_t sys_list[] = {
     { .name = "SYS_sign",           .sysnum = SYS_sign,         .hndl = GET_SYSCALL_HANDLER(sign)           },
 #endif /* KSURFACE_SYS_PROC_ENABLED */
 };
-
 
 ksurface_mapping_t *ksurface = NULL;
 
@@ -303,9 +303,7 @@ static inline void ksurface_kinit_kproc(void)
 void ksurface_kinit(void)
 {
     /* starting huh :3 (shall only run once) */
-    klog_log("ksurface:kinit", "hello from kinit");
-    klog_log("ksurface:kinit", "kernel commits magic spells to the iOS kernel :3");
-    klog_log("ksurface:kinit", "extending paws onto XNU");
+    klog_log("ksurface:kinit", "extending paws onto XNU, rawr! with chuu XNU, I love XNU, Wont harm chu, but pls help mee >~<");
     klog_log("ksurface:kinit", "");
     klog_log("ksurface:kinit", "   |\\__/,|   (`\\");
     klog_log("ksurface:kinit", " _.|o o  |_   ) )");
@@ -324,4 +322,13 @@ void ksurface_kinit(void)
     ksurface_kinit_kinfo();
     ksurface_kinit_kserver();
     ksurface_kinit_kproc();
+    if(ksurface_fs_init() != KERN_SUCCESS)
+    {
+        environment_panic("fs didn't initialize");
+    }
+    
+    /* now mapping klog to its dev device position */
+    NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
+    NSString *entry_path = [NSString stringWithFormat:@"%@/Documents/klog.txt", NSHomeDirectory()];
+    rename([entry_path UTF8String], [kfd_path UTF8String]);
 }

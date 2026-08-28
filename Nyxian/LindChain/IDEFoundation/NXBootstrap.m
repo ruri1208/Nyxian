@@ -428,9 +428,23 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
     return data;
 }
 
-+ (NSData * _Nullable)issueSandboxFileExtensionForURL:(NSURL * _Nullable)url
++ (NSData*)issueSandboxFileExtensionForURL:(NSURL*)url
 {
     return [self issueSandboxFileExtensionForURL:url readWrite:NO];
+}
+
++ (NSData * _Nullable)issueReadOnlyUnsanitizedSandboxFileExtensionForURL:(NSURL*)url
+{
+    extern char *sandbox_extension_issue_file(const char *ext_class, const char *path, uint32_t flags);
+    char *tok = sandbox_extension_issue_file("com.apple.app-sandbox.read", url.path.UTF8String, 0);
+    if(tok == NULL)
+    {
+        return nil;
+    }
+    
+    NSData *data = [NSData dataWithBytes:tok length:strlen(tok) + 1];
+    free(tok);
+    return data;
 }
 
 @end

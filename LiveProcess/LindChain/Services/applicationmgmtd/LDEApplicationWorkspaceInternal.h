@@ -32,6 +32,7 @@
 @property (nonatomic,strong) NSURL *binaryURL;
 @property (nonatomic,strong) NSURL *homeURL;
 @property (nonatomic,strong) NSURL *tmpURL;
+@property (nonatomic,strong) NSURL *blastboxURL;
 @property (nonatomic,strong) NSURL *bootstrapPlistURL;
 @property (nonatomic,strong) dispatch_queue_t workspaceQueue;
 @property (atomic,readwrite) UInt64 version;

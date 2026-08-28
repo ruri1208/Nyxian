@@ -38,7 +38,7 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
     {
         case kvObjEventInit:
         {
-            klog_log("proc:init", "initializing process @ %p", proc);
+            klog_log("ksurface:proc:init", "initializing process @ %p", proc);
             
             /* setting fresh properties */
             proc->bsd.kp_eproc.e_ucred.cr_ngroups = 1;
@@ -57,7 +57,8 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
         {
             ksurface_proc_t *src = (ksurface_proc_t*)kvarr[1];
             
-            klog_log("proc:copy", "copying process @ %p from process @ %p", proc, src);
+            klog_log("ksurface:proc:copy", "copying process @ %p from process @ %p", proc, src);
+            klog_log("ksurface:proc:init", "initializing process @ %p", proc);
             
             /* copy the object into the other object */
             memcpy(&(proc->bsd), &(src->bsd), sizeof(kinfo_proc_t));
@@ -93,7 +94,7 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
         case kvObjEventDeinit:
             if(proc->header.base_type != kvObjBaseTypeObjectSnapshot)
             {
-                klog_log("proc:deinit", "deinitializing process @ %p", proc);
+                klog_log("ksurface:proc:deinit", "deinitializing process @ %p", proc);
                 pthread_mutex_destroy(&(proc->children.mutex));
                 
                 if(proc->task != MACH_PORT_NULL)
