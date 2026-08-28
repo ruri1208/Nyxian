@@ -106,11 +106,22 @@ typedef struct {
         pthread_rwlock_t struct_lock;
         
         /*
-         * radix tree where all processes are
+         * radix tree where all tty's are
          * listed inside.
          */
         radix_tree_t tty;
     } tty_info;
+    
+    struct {
+        /* rwlock securing structures */
+        pthread_rwlock_t struct_lock;
+        
+        /*
+         * radix tree where all kext objects
+         * are listed inside.
+         */
+        radix_tree_t kexts;
+    } kext_info;
 } ksurface_mapping_t;
 
 #endif /* PROCENVIRONMENT_MAPPING_H */

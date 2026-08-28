@@ -142,6 +142,10 @@ static inline void ksurface_kinit_kalloc(void)
     }
     klog_log("ksurface:kinit:kalloc", "allocated ksurface @ %p", ksurface);
     
+    /* prepare key fields that are not nullified */
+    ksurface->priv_key = NULL;
+    ksurface->pub_key = NULL;
+    
     /* get code signature key pair */
     ksurface_kinit_get_keys();
     
@@ -152,8 +156,8 @@ static inline void ksurface_kinit_kalloc(void)
      * one at a time.
      */
     klog_log("ksurface:kinit:kalloc", "initializing global locks");
-    pthread_rwlock_t *wls[3] = { &(ksurface->proc_info.struct_lock),  &(ksurface->host_info.struct_lock), &(ksurface->tty_info.struct_lock) };
-    for(unsigned char i = 0; i < 3; i++)
+    pthread_rwlock_t *wls[] = { &(ksurface->proc_info.struct_lock),  &(ksurface->host_info.struct_lock), &(ksurface->tty_info.struct_lock), &(ksurface->kext_info.struct_lock) };
+    for(unsigned char i = 0; i < sizeof(wls) / sizeof(pthread_rwlock_t*); i++)
     {
         klog_log("ksurface:kinit:kalloc", "initializing global lock @ %p", wls[i]);
         if(pthread_rwlock_init(wls[i], NULL) != 0)
@@ -171,6 +175,7 @@ static inline void ksurface_kinit_kalloc(void)
     ksurface->proc_info.tree.root = NULL;
     ksurface->proc_info.proc_count = 0;
     ksurface->tty_info.tty.root = NULL;
+    ksurface->kext_info.kexts.root = NULL;
 }
 
 static inline void ksurface_kinit_kinfo(void)
