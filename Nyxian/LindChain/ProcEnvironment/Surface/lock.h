@@ -70,4 +70,8 @@
 #define host_wrlock() PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(ksurface->host_info.struct_lock))
 #define host_unlock() PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(&(ksurface->host_info.struct_lock))
 
+#define kext_table_rdlock() PTHREAD_RWLOCK_DEBUG_IMP_RDLOCK(&(ksurface->kext_info.struct_lock))
+#define kext_table_wrlock() PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(ksurface->kext_info.struct_lock))
+#define kext_table_unlock() PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(&(ksurface->kext_info.struct_lock))
+
 #endif /* PROCENVIRONMENT_LOCK_H */
