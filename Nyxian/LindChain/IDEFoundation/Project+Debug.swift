@@ -163,6 +163,39 @@ class DebugDatabase: Codable {
         os_unfair_lock_unlock(&self.lock)
     }
     
+    func appendFileDebug(ofPath path: String, synItems: [MDKDiagnostic]) {
+        guard !synItems.isEmpty else { return }
+        guard let relPath = NXBootstrap.shared().relativeToBootstrap(withAbsolutePath: path) else {
+            return
+        }
+        
+        os_unfair_lock_lock(&self.lock)
+        defer { os_unfair_lock_unlock(&self.lock) }
+        
+        let fileObject: DebugObject
+        if let existing = self.debugObjects[relPath] {
+            fileObject = existing
+        } else {
+            fileObject = DebugObject(title: relPath, flavour: .File)
+            self.debugObjects[relPath] = fileObject
+        }
+        
+        for item in synItems {
+            fileObject.debugItems.append(
+                DebugItem(severity: item.level, message: item.message, sourceLocation: item.fileSourceLocation?.location ?? CCSourceLocationZero)
+            )
+        }
+    }
+    
+    func appendDebug(synItems: [MDKDiagnostic]) {
+        let grouped = Dictionary(grouping: synItems) { item in
+            item.fileSourceLocation?.fileURL.path ?? ""
+        }
+        for (path, items) in grouped where !path.isEmpty {
+            appendFileDebug(ofPath: path, synItems: items)
+        }
+    }
+    
     func removeFileDebug(ofPath path: String) {
         let lastPathComponent: String = URL(fileURLWithPath: path).lastPathComponent
         self.debugObjects[lastPathComponent] = nil

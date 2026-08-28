@@ -1,4 +1,4 @@
-#import <Foundation/Foundation.h>
+@import Foundation;
 
 int main(int argc, char * argv[]) {
 	@autoreleasepool {
