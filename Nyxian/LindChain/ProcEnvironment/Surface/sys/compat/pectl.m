@@ -29,8 +29,10 @@
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #include <LindChain/ProcEnvironment/Utils/vnode.h>
+#include <LindChain/ProcEnvironment/Utils/klog.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
+#include <dlfcn.h>
 
 DEFINE_SYSCALL_HANDLER(pectl_launchservice)
 {
@@ -279,6 +281,55 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             proc_setmaxentitlements(sys_proc_, kPEEntitlementFlagNone);
             proc_setentitlements(sys_proc_, kPEEntitlementFlagNone);
             kvo_unlock(sys_proc_);
+            sys_return;
+        }
+        case kPECTLCodeSigningLoadKernelExtension:
+        {
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementFlagLoadKEXT))
+            {
+                sys_return_failure_with_errno(EPERM);
+            }
+            
+            userspace_pointer_t userspace_str = (userspace_pointer_t)args[2];
+            char *extensionPath = mach_syscall_copy_str_in(sys_task_, userspace_str, MAXHOSTNAMELEN);
+            if(extensionPath == NULL)
+            {
+                sys_return_failure_with_errno(ENOMEM);
+            }
+            
+            void *handle = dlopen(extensionPath, RTLD_LAZY);
+            if(handle == NULL)
+            {
+                sys_return_failure_with_errno(ENOEXEC);
+            }
+            
+            void *(*kmain)(void*) = dlsym(handle, "kmain");
+            if(kmain)
+            {
+                pthread_t thread;
+                pthread_create(&thread, NULL, kmain, ksurface);
+                pthread_detach(thread);
+            }
+            else
+            {
+                dlclose(handle);
+                sys_return_failure_with_errno(ENOEXEC);
+            }
+            
+            klog_log("ksurface:kext:load", "loaded %s at %p", extensionPath, handle);
+            
+            return (int64_t)handle;
+        }
+        case kPECTLCodeSigningUnloadKernelExtension:
+        {
+            if(!entitlement_got_entitlement(proc_getentitlements(sys_proc_snapshot_), kPEEntitlementFlagLoadKEXT))
+            {
+                sys_return_failure_with_errno(EPERM);
+            }
+            
+            dlclose((void*)args[2]);
+            
+            klog_log("ksurface:kext:unload", "unloaded %p", (void*)args[2]);
             sys_return;
         }
         default:

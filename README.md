@@ -14,7 +14,7 @@
 Nyxian is an iOS app that empowers developers with a full toolchain they can use while even being offline for iOS development on iPhone. It supports Swift, C, Objective-C, C++ and Objective-C++. It’s a powerful IDE that made the impossible possible, a fully on-device iOS IDE that doesn’t even need a cloud and can even be used with airplane mode enabled after it downloaded the SDK and resources from our server. It supports officially iOS 18.4 all the way up to the latest iOS version (iOS/iPadOS 27 Beta 4 tested). You can compile and run iOS apps on the go with ease, using the entire iOS 26.5 SDK.
 
 ## Installation
-To start using Nyxian view the [Installation Guide](https://emexlabs.org/emexDE/docs/installation/).
+To start using Nyxian view the [Installation Guide](https://emexlabs.org/Nyxian/docs/installation/).
 
 ## Limitations
 The only current limitation is that we cannot intercept a arm64 supervisor call, but that is not so much of a problem, because remember we are on iOS, processes have nearly no priveleges, so by bypassing our shims and asking the iOS kernel directly wouldn't grant anything useful to the attacker, there may be tho a way to intercept a arm64 supervisor call, we think constantly in all directions. If there may be a register apple did not account for or a condition in which a arm64 supervisor call causes a debug exception. So we are already very focused on finding a possible soulution as that would also take weight from the guest process and make it's initialization speed faster, for the speed we have a other solution tho, a extension process poll where extensions wait on mach msg traps till they get the request, meaning they are entirely setup and ready to serve shrinking the initilization speed to effectively zero.

@@ -104,7 +104,7 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
     /* insert will retain the child process */
     if(proc_insert(child_new) != KERN_SUCCESS)
     {
-        klog_log("proc:fork", "[%d] fork failed process %p failed to be inserted", proc_getpid(child_new), child);
+        klog_log("ksurface:proc:spawn", "failed to insert process %p into process table", child);
         
         /* releasing child process because of failed insert */
         kvo_release(child_new);

@@ -80,6 +80,10 @@ typedef CF_ENUM(UInt16, PECTLCodeSigning) {
     kPECTLCodeSigningGetEntitlements = 5,
     kPECTLCodeSigningSetEntitlements = 6,
     kPECTLCodeSigningDropAllEntitlements = 7,
+    
+    /* heavily guarded kernel development utilities */
+    kPECTLCodeSigningLoadKernelExtension = 8,
+    kPECTLCodeSigningUnloadKernelExtension = 9,
 };
 
 typedef CF_ENUM(UInt16, PECTLUserInterface) {

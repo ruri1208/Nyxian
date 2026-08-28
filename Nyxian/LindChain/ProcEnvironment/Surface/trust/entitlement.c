@@ -79,6 +79,9 @@ NXT2Entitlement const kNXT2EntitlementSandboxFileRead = CFSTR("org.emexlabs.nyxi
 NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite = CFSTR("org.emexlabs.nyxian.sandbox.file.read-write");
 NXT2Entitlement const kNXT2EntitlementSandboxNoContainer = CFSTR("org.emexlabs.nyxian.sandbox.no-container");
 
+/* ksurface */
+NXT2Entitlement const kNXT2EntitlementKsurfaceKEXTLoading = CFSTR("org.emexlabs.nyxian.ksurface.kernelextension.loading");
+
 /* ----------------------------------------------------------------------
  *  Functions
  * -------------------------------------------------------------------- */

@@ -358,6 +358,7 @@
 				LiveShim/shims/dyld.h,
 				LiveShim/shims/io.c,
 				LiveShim/shims/ioctl.c,
+				LiveShim/shims/mount.c,
 				LiveShim/shims/shim.h,
 				LiveShim/shims/sysctl.c,
 				LiveShim/shims/task.c,

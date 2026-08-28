@@ -72,6 +72,7 @@
     self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/mobile"]];
     self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"tmp"]];
     self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"kstrapped.plist"]];
+    self.blastboxURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/blastbox"]];    /* we pissn on you blastbox xD */
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
@@ -147,6 +148,9 @@
     }
     
     self.workspaceQueue = dispatch_queue_create("org.emexlabs.bootstrapd.workspace", DISPATCH_QUEUE_SERIAL);
+    
+    [self purgeTemporaryDirectories];
+    [self drainBlastbox];
     
     return self;
 }
@@ -442,6 +446,64 @@ create_container:
     NSURL *containerURL = [self applicationContainerForBundleID:bundleID];
     [[NSFileManager defaultManager] removeItemAtURL:containerURL error:nil];
     return YES;
+}
+
+- (BOOL)blastItemAtURL:(NSURL *)url
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    if(![fileManager fileExistsAtPath:url.path])
+    {
+        return NO;
+    }
+    
+    NSURL *graveURL = [self.blastboxURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    if([fileManager moveItemAtURL:url toURL:graveURL error:nil])
+    {
+        return YES;
+    }
+    
+    return [fileManager removeItemAtURL:url error:nil];
+}
+
+- (void)purgeTemporaryDirectories
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    if([self blastItemAtURL:self.tmpURL])
+    {
+        [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+    
+    NSArray<NSURL *> *containerURLs = [fileManager contentsOfDirectoryAtURL:self.containersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
+    for(NSURL *containerURL in containerURLs)
+    {
+        NSNumber *isDirectory = nil;
+        if(![containerURL getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:nil] ||
+           !isDirectory.boolValue)
+        {
+            continue;
+        }
+        
+        NSURL *containerTmpURL = [containerURL URLByAppendingPathComponent:@"Tmp"];
+        if([self blastItemAtURL:containerTmpURL])
+        {
+            [fileManager createDirectoryAtURL:containerTmpURL withIntermediateDirectories:YES attributes:nil error:nil];
+        }
+    }
+}
+
+- (void)drainBlastbox
+{
+    NSURL *blastboxURL = self.blastboxURL;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
+        NSFileManager *fileManager = [[NSFileManager alloc] init];
+        NSArray<NSURL *> *graves = [fileManager contentsOfDirectoryAtURL:blastboxURL includingPropertiesForKeys:nil options:0 error:nil];
+        for(NSURL *grave in graves)
+        {
+            [fileManager removeItemAtURL:grave error:nil];
+        }
+    });
 }
 
 @end

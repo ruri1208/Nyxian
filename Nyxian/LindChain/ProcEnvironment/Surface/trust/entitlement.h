@@ -105,6 +105,9 @@ typedef CF_OPTIONS(uint64_t, PEEntitlementFlags) {
     /*! Grants process to get task port of any process. */
     kPEEntitlementFlagSystemTaskPorts               = 1ull << 22,
     
+    /*! Grants a process to load a kernel extension */
+    kPEEntitlementFlagLoadKEXT                      = 1ull << 23,
+    
     kPEEntitlementFlagAll                           = kPEEntitlementFlagGetTaskAllowed | kPEEntitlementFlagTaskForPid | kPEEntitlementFlagProcessEnumeration | kPEEntitlementFlagProcessKill | kPEEntitlementFlagProcessSpawn | kPEEntitlementFlagProcessSpawnSignedOnly | kPEEntitlementFlagProcessElevate | kPEEntitlementFlagHostManager | kPEEntitlementFlagCredentialsManager | kPEEntitlementFlagLaunchServicesStart | kPEEntitlementFlagLaunchServicesStop | kPEEntitlementFlagLaunchServicesToggle | kPEEntitlementFlagLaunchServicesGetEndpoint | kPEEntitlementFlagLaunchServicesSetEndpoint | kPEEntitlementFlagDyldHideLiveProcess | kPEEntitlementFlagProcessSpawnInheriteEntitlements | kPEEntitlementFlagPlatform | kPEEntitlementFlagPlatformRoot | kPEEntitlementFlagSystemTaskPorts,
 };
 
@@ -148,6 +151,9 @@ extern NXT2Entitlement const kNXT2EntitlementLaunchServicesSetEndpointAllowList;
 extern NXT2Entitlement const kNXT2EntitlementSandboxFileRead;                       /* has to be CFArray filled with CFString */
 extern NXT2Entitlement const kNXT2EntitlementSandboxFileReadWrite;                  /* has to be CFArray filled with CFString */
 extern NXT2Entitlement const kNXT2EntitlementSandboxNoContainer;                    /* unfinished, container path here needs to default to $(ROOTFS)/var/mobile */
+
+/* ksurface */
+extern NXT2Entitlement const kNXT2EntitlementKsurfaceKEXTLoading;
 
 /* ----------------------------------------------------------------------
  *  Types

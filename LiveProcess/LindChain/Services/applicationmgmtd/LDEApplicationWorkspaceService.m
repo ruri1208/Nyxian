@@ -179,6 +179,7 @@ create_home:
               withReply:(void (^)(NSString*,BOOL))reply;
 {
     NSString *fastPath = [[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name];
+    [[NSFileManager defaultManager] removeItemAtPath:fastPath error:nil];
     [object writeOut:[[[[LDEApplicationWorkspaceInternal shared] binaryURL] path] stringByAppendingPathComponent:name]];
     bool cs_valid = false;
     LCMachO *machO = LCMapMachO(fastPath.fileSystemRepresentation, true);

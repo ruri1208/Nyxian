@@ -19,28 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KLOG_H
-#define KLOG_H
+#ifndef FS_FS_H
+#define FS_FS_H
 
-#if __OBJC__
-#import <Foundation/Foundation.h>
-#endif /* __OBJC__ */
+#include <sys/syslimits.h>
+#include <mach/kern_return.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-#if HOST_ENV
+kern_return_t ksurface_fs_init(void);
 
-#define klog_log(system, format, ...) \
-    klog_log_internal((system), (format), ##__VA_ARGS__)
-
-#else
-
-#define klog_log(system, format, ...)
-
-#endif
-
-void klog_log_internal(const char *system, const char *format, ...);
-
-#if __OBJC__
-NSString *klog_dump(void);
-#endif /* __OBJC__ */
-
-#endif /* KLOG_H */
+#endif /* FS_FS_H */
