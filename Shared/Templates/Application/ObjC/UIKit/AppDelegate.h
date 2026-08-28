@@ -1,7 +1,7 @@
 #ifndef APPDELEGATE_H
 #define APPDELEGATE_H
 
-#import <UIKit/UIKit.h>
+@import UIKit;
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 @end

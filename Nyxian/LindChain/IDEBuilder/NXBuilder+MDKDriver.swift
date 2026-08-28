@@ -39,11 +39,13 @@ extension NXBuilder: MDKDriverDelegate {
             guard let sourceDate = try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate] as? Date,
                   let objectDate = try? FileManager.default.attributesOfItem(atPath: objectPath)[.modificationDate] as? Date,
                   objectDate > sourceDate else {
+                self.database.removeFileDebug(ofPath: file.fileURL.path)
                 return false
             }
             
             // Checking if the header files included by the source code are newer than the object file
             guard let headers = self.dependencyScanner.headerFiles(for: file) else {
+                self.database.removeFileDebug(ofPath: file.fileURL.path)
                 return false
             }
             
@@ -51,12 +53,14 @@ extension NXBuilder: MDKDriverDelegate {
                 guard let fileURL = header.fileURL,
                       let headerDate = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.modificationDate] as? Date,
                       objectDate > headerDate else {
+                    self.database.removeFileDebug(ofPath: file.fileURL.path)
                     return false
                 }
             }
             
             return true
         } else {
+            self.database.removeFileDebug(ofPath: file.fileURL.path)
             return false
         }
     }

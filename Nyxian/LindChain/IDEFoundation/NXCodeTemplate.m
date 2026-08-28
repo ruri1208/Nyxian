@@ -85,6 +85,7 @@ NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind s
         @"$(BSROOT)/Include",
         @"-L$(BSROOT)/lib",
         @"-lclang_rt.ios",
+        @"-fmodules",
     ];
     
     if(schemeKind == NXProjectSchemeKindApp)

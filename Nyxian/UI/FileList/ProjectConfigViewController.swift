@@ -484,7 +484,7 @@ class ProjectConfigViewController: UIThemedTableViewController {
         alert.preferredAction = save
         present(alert, animated: true)
     }
-
+    
     @objc private func saveTapped() {
         var dictionary: [AnyHashable:Any] = self.project.projectConfig.originalDictionary
         
@@ -514,6 +514,8 @@ class ProjectConfigViewController: UIThemedTableViewController {
         
         project.projectConfig.save()
         isDirty = false
+        
+        NotificationCenter.default.post(name: Notification.Name("NXProjectSettingsChanged"), object: [])
     }
     
     @objc private func closeTapped() {

@@ -1,7 +1,7 @@
 #ifndef SCENEDELEGATE_H
 #define SCENEDELEGATE_H
 
-#import <UIKit/UIKit.h>
+@import UIKit;
 
 @interface SceneDelegate : UIResponder <UIWindowSceneDelegate>
 

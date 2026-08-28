@@ -83,15 +83,21 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
         // because its still a long journey till
         // swift gets all of those nice little features.
         if CCFileTypeIsClangFile(self.file.type)
-        {
+            {
             self.languageServer = NXLanguageServer(self.file.fileURL.path)
-                
+            
             if let project = project {
                 self.database = DebugDatabase.getDatabase(ofPath: project.cacheURL.appendingPathComponent("debug.json").path)
             }
         }
         
         super.init(nibName: nil, bundle: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(changedProjectSettings(_:)), name: Notification.Name("NXProjectSettingsChanged"), object: nil)
+    }
+
+    @objc func changedProjectSettings(_ notification: Notification) {
+        self.languageServer?.releaseMemory()
+        self.coordinator?.textViewDidChange(self.textView)
     }
     
     required init?(coder: NSCoder) {
