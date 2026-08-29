@@ -19,34 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KSURFACE_FS_PRESERVER_H
-#define KSURFACE_FS_PRESERVER_H
+#ifndef FS_MOUNT_H
+#define FS_MOUNT_H
 
 #include <mach/kern_return.h>
-#include <stdint.h>
-#include <limits.h>
-#include <stddef.h>
+#include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 
-typedef enum: uint8_t {
-    kFSNodeTypeSymbolicLink,
-    kFSNodeTypeDirectory,
-} FSNodeType;
+kern_return_t ksurface_fs_mount(const char *mount_dir, const char *bind_dir);
 
-typedef struct {
-    FSNodeType type;
-    char name[PATH_MAX];
-    char target[PATH_MAX];
-} FSPreserverNode;
-
-kern_return_t ksurface_fs_preserver_add_node(FSPreserverNode node);
-
-typedef struct {
-    FSNodeType type;
-    const char *name;
-    const char *target;
-} FSPreserverDesc;
-
-kern_return_t ksurface_fs_preserver_add_nodes(const FSPreserverDesc *v, size_t count, size_t *failed_index);
-kern_return_t ksurface_fs_preserver_kickstart(void);
-
-#endif /* KSURFACE_FS_PRESERVER_H */
+#endif /* FS_MOUNT_H */

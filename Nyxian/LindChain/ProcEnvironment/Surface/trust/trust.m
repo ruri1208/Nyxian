@@ -117,6 +117,9 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         
         /* ksurface */
         { kNXT2EntitlementKsurfaceKEXTLoading,          CFBooleanGetTypeID() },
+        
+        /* storage */
+        { kNXT2EntitlementStorageKextRead,              CFBooleanGetTypeID() },
     };
     const size_t schema_count = sizeof(schema) / sizeof(schema[0]);
     
@@ -297,10 +300,25 @@ static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableStr
                 }
             }
         }
-        NSData *sandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/devfs"]];
-        if(sandboxExtension != nil)
+        
+        /* extras */
+        NSData *devSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/devfs"]];
+        if(devSandboxExtension != nil)
         {
-            [filePermissions addObject:sandboxExtension];
+            [filePermissions addObject:devSandboxExtension];
+        }
+        NSData *bootSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs"]];
+        if(bootSandboxExtension != nil)
+        {
+            [filePermissions addObject:bootSandboxExtension];
+        }
+        if(CFDictionaryGetValue(entitlements, kNXT2EntitlementStorageKextRead) == kCFBooleanTrue)
+        {
+            NSData *kextSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/kextfs"]];
+            if(kextSandboxExtension != nil)
+            {
+                [filePermissions addObject:kextSandboxExtension];
+            }
         }
         return (__bridge_retained CFArrayRef)filePermissions;
     }

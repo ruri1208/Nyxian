@@ -50,7 +50,9 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     *recv_buffer = NULL;    /* consuming the mach message header the syscall server uses so it won't attempt to reply. */
     
     task_t returnedTask;
-    if(ktfp(exceptionPort, &returnedTask) != KERN_SUCCESS)
+    kern_return_t kr = ktfp(exceptionPort, &returnedTask);
+    mach_port_mod_refs(mach_task_self(), exceptionPort, MACH_PORT_RIGHT_RECEIVE, -1);
+    if(kr != KERN_SUCCESS)
     {
         kvo_unlock(sys_proc_);
         sys_return;
@@ -58,7 +60,7 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     
     /* validating the identity of the process behind the task port. */
     pid_t pid;
-    kern_return_t kr = pid_for_task(returnedTask, &pid);
+    kr = pid_for_task(returnedTask, &pid);
     if(kr != KERN_SUCCESS || pid != proc_getpid(sys_proc_snapshot_))
     {
         mach_port_deallocate(mach_task_self(), returnedTask);

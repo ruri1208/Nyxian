@@ -147,7 +147,6 @@ NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind s
             
             /* relaxing the damn linker */
             @"-Wl,-undefined,dynamic_lookup",
-            @"-Wl,-kext",
             
             @"-lSystem",
         ];
