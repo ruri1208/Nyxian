@@ -35,11 +35,24 @@ import UIKit
         fatalError("init(coder:) has not been implemented")
     }
     
+    private func reloadProjectsFromDisk() {
+        let rawProjectsList = NXProject.listProjects(at: NXBootstrap.shared().rootURL.appendingPathComponent("Projects")) as! [String: [NXProject]]
+        var buckets: [String: [NXProject]] = [:]
+        
+        for project in rawProjectsList.values.flatMap({ $0 }) {
+            let key = Self.sectionKey(for: project)
+            buckets[key, default: []].append(project)
+        }
+        
+        self.projectsList = buckets
+        self.tableView.reloadData()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         self.tableView.register(ProjectTableCell.self, forCellReuseIdentifier: ProjectTableCell.reuseIdentifier)
-        
+        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         self.title = "Projects"
 
         let createItem = UIBarButtonItem(
@@ -53,22 +66,9 @@ import UIKit
             target: self,
             action: #selector(presentImportPicker)
         )
-        self.navigationItem.setRightBarButtonItems([createItem], animated: false)
-        self.navigationItem.setLeftBarButtonItems([importItem], animated: false)
-        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        self.navigationItem.setRightBarButtonItems([createItem, importItem], animated: false)
         
-        let rawProjectsList = NXProject.listProjects(at: NXBootstrap.shared().rootURL.appendingPathComponent("Projects")) as! [String:[NXProject]]
-        let filtered = rawProjectsList.filter { !$0.value.isEmpty }
-
-        let sorted = filtered.sorted { a, b in
-            let keyA = a.key.lowercased()
-            let keyB = b.key.lowercased()
-            return sortKeys(keyA, keyB)
-        }
-
-        self.projectsList = Dictionary(uniqueKeysWithValues: sorted)
-        
-        self.tableView.reloadData()
+        reloadProjectsFromDisk()
     }
 
     @objc private func presentProjectCreationSheet() {
@@ -110,6 +110,7 @@ import UIKit
             switch project.projectConfig.schemeKind {
             case .app: return "applications"
             case .utility: return "utilities"
+            case .kSurfaceKext: return "kernel extension"
             default: return "unknown"
             }
         }()
@@ -154,6 +155,7 @@ import UIKit
             switch project.projectConfig.schemeKind {
             case .app: return "applications"
             case .utility: return "utilities"
+            case .kSurfaceKext: return "kernel extension"
             default: return "unknown"
             }
         }()
@@ -199,12 +201,14 @@ import UIKit
             .sorted { sortKeys($0.key, $1.key) }
             .map { $0.key }
     }
-
+    
     private func sortKeys(_ a: String, _ b: String) -> Bool {
         let keyA = a.lowercased()
         let keyB = b.lowercased()
         if keyA == "applications" { return true }
         if keyB == "applications" { return false }
+        if keyA == "utilities" { return true }
+        if keyB == "utilities" { return false }
         if keyA == "unknown" { return false }
         if keyB == "unknown" { return true }
         return keyA < keyB
@@ -216,7 +220,7 @@ import UIKit
             NotificationServer.NotifyUser(level: .error, notification: "Product name is required")
             return false
         }
-
+        
         optionsModel.saveOrganizationIdentifier()
         
         guard let project = NXProject.createProject(
@@ -231,35 +235,48 @@ import UIKit
             NotificationServer.NotifyUser(level: .error, notification: "Failed to create project")
             return false
         }
-
+        
         addProject(project)
         return true
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        if let indexPath = sessionIndex {
-            let keys = Array(self.projectsList.keys).sorted()
-            let key = keys[indexPath.section]
-            let sectionProjects = self.projectsList[key] ?? []
-            let selectedProject: NXProject = sectionProjects[indexPath.row]
-            selectedProject.reload()
-            self.tableView.reloadRows(at: [indexPath], with: .none)
-            sessionIndex = nil
+        if sessionIndex != nil {
+            reloadProjectsFromDisk()
+        }
+    }
+    
+    private var sortedSectionKeys: [String] {
+        projectsList.keys.sorted(by: sortKeys)
+    }
+    
+    private static func sectionKey(for project: NXProject) -> String {
+        switch project.projectConfig.schemeKind {
+        case .app: return "applications"
+        case .utility: return "utilities"
+        case .kSurfaceKext: return "kernel extension"
+        default: return "unknown"
+        }
+    }
+    
+    private func sectionTitle(for key: String) -> String {
+        switch key {
+        case "applications": return "Applications"
+        case "utilities": return "Utilities"
+        case "kernel extension": return "Kernel Extensions"
+        default: return key.capitalized
         }
     }
     
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        let keys = Array(self.projectsList.keys).sorted()
-        let key = keys[section]
+        let key = sortedSectionKeys[section]
         let sectionProjects = self.projectsList[key] ?? []
-        return "\(key.capitalized) (\(sectionProjects.count))"
+        return "\(sectionTitle(for: key)) (\(sectionProjects.count))"
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let keys = Array(self.projectsList.keys).sorted()
-        let key = keys[section]
+        let key = sortedSectionKeys[section]
         let sectionProjects = self.projectsList[key] ?? []
         return sectionProjects.count
     }
@@ -269,12 +286,18 @@ import UIKit
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let keys = Array(self.projectsList.keys).sorted()
-        let key = keys[indexPath.section]
+        let key = sortedSectionKeys[indexPath.section]
         let sectionProjects = self.projectsList[key] ?? []
-        let project: NXProject = sectionProjects[indexPath.row];
+        let project: NXProject = sectionProjects[indexPath.row]
         let cell: ProjectTableCell = self.tableView.dequeueReusableCell(withIdentifier: ProjectTableCell.reuseIdentifier) as! ProjectTableCell
-        cell.configure(displayName: project.projectConfig.displayName, bundleIdentifier: project.projectConfig.bundleid, appIcon: (project.projectConfig.schemeKind == .app) ? UIImage(named: "DefaultIcon") : UIImage(named: "UtilityIcon"), showArrow: UIDevice.current.userInterfaceIdiom != .pad)
+        let icon: UIImage? = {
+            switch project.projectConfig.schemeKind {
+            case .app: return UIImage(named: "DefaultIcon")
+            case .kSurfaceKext: return UIImage(systemName: "puzzlepiece.extension.fill")
+            default: return UIImage(named: "UtilityIcon")
+            }
+        }()
+        cell.configure(displayName: project.projectConfig.displayName, bundleIdentifier: project.projectConfig.bundleid, appIcon: icon, showArrow: UIDevice.current.userInterfaceIdiom != .pad)
         return cell
     }
     
@@ -283,8 +306,7 @@ import UIKit
         
         sessionIndex = indexPath
         
-        let keys = Array(self.projectsList.keys).sorted()
-        let key = keys[indexPath.section]
+        let key = sortedSectionKeys[indexPath.section]
         let sectionProjects = self.projectsList[key] ?? []
         
         let selectedProject: NXProject = sectionProjects[indexPath.row]
@@ -301,12 +323,9 @@ import UIKit
     
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { suggestedActions in
-            let export: UIAction = UIAction(title: "Export", image: UIImage(systemName: "square.and.arrow.up.fill")) { [weak self] _ in
+            let export: UIAction = UIAction(title: "Export", image: UIImage(systemName: "square.and.arrow.up.fill")) { _ in
                 DispatchQueue.global().async {
-                    guard let self = self else { return }
-                    
-                    let keys = Array(self.projectsList.keys).sorted()
-                    let key = keys[indexPath.section]
+                    let key = self.sortedSectionKeys[indexPath.section]
                     let sectionProjects = self.projectsList[key] ?? []
                     let project: NXProject = sectionProjects[indexPath.row]
                     
@@ -317,8 +336,7 @@ import UIKit
             }
             
             let item: UIAction = UIAction(title: "Remove", image: UIImage(systemName: "trash.fill"), attributes: .destructive) { _ in
-                let keys = Array(self.projectsList.keys).sorted()
-                let key = keys[indexPath.section]
+                let key = self.sortedSectionKeys[indexPath.section]
                 let sectionProjects = self.projectsList[key] ?? []
                 let project = sectionProjects[indexPath.row]
                 
@@ -327,9 +345,8 @@ import UIKit
                     message: "Are you sure you want to remove \"\(project.projectConfig.displayName!)\"?",
                     confirmTitle: "Remove",
                     confirmStyle: .destructive)
-                { [weak self] in
-                    guard let self = self else { return }
-                    removeProject(project)
+                {
+                    self.removeProject(project)
                 }
             }
             
@@ -340,29 +357,28 @@ import UIKit
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         do {
             guard let selectedURL = urls.first else { return }
-
+            
             let extractFirst = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Proj")
             
             if FileManager.default.fileExists(atPath: extractFirst.path) {
                 try FileManager.default.removeItem(at: extractFirst)
             }
             try FileManager.default.createDirectory(at: extractFirst, withIntermediateDirectories: true)
-
+            
             guard unzipArchiveAtPath(selectedURL.path, extractFirst.path) else {
                 try? FileManager.default.removeItem(at: extractFirst)
                 throw CocoaError(.fileReadCorruptFile)
             }
-
-            // Removing the __MAXOSX shit
+            
             let items = try FileManager.default.contentsOfDirectory(atPath: extractFirst.path).filter { !$0.hasPrefix("__") && !$0.hasPrefix(".") }
-
+            
             guard let firstItem = items.first else {
                 try? FileManager.default.removeItem(at: extractFirst)
                 throw CocoaError(.fileReadNoSuchFile)
             }
-
+            
             let projectPath = "\(NXBootstrap.shared().rootURL.appendingPathComponent("/Projects").path)/\(UUID().uuidString)"
-
+            
             do {
                 try FileManager.default.moveItem(
                     atPath: extractFirst.appendingPathComponent(firstItem).path,
@@ -372,9 +388,9 @@ import UIKit
                 try? FileManager.default.removeItem(at: extractFirst)
                 throw error
             }
-
+            
             try? FileManager.default.removeItem(at: extractFirst)
-
+            
             if let project = NXProject(url: URL(fileURLWithPath: projectPath)) {
                 addProject(project)
             }
@@ -384,8 +400,6 @@ import UIKit
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let keys = Array(self.projectsList.keys).sorted()
-        let key = keys[indexPath.section]
         if #available(iOS 26.0, *) {
             return 80
         } else {
@@ -409,6 +423,9 @@ final class ProjectTemplateOptionsModel: ObservableObject {
         ProjectTemplatePickerOption(id: "Swift", title: "Swift"),
         ProjectTemplatePickerOption(id: "ObjC", title: "Objective-C"),
         ProjectTemplatePickerOption(id: "C++", title: "C++"),
+        ProjectTemplatePickerOption(id: "C", title: "C")
+    ]
+    private let kextLanguages: [ProjectTemplatePickerOption] = [
         ProjectTemplatePickerOption(id: "C", title: "C")
     ]
     private let interfaces: [ProjectTemplatePickerOption] = [
@@ -468,6 +485,8 @@ final class ProjectTemplateOptionsModel: ObservableObject {
     var languageOptions: [ProjectTemplatePickerOption] {
         if schemeKind == .utility {
             return utilityLanguages
+        } else if schemeKind == .kSurfaceKext {
+            return kextLanguages
         }
         return appLanguages
     }
