@@ -66,7 +66,9 @@ import UIKit
             target: self,
             action: #selector(presentImportPicker)
         )
-        self.navigationItem.setRightBarButtonItems([createItem, importItem], animated: false)
+        //self.navigationItem.setRightBarButtonItems([createItem, importItem], animated: false)
+        self.navigationItem.setRightBarButtonItems([importItem], animated: false)
+        self.navigationItem.setLeftBarButtonItems([createItem], animated: false)
         
         reloadProjectsFromDisk()
     }
