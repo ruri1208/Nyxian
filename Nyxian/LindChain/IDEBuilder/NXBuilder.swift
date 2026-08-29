@@ -128,6 +128,10 @@ final class NXBuilder: NSObject {
             
             let infoPlistDataSerialized = try PropertyListSerialization.data(fromPropertyList: self.project.projectConfig.infoDictionary ?? [:], format: .xml, options: 0)
             FileManager.default.createFile(atPath: self.project.bundleURL.appendingPathComponent("Info.plist").path, contents: infoPlistDataSerialized)
+        } else if project.projectConfig.schemeKind == .kSurfaceKext {
+            try FileManager.default.createDirectory(at: self.project.bundleURL, withIntermediateDirectories: true)
+            let infoPlistDataSerialized = try PropertyListSerialization.data(fromPropertyList: self.project.projectConfig.infoDictionary ?? [:], format: .xml, options: 0)
+            FileManager.default.createFile(atPath: self.project.bundleURL.appendingPathComponent("Info.plist").path, contents: infoPlistDataSerialized)
         }
     }
     
@@ -207,9 +211,20 @@ final class NXBuilder: NSObject {
                 executablePathCallback(path)
             } else if self.project.projectConfig.schemeKind == .kSurfaceKext {
                 LCUtils.signMachOWithoutPatch(at: self.project.machoURL)
+                trust_nxt2_sign(self.project.machoURL.path, [
+                    "org.emexlabs.nyxian.ksurface.kernelextension.loading" : true
+                ] as CFDictionary, true)
                 vnode_refresh_at_path(self.project.machoURL.path)
+                var ret: kern_return_t = ksurface_fs_install_kext_at_path(self.project.bundleURL.path);
+                if ret != 0 {
+                    throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to install kext: \(String(cString: mach_error_string(ret)))"])
+                }
+                
                 var key: UInt64 = 0
-                kext_load_at_path(self.project.machoURL.path, &key)
+                ret = ksurface_fs_load_kext_with_bundleid(self.project.projectConfig.bundleid, &key)
+                if ret != 0 {
+                    throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to inject kext: \(String(cString: mach_error_string(ret)))"])
+                }
             }
         } else {
             if self.project.projectConfig.signMachOWithNyxianEntitlements {

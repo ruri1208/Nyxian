@@ -30,7 +30,6 @@ void environment_panic_internal(const char *reason,
                                 int line,
                                 ...)
 {
-#if DEBUG
     /* starting variadic parse */
     va_list args;
     va_start(args, line);
@@ -45,7 +44,6 @@ void environment_panic_internal(const char *reason,
     va_end(args);
     
     klog_log("ksurface:panic", "\npanic string: %s\nfile: %s\nline: %d", [msg UTF8String], file, line);
-#endif /* DEBUG */
     
     /* trap the system */
     __builtin_trap();

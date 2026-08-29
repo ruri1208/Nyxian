@@ -276,7 +276,16 @@
             break;
         case NXProjectSchemeKindKSurfaceKext:
             [projConfigPlist setValuesForKeysWithDictionary:@{
-                @"NXOutputPath": @"$(CACHEROOT)/$(NXExecutable)"
+                @"NXBundleInfo": @{
+                    @"CFBundleExecutable": @"$(NXExecutable)",
+                    @"CFBundleIdentifier": @"$(NXBundleIdentifier)",
+                    @"CFBundleVersion": @"$(NXBundleVersion)",
+                    @"CFBundleShortVersionString": @"$(NXBundleShortVersion)",
+                    @"PEMinimumVersion": [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+                },
+                @"NXBundleVersion": @"1.0",
+                @"NXBundleShortVersion": @"1.0",
+                @"NXOutputPath": @"$(CACHEROOT)/$(NXBundleIdentifier).kext/$(NXExecutable)"
             }];
             break;
         default:
@@ -465,7 +474,13 @@
 
 - (NSURL*)resourcesURL { return [self.url URLByAppendingPathComponent:@"Resources"]; }
 - (NSURL*)payloadURL { return [self.cacheURL URLByAppendingPathComponent:@"Payload"]; }
-- (NSURL*)bundleURL { return [self.payloadURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"app"]]; }
+- (NSURL*)bundleURL {
+    if(self.projectConfig.formatKind == NXProjectSchemeKindKSurfaceKext)
+    {
+        return [self.cacheURL  URLByAppendingPathComponent:[self.projectConfig.bundleid stringByAppendingPathExtension:@"kext"]];
+    }
+    return [self.payloadURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"app"]];
+}
 - (NSURL*)machoURL
 {
     if(self.projectConfig.formatKind == NXProjectFormatKindKate)

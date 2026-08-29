@@ -27,6 +27,7 @@
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -38,15 +39,6 @@
 
 @dynamic isBooted;
 @dynamic isLaunchServiceManagerStable;
-
-+ (void)load
-{
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
-        @autoreleasepool {
-            [[PEUserspaceManager shared] boot];
-        }
-    });
-}
 
 + (instancetype)shared
 {
@@ -86,6 +78,68 @@
         _mode = kPEUserspaceModeDefault;
     }
     return self;
+}
+
+- (void)bootWithKextLoadingEnabled:(BOOL)enabled
+{
+    const char *domain = "PEUserspaceManager:boot";
+    
+    /* boot shall only happen once */
+    if(atomic_flag_test_and_set(&_bootOnceFlag))
+    {
+        environment_panic("boot called twice");
+    }
+    
+    os_unfair_lock_lock(&_lock);
+    
+    /* extension must be available */
+    if(PEGetLiveProcessBundle() == NULL ||
+       !PEExtensionHasGetTaskAllowed())
+    {
+        klog_log(domain, "Cannot spin up anything, extension is malformed");
+        os_unfair_lock_unlock(&_lock);
+        return;
+    }
+    
+    /* now we can spin up that baby (micro kernel) =3 */
+    ksurface_kinit();
+    
+    /* now the actual userspace */
+    Class UserspaceBootChain[] = {
+        [PEProcessManager class],
+        [PEBootstrapRegistry class],
+        [PELaunchServiceManager class],
+    };
+    
+    for(size_t index = 0; index < sizeof(UserspaceBootChain) / sizeof(Class); index++)
+    {
+        Class class = UserspaceBootChain[index];
+        if([class shared] != nil)
+        {
+            klog_log(domain, "%@ [ok]", class);
+        }
+        else
+        {
+            environment_panic("%@ [failed]", class);
+        }
+    }
+    klog_log(domain, "%@ [ok]", [self class]);
+    
+    /* spinning up the launch services */
+    [[PELaunchServiceManager shared] reloadAllEntries];
+    
+    /* mark current boot as successful */
+    atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
+    atomic_store_explicit(&_bootSuccessful, true, memory_order_release);
+    
+    if(enabled)
+    {
+        klog_log(domain, "loading kexts into address space");
+        kern_return_t kr = ksurface_fs_load_all_kext();
+        klog_log(domain, "kext loader %s", kr == KERN_SUCCESS ? "[ok]" : "[fail]");
+    }
+    
+    os_unfair_lock_unlock(&_lock);
 }
 
 - (void)boot

@@ -221,6 +221,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
     var window: NXWindowServer?
     weak var themedTabViewController: UIThemedTabViewController?
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        if let item = connectionOptions.shortcutItem,
+           item.type == "org.emexlabs.nyxian.noload" {
+            PEUserspaceManager.shared().boot(withKextLoadingEnabled: false)
+        } else {
+            PEUserspaceManager.shared().boot(withKextLoadingEnabled: true)
+        }
+        
         guard let windowScene = scene as? UIWindowScene else { return }
         
         // swizzle swizzle swizzle :3
@@ -306,6 +313,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             checkSigningSetup()
+        }
+    }
+    
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        completionHandler(true)
+        if shortcutItem.type == "org.emexlabs.nyxian.noload" {
+            NotificationServer.NotifyUser(level: .note, notification: "You have to close Nyxian first before you can start it without Ksurface Kernel Extensions.")
         }
     }
 }

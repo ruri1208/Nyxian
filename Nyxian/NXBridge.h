@@ -65,6 +65,7 @@
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #import <LindChain/ProcEnvironment/Surface/kext.h>
 #import <LindChain/ProcEnvironment/Utils/vnode.h>
+#import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 
 /* Daemon Interfaces Headers */
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
