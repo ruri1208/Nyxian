@@ -33,6 +33,7 @@ typedef NS_ENUM(NSUInteger, KSNXT2Section) {
     KSNXT2SectionServices,
     KSNXT2SectionManagement,
     KSNXT2SectionStealth,
+    KSNXT2SectionTrust,
     KSNXT2SectionUnrecognized,
     KSNXT2SectionCount
 };
@@ -45,6 +46,7 @@ static NSString *const kKSNXT2SectionTitles[KSNXT2SectionCount] = {
     @"Services",
     @"System Management",
     @"Stealth",
+    @"Trust",
     @"Unrecognized Entitlements",
 };
 

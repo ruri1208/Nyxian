@@ -145,6 +145,12 @@ extern BOOL PEURLIsContainedIn(NSURL *candidate, NSURL *root);
     return [ZSigner signMachOAtPath:url.path prov:self.profileData key:self.certificateData pass:self.certificatePassword];
 }
 
++ (BOOL)signMachOWithoutPatchAtURL:(NSURL *)url
+{
+    /* use zsign as our signer~ (yeah daddy tim, were using zsigner as our signer, am i a bad girl now ;3) */
+    return [ZSigner signMachOAtPath:url.path prov:self.profileData key:self.certificateData pass:self.certificatePassword];
+}
+
 + (int)validateCertificateWithCompletionHandler:(void(^)(int status, NSString *error))completionHandler
 {
     if(self.certificateData == nil)

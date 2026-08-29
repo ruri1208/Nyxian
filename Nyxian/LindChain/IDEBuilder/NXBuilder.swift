@@ -82,7 +82,7 @@ final class NXBuilder: NSObject {
     
     func headsup(buildType: NXBuilder.BuildType) throws {
         let type = project.projectConfig.schemeKind
-        if(type != .app && type != .utility) {
+        if(type != .app && type != .utility && type != .kSurfaceKext) {
             throw NSError(domain: "com.cr4zy.nyxian.builder.headsup", code: 1, userInfo: [NSLocalizedDescriptionKey:"Project type \(type) is unknown."])
         }
         
@@ -205,6 +205,11 @@ final class NXBuilder: NSObject {
                     throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to fastpath install utility"])
                 }
                 executablePathCallback(path)
+            } else if self.project.projectConfig.schemeKind == .kSurfaceKext {
+                LCUtils.signMachOWithoutPatch(at: self.project.machoURL)
+                vnode_refresh_at_path(self.project.machoURL.path)
+                var key: UInt64 = 0
+                kext_load_at_path(self.project.machoURL.path, &key)
             }
         } else {
             if self.project.projectConfig.signMachOWithNyxianEntitlements {

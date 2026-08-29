@@ -45,7 +45,7 @@
 
 @property (nonatomic, readwrite) MDKFile *file;
 
-+ (instancetype)unit;
++ (instancetype)unitWithType:(CCASTUnitType)type;
 
 - (BOOL)reparse;
 - (void)setArguments:(NSArray<NSString*>*)arguments;

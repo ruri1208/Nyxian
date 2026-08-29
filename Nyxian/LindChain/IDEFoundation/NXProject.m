@@ -148,7 +148,8 @@
         @"SRCROOT": url.path,
         @"SDKROOT": NXBootstrap.shared.sdkURL.path,
         @"BSROOT": NXBootstrap.shared.rootURL.path,
-        @"CACHEROOT": _cacheURL.path
+        @"CACHEROOT": _cacheURL.path,
+        @"SHDROOT": [[NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Shared"] path],
     }];
     _entitlementsConfig = [[NXEntitlementsConfig alloc] initWithPlistPath:[NSString stringWithFormat:@"%@/Config/Entitlements.plist", self.url.path] withVariables:nil];
     return self;
@@ -269,6 +270,11 @@
             }];
             break;
         case NXProjectSchemeKindUtility:
+            [projConfigPlist setValuesForKeysWithDictionary:@{
+                @"NXOutputPath": @"$(CACHEROOT)/$(NXExecutable)"
+            }];
+            break;
+        case NXProjectSchemeKindKSurfaceKext:
             [projConfigPlist setValuesForKeysWithDictionary:@{
                 @"NXOutputPath": @"$(CACHEROOT)/$(NXExecutable)"
             }];

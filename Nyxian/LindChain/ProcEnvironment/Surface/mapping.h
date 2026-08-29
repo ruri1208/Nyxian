@@ -28,7 +28,6 @@
 #import <LindChain/ProcEnvironment/Surface/radix/radix.h>
 #import <LindChain/ProcEnvironment/Surface/lock.h>
 #include <LindChain/ProcEnvironment/Surface/key.h>
-#include <LiveShim/LiveShimSyscall.h>
 #include <stdint.h>
 #include <limits.h>
 #include <pthread.h>

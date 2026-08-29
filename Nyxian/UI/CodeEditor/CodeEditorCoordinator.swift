@@ -61,7 +61,12 @@ class CodeEditorCoordinator: NSObject, TextViewDelegate {
             parent.project?.projectConfig.reloadIfNeeded()
             let flags: [String] = parent.isReadOnly ? NXProjectConfig.sdkCompilerFlags() ?? [] : parent.project?.projectConfig.compilerFlags ?? []
             
-            server.reparseFile(self.parent?.textView.text, withArgs: flags)
+            if CCFileTypeIsSwiftFile(parent.file.type) {
+                let swiftFies: [String] = LDEFilesFinder(parent.project?.url.path, ["swift"], ["Resources", "Config"])
+                server.reparseFile(self.parent?.textView.text, withArgs: (parent.project?.projectConfig.swiftFlags ?? []) + swiftFies)
+            } else if CCFileTypeIsClangFile(parent.file.type) {
+                server.reparseFile(self.parent?.textView.text, withArgs: flags)
+            }
             let diag = self.parent?.languageServer?.getDiagnostics() ?? []
             
             DispatchQueue.main.async {
