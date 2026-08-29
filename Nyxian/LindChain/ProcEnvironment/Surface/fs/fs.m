@@ -62,7 +62,8 @@ kern_return_t ksurface_fs_init(void)
     /* bind mounts */
     ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String]);
     ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/bootloader", home] UTF8String], NSBundle.mainBundle.bundlePath.UTF8String);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kext", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String]);
+    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/headers", home] UTF8String], [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/kernel"] UTF8String]);
+    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kexts", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String]);
     ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/dev", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String]);
     ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/boot", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String]);
     
