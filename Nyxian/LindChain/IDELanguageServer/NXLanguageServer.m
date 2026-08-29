@@ -120,7 +120,7 @@
     os_unfair_lock_lock(&_lock);
     
     /* creating new synpush core and update all */
-    _unit = [MDKMutableASTUnit unit];
+    _unit = [MDKMutableASTUnit unitWithType:CCFileTypeIsSwiftFile(_file.type) ? kCCASTUnitTypeSwift : kCCASTUnitTypeClang];
     if(_unit == nil)
     {
         os_unfair_lock_unlock(&_lock);

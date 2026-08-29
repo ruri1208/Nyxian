@@ -80,6 +80,14 @@ void CCInstallLLVMFatalErrorHandler(void)
     llvm::install_fatal_error_handler(CCLLVMErrorHandler);
 }
 
+static std::once_flag SwiftModulesInitOnce;
+void CCInitializeSwiftModulesOnce(void)
+{
+    std::call_once(SwiftModulesInitOnce, [] {
+        initializeSwiftModules();
+    });
+}
+
 __attribute__((constructor))
 void llvm_init(void)
 {

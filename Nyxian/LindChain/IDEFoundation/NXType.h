@@ -46,6 +46,7 @@ static NXProjectScheme const NXProjectSchemeApp = @"Application";
 static NXProjectScheme const NXProjectSchemeUtility = @"Utility";
 static NXProjectScheme const NXProjectSchemeLibrary = @"Library";
 static NXProjectScheme const NXProjectSchemeFramework = @"Framework";
+static NXProjectScheme const NXProjectSchemeKSurfaceKext = @"Kext";
 
 typedef UInt64 NXProjectSchemeKind NS_TYPED_ENUM;
 static NXProjectSchemeKind const NXProjectSchemeKindUnknown = 0;
@@ -53,6 +54,7 @@ static NXProjectSchemeKind const NXProjectSchemeKindApp = 1;
 static NXProjectSchemeKind const NXProjectSchemeKindUtility = 2;
 static NXProjectSchemeKind const NXProjectSchemeKindLibrary = 3;
 static NXProjectSchemeKind const NXProjectSchemeKindFramework = 4;
+static NXProjectSchemeKind const NXProjectSchemeKindKSurfaceKext = 5;
 
 typedef NSString * NXProjectLanguage NS_TYPED_ENUM;
 static NXProjectLanguage const NXProjectLanguageUnknown = nil;

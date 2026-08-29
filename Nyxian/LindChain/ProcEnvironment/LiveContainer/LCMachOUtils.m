@@ -258,7 +258,7 @@ bool LCPatchExecSlice(LCMachO *machO)
     // Patch __PAGEZERO to map just a single zero page, fixing "out of address space"
     struct segment_command_64 *seg = (struct segment_command_64 *)imageHeaderPtr;
     assert(seg->cmd == LC_SEGMENT_64 || seg->cmd == LC_ID_DYLIB);
-    if(seg->cmd == LC_SEGMENT_64 && seg->vmaddr == 0)
+    if(seg->cmd == LC_SEGMENT_64 && strcmp(seg->segname, "__PAGEZERO") == 0)
     {
         seg->vmaddr = 0x100000000 - 0x4000;
         seg->vmsize = 0x4000;

@@ -82,8 +82,7 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
         // Cuz swift is not supported yet by synpush
         // because its still a long journey till
         // swift gets all of those nice little features.
-        if CCFileTypeIsClangFile(self.file.type)
-            {
+        if CCFileTypeIsClangFile(self.file.type) || CCFileTypeIsSwiftFile(self.file.type) {
             self.languageServer = NXLanguageServer(self.file.fileURL.path)
             
             if let project = project {

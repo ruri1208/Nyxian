@@ -30,12 +30,17 @@
 #include <CoreCompiler/CCFile.h>
 #include <CoreCompiler/CCFileSourceLocation.h>
 
+typedef CF_ENUM(UInt8, CCASTUnitType) {
+    kCCASTUnitTypeClang = 0,
+    kCCASTUnitTypeSwift,
+};
+
 typedef struct __CCASTUnit *CCASTUnitRef;
 typedef struct __CCASTUnit *CCMutableASTUnitRef;
 
 CC_EXPORT CFTypeID CCASTUnitGetTypeID(void);
 
-CC_EXPORT CCMutableASTUnitRef CCASTUnitCreateMutable(CFAllocatorRef allocator);
+CC_EXPORT CCMutableASTUnitRef CCASTUnitCreateMutable(CFAllocatorRef allocator, CCASTUnitType type);
 
 CC_EXPORT Boolean CCASTUnitReparse(CCMutableASTUnitRef mutableUnit);
 

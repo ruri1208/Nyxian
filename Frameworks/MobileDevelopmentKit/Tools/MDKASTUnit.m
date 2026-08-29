@@ -58,9 +58,9 @@
 
 @dynamic file;
 
-+ (instancetype)unit
++ (instancetype)unitWithType:(CCASTUnitType)type
 {
-    MDKASTUnit *obj = (__bridge_transfer MDKASTUnit*)CCASTUnitCreateMutable(kCFAllocatorSystemDefault);
+    MDKASTUnit *obj = (__bridge_transfer MDKASTUnit*)CCASTUnitCreateMutable(kCFAllocatorSystemDefault, type);
     object_setClass(obj, [MDKMutableASTUnit class]);
     return (MDKMutableASTUnit *)obj;
 }

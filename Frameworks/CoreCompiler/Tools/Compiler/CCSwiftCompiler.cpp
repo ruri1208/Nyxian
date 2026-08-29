@@ -45,7 +45,6 @@ struct CapturedDiag {
     std::string message;
     std::string file;
     unsigned line = 0, column = 0;
-    /* add ranges / fixits / category / educationalNotes if you need them */
 };
 
 class CapturingConsumer : public swift::DiagnosticConsumer {
@@ -58,8 +57,7 @@ public:
         CapturedDiag d;
         d.id = Info.ID;
         d.kind = Info.Kind;
-
-        /* render FormatString + FormatArgs into a real string. */
+        
         llvm::SmallString<256> buf;
         {
             llvm::raw_svector_ostream os(buf);
@@ -78,7 +76,7 @@ public:
     }
 };
 
-class MyObserver : public swift::FrontendObserver {
+class CCSwiftObserver : public swift::FrontendObserver {
 public:
     std::string primaryFile;
     CapturingConsumer consumer;
@@ -107,8 +105,6 @@ public:
     }
 };
 
-static std::once_flag SwiftModulesInitOnce;
-
 CC_EXPORT Boolean CCSwiftCompilerJobExecute(CCJobRef job,
                                             CFArrayRef *outDiagnostics,
                                             CFStringRef *outMainSource)
@@ -127,11 +123,9 @@ CC_EXPORT Boolean CCSwiftCompilerJobExecute(CCJobRef job,
         args.erase(args.begin());
     }
     
-    std::call_once(SwiftModulesInitOnce, [] {
-        initializeSwiftModules();
-    });
+    CCInitializeSwiftModulesOnce();
     
-    MyObserver obs;
+    CCSwiftObserver obs;
     llvm::remove_fatal_error_handler();
     int status = swift::performFrontend(args, "swift-frontend", nullptr, &obs);
     CCInstallLLVMFatalErrorHandler();

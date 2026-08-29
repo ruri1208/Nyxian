@@ -68,6 +68,7 @@ NXProjectScheme NXProjectSchemeFromSchemeKind(NXProjectSchemeKind kind)
         case NXProjectSchemeKindUtility: return NXProjectSchemeUtility;
         case NXProjectSchemeKindLibrary: return NXProjectSchemeLibrary;
         case NXProjectSchemeKindFramework: return NXProjectSchemeFramework;
+        case NXProjectSchemeKindKSurfaceKext: return NXProjectSchemeKSurfaceKext;
         default: return NXProjectSchemeUnknown;
     }
 }
@@ -89,6 +90,10 @@ NXProjectSchemeKind NXProjectSchemeKindFromScheme(NXProjectScheme scheme)
     else if([scheme isEqualToString:NXProjectSchemeFramework])
     {
         return NXProjectSchemeKindFramework;
+    }
+    else if([scheme isEqualToString:NXProjectSchemeKSurfaceKext])
+    {
+        return NXProjectSchemeKindKSurfaceKext;
     }
     return NXProjectSchemeKindUnknown;
 }
@@ -178,6 +183,13 @@ BOOL NXProjectConfigurationIsValid(NXProjectSchemeKind schemeKind,
              * later checks like getting the the language
              * from kind will reveil failure if applicable.
              */
+            return YES;
+        }
+    }
+    else if(schemeKind == NXProjectSchemeKindKSurfaceKext)
+    {
+        if(interfaceKind == NXProjectInterfaceKindUnknown)
+        {
             return YES;
         }
     }

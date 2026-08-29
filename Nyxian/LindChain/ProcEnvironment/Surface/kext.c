@@ -115,10 +115,13 @@ kern_return_t kext_load_at_path(const char *path,
         return KERN_NAME_EXISTS;
     }
     
+    klog_log("ksurface:kext:load", "survived", path);
+    
     /* loading kernel extension into address space */
     loadedHandle = dlopen(path, RTLD_LAZY);
     if(loadedHandle == NULL)
     {
+        printf("%s\n", dlerror());
         klog_log("ksurface:kext:load", "failed to load handle: %s", dlerror());
         kext_table_unlock();
         return KERN_INVALID_ARGUMENT;

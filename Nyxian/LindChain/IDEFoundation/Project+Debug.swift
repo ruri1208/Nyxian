@@ -165,9 +165,7 @@ class DebugDatabase: Codable {
     
     func appendFileDebug(ofPath path: String, synItems: [MDKDiagnostic]) {
         guard !synItems.isEmpty else { return }
-        guard let relPath = NXBootstrap.shared().relativeToBootstrap(withAbsolutePath: path) else {
-            return
-        }
+        let relPath = NXBootstrap.shared().relativeToBootstrap(withAbsolutePath: path) ?? path
         
         os_unfair_lock_lock(&self.lock)
         defer { os_unfair_lock_unlock(&self.lock) }
