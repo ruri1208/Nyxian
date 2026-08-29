@@ -1,6 +1,9 @@
 #!/bin/bash
 # Increment build number across all targets and append build configuration
 
+if [ -z "$SRCROOT" ]; then
+  SRCROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+fi
 cd "$SRCROOT"
 
 # Current date
