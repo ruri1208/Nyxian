@@ -92,6 +92,19 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypePlay</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>If Nyxian is crashing this could be useful</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Do Not Load Ksurface Kernel Extensions</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>org.emexlabs.nyxian.noload</string>
+		</dict>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UTImportedTypeDeclarations</key>
