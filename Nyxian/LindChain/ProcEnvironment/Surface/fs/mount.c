@@ -19,34 +19,32 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KSURFACE_FS_PRESERVER_H
-#define KSURFACE_FS_PRESERVER_H
+#include <LindChain/ProcEnvironment/Surface/fs/mount.h>
+#include <string.h>
 
-#include <mach/kern_return.h>
-#include <stdint.h>
-#include <limits.h>
-#include <stddef.h>
-
-typedef enum: uint8_t {
-    kFSNodeTypeSymbolicLink,
-    kFSNodeTypeDirectory,
-} FSNodeType;
-
-typedef struct {
-    FSNodeType type;
-    char name[PATH_MAX];
-    char target[PATH_MAX];
-} FSPreserverNode;
-
-kern_return_t ksurface_fs_preserver_add_node(FSPreserverNode node);
-
-typedef struct {
-    FSNodeType type;
-    const char *name;
-    const char *target;
-} FSPreserverDesc;
-
-kern_return_t ksurface_fs_preserver_add_nodes(const FSPreserverDesc *v, size_t count, size_t *failed_index);
-kern_return_t ksurface_fs_preserver_kickstart(void);
-
-#endif /* KSURFACE_FS_PRESERVER_H */
+kern_return_t ksurface_fs_mount(const char *mount_dir,
+                                const char *bind_dir)
+{
+    if(mount_dir == NULL)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    /* if bind_dir is givven it becomes a directory */
+    FSNodeType type = kFSNodeTypeDirectory;
+    if(bind_dir != NULL)
+    {
+        type = kFSNodeTypeSymbolicLink;
+    }
+    
+    /* preparing node */
+    FSPreserverNode node = { .type = type, 0 };
+    strlcpy(node.name, mount_dir, PATH_MAX);
+    if(bind_dir != NULL)
+    {
+        strlcpy(node.target, bind_dir, PATH_MAX);
+    }
+    
+    /* and register it */
+    return ksurface_fs_preserver_add_node(node);
+}

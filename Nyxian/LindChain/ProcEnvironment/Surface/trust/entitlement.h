@@ -155,6 +155,9 @@ extern NXT2Entitlement const kNXT2EntitlementSandboxNoContainer;                
 /* ksurface */
 extern NXT2Entitlement const kNXT2EntitlementKsurfaceKEXTLoading;
 
+/* storage */
+extern NXT2Entitlement const kNXT2EntitlementStorageKextRead;                       /* is read-only */
+
 /* ----------------------------------------------------------------------
  *  Types
  * -------------------------------------------------------------------- */
