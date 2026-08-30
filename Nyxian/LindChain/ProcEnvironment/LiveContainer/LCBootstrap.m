@@ -217,7 +217,6 @@ int LCBootstrapMain(NSString *executablePath,
     
     /* now applying LC hooks */
     NUDGuestHooksInit();
-    SecItemGuestHooksInit();
     NSFMGuestHooksInit();
     UIKitGuestHooksInit();
     initDead10ccFix();

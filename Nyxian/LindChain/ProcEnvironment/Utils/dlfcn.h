@@ -19,11 +19,13 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_GETATTRLIST_H
-#define SURFACE_SYS_GETATTRLIST_H
+#ifndef PROCENVIRONMENT_DYLD_H
+#define PROCENVIRONMENT_DYLD_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
+#include <dlfcn.h>
 
-DEFINE_SYSCALL_HANDLER(getattrlist);
+#define RTLD_EXACT_PATH 0x40000000  /* doesn't allow dependencies nor path resolution */
 
-#endif /* SURFACE_SYS_GETATTRLIST_H */
+void *dlopen_from_fd(int fd, int mode);
+
+#endif /* PROCENVIRONMENT_DYLD_H */

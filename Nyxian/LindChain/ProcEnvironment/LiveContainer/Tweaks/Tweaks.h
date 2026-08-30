@@ -26,7 +26,6 @@
 bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** origFunction, void* hookFunction);
 
 void NUDGuestHooksInit(void);
-void SecItemGuestHooksInit(void);
 void DyldHooksInit(void);
 void NSFMGuestHooksInit(void);
 

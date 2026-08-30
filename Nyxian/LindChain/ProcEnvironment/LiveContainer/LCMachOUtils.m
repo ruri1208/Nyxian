@@ -51,7 +51,7 @@ LCMachO *LCMapMachO(const char *path, bool readOnly)
     
     /* initially opening the machO */
     machO->ro = readOnly;
-    machO->fd = open(path, readOnly ? O_RDONLY : O_RDWR, (mode_t)readOnly ? 0400 : 0600);
+    machO->fd = open(path, (readOnly ? O_RDONLY : O_RDWR) | O_EXLOCK, (mode_t)readOnly ? 0400 : 0600);
     if(machO->fd < 0)
     {
         free(machO->path);

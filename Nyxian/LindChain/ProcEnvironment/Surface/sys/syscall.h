@@ -43,9 +43,6 @@
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setsid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/wait4.h>
-#include <LindChain/ProcEnvironment/Surface/sys/fs/open.h>
-#include <LindChain/ProcEnvironment/Surface/sys/fs/faccessat.h>
-#include <LindChain/ProcEnvironment/Surface/sys/fs/getattrlist.h>
 #include <ksurface_config.h>
 
 typedef struct {

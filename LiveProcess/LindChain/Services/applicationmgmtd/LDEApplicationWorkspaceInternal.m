@@ -75,44 +75,34 @@
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
-    /* check if installed */
-    if(!self.isInstalled)
-    {
-        NSLog(@"[kupdate:1] kstrapped.plist missing, recovering directories from older Nyxian versions");
-        NSArray<NSString*> *containerHomeDirectories = [fileManager contentsOfDirectoryAtPath:homeDir error:nil];
-        for(NSString *dir in containerHomeDirectories)
-        {
-            [fileManager removeItemAtPath:dir error:nil];
-        }
-        
-        NSString *path = [NSString stringWithFormat:@"%s/Documents", dyld_get_mmap_sandbox_map_exec_allowed_path()];
+    /* just clearing the pk container */
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        NSString *docContainerPath = [NSString stringWithFormat:@"%s/Documents", dyld_get_mmap_sandbox_map_exec_allowed_path()];
+        NSString *tmpContainerPath = [NSString stringWithFormat:@"%s/tmp", dyld_get_mmap_sandbox_map_exec_allowed_path()];
+        NSString *libraryContainerPath = [NSString stringWithFormat:@"%s/Library", dyld_get_mmap_sandbox_map_exec_allowed_path()];
         NSError *error;
-        NSArray<NSString*> *pkContainerHomeDirectories = [fileManager contentsOfDirectoryAtPath:path error:&error];
+        NSArray<NSString*> *pkContainerHomeDirectories = [fileManager contentsOfDirectoryAtPath:docContainerPath error:&error];
         for(NSString *dir in pkContainerHomeDirectories)
         {
             NSString *lastPathComponent = [dir lastPathComponent];
             NSString *newPath = [homeDir stringByAppendingPathComponent:lastPathComponent];
-            [fileManager moveItemAtPath:lastPathComponent toPath:newPath error:nil];
+            [fileManager removeItemAtPath:newPath error:nil];
         }
-        
-        NSLog(@"[kupdate:1] old PKHome rootfs recovered");
-        self.version = 2;
-    }
-    
-    if(self.version < 3)
-    {
-        NSLog(@"[kupdate:2] moving those bundle and container dirs to their new path");
-        [fileManager removeItemAtURL:self.applicationsURL error:nil];
-        [fileManager removeItemAtURL:self.containersURL error:nil];
-        [fileManager createDirectoryAtURL:[self.applicationsURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-        [fileManager createDirectoryAtURL:[self.containersURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
-        [fileManager moveItemAtPath:[homeDir stringByAppendingPathComponent:@"/Bundle/Application"] toPath:self.applicationsURL.path error:nil];
-        [fileManager moveItemAtPath:[homeDir stringByAppendingPathComponent:@"/Data/Application"] toPath:self.containersURL.path error:nil];
-        [fileManager removeItemAtPath:[homeDir stringByAppendingPathComponent:@"/Bundle"] error:nil];
-        [fileManager removeItemAtPath:[homeDir stringByAppendingPathComponent:@"/Data"] error:nil];
-        NSLog(@"[kupdate:2] moved them");
-        self.version = 3;
-    }
+        NSArray<NSString*> *pkContainerTmpDirectories = [fileManager contentsOfDirectoryAtPath:tmpContainerPath error:&error];
+        for(NSString *dir in pkContainerTmpDirectories)
+        {
+            NSString *lastPathComponent = [dir lastPathComponent];
+            NSString *newPath = [homeDir stringByAppendingPathComponent:lastPathComponent];
+            [fileManager removeItemAtPath:newPath error:nil];
+        }
+        NSArray<NSString*> *pkContainerLibDirectories = [fileManager contentsOfDirectoryAtPath:libraryContainerPath error:&error];
+        for(NSString *dir in pkContainerLibDirectories)
+        {
+            NSString *lastPathComponent = [dir lastPathComponent];
+            NSString *newPath = [homeDir stringByAppendingPathComponent:lastPathComponent];
+            [fileManager removeItemAtPath:newPath error:nil];
+        }
+    });
     
     // Creating paths if they dont exist
     [fileManager createDirectoryAtURL:self.applicationsURL withIntermediateDirectories:YES attributes:nil error:nil];
