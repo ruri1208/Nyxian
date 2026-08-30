@@ -335,5 +335,8 @@ void ksurface_kinit(void)
     /* now mapping klog to its dev device position */
     NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
     NSString *entry_path = [NSString stringWithFormat:@"%@/Documents/klog.txt", NSHomeDirectory()];
-    rename([entry_path UTF8String], [kfd_path UTF8String]);
+    if(rename([entry_path UTF8String], [kfd_path UTF8String]) != 0)
+    {
+        perror("rename");
+    }
 }

@@ -36,11 +36,7 @@ class SettingsViewController: UIThemedTableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-#if DEBUG
-        return NXApplicationState.extensionLessMode ? 3 : 6
-#else
         return NXApplicationState.extensionLessMode ? 3 : 5
-#endif // DEBUG
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -120,15 +116,8 @@ class SettingsViewController: UIThemedTableViewController {
                 }
             case 3:
                 return CustomizationViewController(style: .insetGrouped)
-#if DEBUG
-            case 4:
-                return DebugToolboxViewController()
-            case 5:
-                return CreditsViewController(style: .insetGrouped)
-#else
             case 4:
                 return CreditsViewController(style: .insetGrouped)
-#endif // DEBUG
             default:
                 return nil
             }

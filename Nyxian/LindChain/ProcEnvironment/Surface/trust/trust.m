@@ -35,6 +35,7 @@
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
+#import <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <ksurface_config.h>
 
@@ -147,7 +148,6 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         CFDictionarySetValue(clean, schema[i].key, val);
     }
     
-    /* grant access automatically to executable and blastbox */
     CFMutableArrayRef rwPaths;
     CFArrayRef existing = CFDictionaryGetValue(clean, kNXT2EntitlementSandboxFileReadWrite);
     if(existing)
@@ -273,10 +273,10 @@ static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableStr
                 NSString *actualPath = PECanonicalizePath(path);
                 if(actualPath)
                 {
-                    NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:YES];
-                    if(sandboxExtension != nil)
+                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionReadWrite);
+                    if(extensions != nil)
                     {
-                        [filePermissions addObject:sandboxExtension];
+                        [filePermissions addObjectsFromArray:extensions];
                     }
                 }
             }
@@ -289,30 +289,13 @@ static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableStr
                 NSString *actualPath = PECanonicalizePath(path);
                 if(actualPath)
                 {
-                    NSData *sandboxExtension = [NXBootstrap issueSandboxFileExtensionForURL:[NSURL fileURLWithPath:actualPath] readWrite:NO];
-                    if(sandboxExtension != nil)
+                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionRead);
+                    if(extensions != nil)
                     {
-                        [filePermissions addObject:sandboxExtension];
+                        [filePermissions addObjectsFromArray:extensions];
                     }
                 }
             }
-        }
-        
-        /* extras */
-        NSData *devSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/devfs"]];
-        if(devSandboxExtension != nil)
-        {
-            [filePermissions addObject:devSandboxExtension];
-        }
-        NSData *bootSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs"]];
-        if(bootSandboxExtension != nil)
-        {
-            [filePermissions addObject:bootSandboxExtension];
-        }
-        NSData *kextSandboxExtension = [NXBootstrap issueReadOnlyUnsanitizedSandboxFileExtensionForURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/kextfs"]];
-        if(kextSandboxExtension != nil)
-        {
-            [filePermissions addObject:kextSandboxExtension];
         }
         return (__bridge_retained CFArrayRef)filePermissions;
     }

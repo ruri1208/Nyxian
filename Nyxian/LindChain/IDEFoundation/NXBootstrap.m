@@ -407,44 +407,4 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
     return self.version == NXBOOTSTRAP_NEWEST_VERSION;
 }
 
-+ (NSData*)issueSandboxFileExtensionForURL:(NSURL*)url
-                                 readWrite:(BOOL)readWrite
-{
-    if(!PEURLIsContainedIn(url, [[NXBootstrap shared] rootfsURL]))
-    {
-        return nil;
-    }
-    
-    extern char *sandbox_extension_issue_file(const char *ext_class, const char *path, uint32_t flags);
-    const char *cls = readWrite ? "com.apple.app-sandbox.read-write" : "com.apple.app-sandbox.read";    /* MARK: note that com.apple.sandbox.executable is the only class that doesn't work */
-    char *tok = sandbox_extension_issue_file(cls, url.path.UTF8String, 0);
-    if(tok == NULL)
-    {
-        return nil;
-    }
-    
-    NSData *data = [NSData dataWithBytes:tok length:strlen(tok) + 1];
-    free(tok);
-    return data;
-}
-
-+ (NSData*)issueSandboxFileExtensionForURL:(NSURL*)url
-{
-    return [self issueSandboxFileExtensionForURL:url readWrite:NO];
-}
-
-+ (NSData * _Nullable)issueReadOnlyUnsanitizedSandboxFileExtensionForURL:(NSURL*)url
-{
-    extern char *sandbox_extension_issue_file(const char *ext_class, const char *path, uint32_t flags);
-    char *tok = sandbox_extension_issue_file("com.apple.app-sandbox.read", url.path.UTF8String, 0);
-    if(tok == NULL)
-    {
-        return nil;
-    }
-    
-    NSData *data = [NSData dataWithBytes:tok length:strlen(tok) + 1];
-    free(tok);
-    return data;
-}
-
 @end

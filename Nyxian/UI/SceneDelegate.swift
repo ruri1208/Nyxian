@@ -173,7 +173,7 @@ struct UIOnboardingHelper {
                           : UIColor(red: 0.55, green: 0.45, blue: 0.85, alpha: 1.0)
                       },
                       title: "MobileDevelopmentKit",
-                      description: "A completely FOSS LLVM, Swift, Clang, and LLD toolchain running natively on iOS, powering compilation and linking completely on-device without any overpriced cloud services or subscriptions."),
+                      description: "A completely FOSS LLVM, Swift, Clang, and LLD toolchain running natively on iOS, powering compilation and linkage completely on-device without any overpriced cloud services or subscriptions."),
             
                 .init(icon: UIImage(systemName: "cpu.fill")!,
                       iconTint: UIColor { trait in
