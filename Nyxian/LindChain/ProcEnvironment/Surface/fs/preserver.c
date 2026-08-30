@@ -33,6 +33,7 @@
 #include <limits.h>
 #include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
+#include <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
 
 #define PRES_MAX_NODES    1024
 #define PRES_DEBOUNCE_NS  (20ull * NSEC_PER_MSEC)
@@ -393,19 +394,63 @@ static void arm_watch(uint32_t widx)
     dispatch_resume(w->src);
 }
 
+static int cmp_depth(const void *a,
+                     const void *b)
+{
+    uint16_t da = g_node[*(const uint32_t *)a].depth;
+    uint16_t db = g_node[*(const uint32_t *)b].depth;
+    return (da > db) - (da < db);
+}
+
+static void rebuild_order(void)
+{
+    for(uint32_t i = 0; i < g_node_count; i++)
+    {
+        g_order[i] = i;
+    }
+    qsort(g_order, g_node_count, sizeof g_order[0], cmp_depth);
+}
+
 static uint32_t watch_for_dir(const char *dir)
 {
+    int free_idx = -1;
     for(uint32_t i = 0; i < g_watch_count; i++)
     {
         if(strcmp(g_watch[i].dir, dir) == 0)
         {
             return i;
         }
+        if(g_watch[i].dir[0] == '\0' && free_idx < 0)
+        {
+            free_idx = i;
+        }
     }
-    uint32_t i = g_watch_count++;
+    
+    uint32_t i = (free_idx >= 0) ? (uint32_t)free_idx : g_watch_count++;
     strlcpy(g_watch[i].dir, dir, PATH_MAX);
     g_watch[i].fd = -1;
+    g_watch[i].src = NULL;
+    g_watch[i].rearming = false;
+    g_watch[i].sweep_pending = false;
     return i;
+}
+
+static void unwatch_if_orphaned(uint32_t widx)
+{
+    for(uint32_t i = 0; i < g_node_count; i++)
+    {
+        if(g_node[i].watch == widx) return;
+    }
+    
+    pres_watch_t *w = &g_watch[widx];
+    if(w->src)
+    {
+        dispatch_source_cancel(w->src);
+    }
+    
+    w->dir[0] = '\0';
+    w->rearming = false;
+    w->sweep_pending = false;
 }
 
 static kern_return_t pres_append_locked(FSNodeType type,
@@ -444,7 +489,24 @@ static kern_return_t pres_append_locked(FSNodeType type,
     path_parent(n->path, n->dir, PATH_MAX);
     n->depth  = path_depth(n->path);
     n->intact = false;
+    
+    if(g_started)
+    {
+        n->watch = watch_for_dir(n->dir);
+    }
+    
     g_node_count++;
+    
+    if(g_started)
+    {
+        rebuild_order();
+        pres_watch_t *w = &g_watch[n->watch];
+        if(w->fd < 0 && !w->rearming && !w->src)
+        {
+            arm_watch(n->watch);
+        }
+        sweep_node(g_node_count - 1);
+    }
     
     return KERN_SUCCESS;
 }
@@ -453,65 +515,43 @@ kern_return_t ksurface_fs_preserver_add_node(FSPreserverNode node)
 {
     __block kern_return_t kr;
     dispatch_sync(pres_queue(), ^{
-        if(g_started)
-        {
-            kr = KERN_FAILURE;
-            return;
-        }
         kr = pres_append_locked(node.type, node.name, node.type == kFSNodeTypeSymbolicLink ? node.target : NULL);
     });
     return kr;
 }
 
-kern_return_t ksurface_fs_preserver_add_nodes(const FSPreserverDesc *v,
-                                              size_t count,
-                                              size_t *failed_index)
+kern_return_t ksurface_fs_preserver_remove_node(const char *path)
 {
-    if(!v || count == 0)
+    if(path == NULL)
     {
         return KERN_INVALID_ARGUMENT;
     }
     
     __block kern_return_t kr = KERN_SUCCESS;
-    __block size_t bad = 0;
-    
     dispatch_sync(pres_queue(), ^{
-        if(g_started)
+        int idx = node_index_for_path(path);
+        if(idx < 0)
         {
             kr = KERN_FAILURE;
             return;
         }
         
-        uint32_t mark = g_node_count;
-        for(size_t i = 0; i < count; i++)
-        {
-            kr = pres_append_locked(v[i].type, v[i].name, v[i].target);
-            if(kr != KERN_SUCCESS)
-            {
-                bad = i;
-                break;
-            }
-        }
+        uint32_t old_watch = g_node[idx].watch;
         
-        if(kr != KERN_SUCCESS)
+        for(uint32_t i = idx; i < g_node_count - 1; i++)
         {
-            g_node_count = mark;
+            g_node[i] = g_node[i + 1];
+        }
+        g_node_count--;
+        
+        if(g_started)
+        {
+            rebuild_order();
+            unwatch_if_orphaned(old_watch);
         }
     });
     
-    if(kr != KERN_SUCCESS && failed_index)
-    {
-        *failed_index = bad;
-    }
     return kr;
-}
-
-static int cmp_depth(const void *a,
-                     const void *b)
-{
-    uint16_t da = g_node[*(const uint32_t *)a].depth;
-    uint16_t db = g_node[*(const uint32_t *)b].depth;
-    return (da > db) - (da < db);
 }
 
 kern_return_t ksurface_fs_preserver_kickstart(void)

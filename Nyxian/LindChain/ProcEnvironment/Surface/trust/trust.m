@@ -273,7 +273,7 @@ static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableStr
                 NSString *actualPath = PECanonicalizePath(path);
                 if(actualPath)
                 {
-                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionReadWrite);
+                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_sandbox_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionReadWrite);
                     if(extensions != nil)
                     {
                         [filePermissions addObjectsFromArray:extensions];
@@ -289,7 +289,7 @@ static CFArrayRef trust_identity_give_file_permissions(CFStringRef executableStr
                 NSString *actualPath = PECanonicalizePath(path);
                 if(actualPath)
                 {
-                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionRead);
+                    NSArray<NSData*> *extensions = (__bridge_transfer NSArray<NSData*>*)ksurface_fs_sandbox_copy_sandbox_extensions(actualPath.UTF8String, kFSMountPermissionRead);
                     if(extensions != nil)
                     {
                         [filePermissions addObjectsFromArray:extensions];

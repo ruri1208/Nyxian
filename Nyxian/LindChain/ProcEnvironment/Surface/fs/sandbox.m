@@ -51,7 +51,6 @@ typedef struct {
 
 static FSMountRecord g_records[KSURFACE_FS_MAX_MOUNTS];
 static size_t g_record_count = 0;
-static bool g_sealed = false;
 static os_unfair_lock g_lock = OS_UNFAIR_LOCK_INIT;
 static char g_home[PATH_MAX];
 
@@ -139,10 +138,10 @@ static bool fs_issuable(const char *phys)
     return (g_home[0] && fs_contains(g_home, phys));
 }
 
-kern_return_t ksurface_fs_registry_add(FSMountPermissionFlags permission,
-                                       FSNodeType type,
-                                       const char *mount_dir,
-                                       const char *bind_dir)
+kern_return_t ksurface_fs_sandbox_registry_add(FSMountPermissionFlags permission,
+                                               FSNodeType type,
+                                               const char *mount_dir,
+                                               const char *bind_dir)
 {
     if(mount_dir == NULL)
     {
@@ -158,7 +157,7 @@ kern_return_t ksurface_fs_registry_add(FSMountPermissionFlags permission,
     
     os_unfair_lock_lock(&g_lock);
     
-    if(g_sealed || g_record_count >= KSURFACE_FS_MAX_MOUNTS)
+    if(g_record_count >= KSURFACE_FS_MAX_MOUNTS)
     {
         os_unfair_lock_unlock(&g_lock);
         return KERN_RESOURCE_SHORTAGE;
@@ -173,6 +172,27 @@ kern_return_t ksurface_fs_registry_add(FSMountPermissionFlags permission,
     {
         strlcpy(r->bind, bind_dir, PATH_MAX);
     }
+    
+    /* sealing mount dynamically */
+    fs_resolve(r->decl, (ssize_t)g_record_count, r->site, PATH_MAX, NULL);
+    if(r->type == kFSNodeTypeSymbolicLink)
+    {
+        fs_resolve(r->bind, (ssize_t)g_record_count, r->phys, PATH_MAX, NULL);
+    }
+    else
+    {
+        strlcpy(r->phys, r->site, PATH_MAX);
+    }
+    char canon[PATH_MAX];
+    if(realpath(r->phys, canon) != NULL)
+    {
+        strlcpy(r->phys, canon, PATH_MAX);
+    }
+    else
+    {
+        klog_log("ksurface:fs:sandbox", "unmaterialized mount: %s (%s)", r->phys, strerror(errno));
+    }
+    
     g_record_count++;
     
     os_unfair_lock_unlock(&g_lock);
@@ -200,52 +220,14 @@ static void fs_env_init(void)
     });
 }
 
-kern_return_t ksurface_fs_registry_seal(void)
+kern_return_t ksurface_fs_sandbox_init(void)
 {
     fs_env_init();
-    
     if(g_home[0] == '\0')
     {
-        klog_log("ksurface:fs:sandbox", "HOME unset, refusing to seal");
+        klog_log("ksurface:fs:sandbox", "HOME unset, refusing to initialize");
         return KERN_FAILURE;
     }
-    
-    os_unfair_lock_lock(&g_lock);
-    
-    if(g_sealed)
-    {
-        os_unfair_lock_unlock(&g_lock);
-        klog_log("ksurface:fs:sandbox", "registry already sealed");
-        return KERN_SUCCESS;
-    }
-    
-    for(size_t i = 0; i < g_record_count; i++)
-    {
-        FSMountRecord *r = &g_records[i];
-        fs_resolve(r->decl, (ssize_t)i, r->site, PATH_MAX, NULL);
-        if(r->type == kFSNodeTypeSymbolicLink)
-        {
-            fs_resolve(r->bind, (ssize_t)i, r->phys, PATH_MAX, NULL);
-        }
-        else
-        {
-            strlcpy(r->phys, r->site, PATH_MAX);
-        }
-        char canon[PATH_MAX];
-        if(realpath(r->phys, canon) != NULL)
-        {
-            strlcpy(r->phys, canon, PATH_MAX);
-        }
-        else
-        {
-            klog_log("ksurface:fs:sandbox", "unmaterialized mount: %s (%s)", r->phys, strerror(errno));
-        }
-    }
-    
-    g_sealed = true;
-    os_unfair_lock_unlock(&g_lock);
-    
-    klog_log("ksurface:fs:sandbox", "sealed %zu mount records", g_record_count);
     return KERN_SUCCESS;
 }
 
@@ -305,8 +287,8 @@ static FSMountPermissionFlags fs_backing_permission(const char *phys)
     return best;
 }
 
-CFArrayRef ksurface_fs_copy_sandbox_extensions(const char *path,
-                                               FSMountPermissionFlags wanted)
+CFArrayRef ksurface_fs_sandbox_copy_sandbox_extensions(const char *path,
+                                                       FSMountPermissionFlags wanted)
 {
     if(path == NULL || path[0] != '/')
     {
@@ -318,12 +300,6 @@ CFArrayRef ksurface_fs_copy_sandbox_extensions(const char *path,
     }
     
     os_unfair_lock_lock(&g_lock);
-    if(!g_sealed)
-    {
-        os_unfair_lock_unlock(&g_lock);
-        klog_log("ksurface:fs:sandbox", "extension request before seal");
-        return NULL;
-    }
     
     FSRegion *regs = calloc(KSURFACE_FS_MAX_REGIONS, sizeof(FSRegion));
     size_t nregs = 0;
@@ -432,7 +408,7 @@ CFArrayRef ksurface_fs_copy_sandbox_extensions(const char *path,
             continue;
         }
         
-        const char *cls = (regs[i].perm == kFSMountPermissionReadWrite) ? "com.apple.app-sandbox.read-write" : "com.apple.app-sandbox.read";
+        const char *cls = (regs[i].perm == kFSMountPermissionReadWrite) ? kFSExtClassReadWrite : kFSExtClassRead;
         char *tok = sandbox_extension_issue_file(cls, regs[i].phys, 0);
         if(tok == NULL)
         {

@@ -20,20 +20,58 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/fs/mount.h>
+#include <sys/stat.h>
 #include <string.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <limits.h>
 
-kern_return_t ksurface_fs_mount(FSMountPermissionFlags permissions,
-                                const char *mount_dir,
-                                const char *bind_dir)
+static kern_return_t __ksurface_fs_mount_clear_directory(const char *dir_path)
 {
-    if(mount_dir == NULL || mount_dir[0] != '/')
+    DIR *dir = opendir(dir_path);
+    if(!dir)
     {
-        return KERN_INVALID_ARGUMENT;
+        return KERN_NOT_FOUND;
     }
     
-    if(permissions != kFSMountPermissionNone &&
-       permissions != kFSMountPermissionRead &&
-       permissions != kFSMountPermissionReadWrite)
+    struct dirent *entry;
+    char path[PATH_MAX];
+    
+    while((entry = readdir(dir)) != NULL)
+    {
+        if(strcmp(entry->d_name, ".") == 0 ||
+           strcmp(entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+        
+        snprintf(path, sizeof(path), "%s/%s", dir_path, entry->d_name);
+        
+        struct stat statbuf;
+        if(lstat(path, &statbuf) == 0)
+        {
+            if(S_ISDIR(statbuf.st_mode))
+            {
+                __ksurface_fs_mount_clear_directory(path);
+                rmdir(path);
+            }
+            else
+            {
+                unlink(path);
+            }
+        }
+    }
+    
+    closedir(dir);
+    return KERN_SUCCESS;
+}
+
+kern_return_t ksurface_fs_mount(FSMountAttr attributes,
+                                const char *mount_dir,
+                                const char *bind_dir,
+                                ...)
+{
+    if(mount_dir == NULL || mount_dir[0] != '/')
     {
         return KERN_INVALID_ARGUMENT;
     }
@@ -43,8 +81,50 @@ kern_return_t ksurface_fs_mount(FSMountPermissionFlags permissions,
         return KERN_INVALID_ARGUMENT;
     }
     
+    /* check for yet unsupported flags */
+    if(attributes & (kFSMountAttrReadPlatform | kFSMountAttrWritePlatform | kFSMountAttrReadEntitlement | kFSMountAttrWriteEntitlement))
+    {
+        return KERN_NOT_SUPPORTED;
+    }
+    
+    /* manage permissions */
+    FSMountPermissionFlags permissions = kFSMountPermissionNone;
+    if((attributes & kFSMountAttrWrite) && !(attributes & kFSMountAttrRead))
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    if(attributes & kFSMountAttrWrite)
+    {
+        permissions = kFSMountPermissionReadWrite;
+    }
+    else if(attributes & kFSMountAttrRead)
+    {
+        permissions = kFSMountPermissionRead;
+    }
+    else
+    {
+        permissions = kFSMountPermissionNone;
+    }
+    
     /* if bind_dir is givven it becomes a directory */
     FSNodeType type = (bind_dir != NULL) ? kFSNodeTypeSymbolicLink : kFSNodeTypeDirectory;
+    
+    /* shall this be cleared? */
+    if(attributes & kFSMountAttrClear)
+    {
+        switch(type)
+        {
+            case kFSNodeTypeDirectory:
+                __ksurface_fs_mount_clear_directory(mount_dir);
+                break;
+            case kFSNodeTypeSymbolicLink:
+                __ksurface_fs_mount_clear_directory(bind_dir);
+                break;
+            default:
+                return KERN_FAILURE;
+        }
+    }
     
     /* preparing node */
     FSPreserverNode node = { .type = type, 0 };
@@ -61,5 +141,5 @@ kern_return_t ksurface_fs_mount(FSMountPermissionFlags permissions,
         return kr;
     }
     
-    return ksurface_fs_registry_add(permissions, type, mount_dir, bind_dir);
+    return ksurface_fs_sandbox_registry_add(permissions, type, mount_dir, bind_dir);
 }

@@ -68,10 +68,10 @@
     NSString *homeDir = NSHomeDirectory();
     self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/containers/Bundle/Application"]];
     self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile/Containers/Data/Application"]];
-    self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"usr/bin"]];
-    self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/mobile"]];
-    self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"tmp"]];
-    self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"kstrapped.plist"]];
+    self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/usr/bin"]];
+    self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile"]];
+    self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/root/tmp/bootstrapd"]];
+    self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/kstrapped.plist"]];
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
