@@ -27,6 +27,24 @@
 #include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 #include <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
 
-kern_return_t ksurface_fs_mount(FSMountPermissionFlags permissions, const char *mount_dir, const char *bind_dir);
+typedef CF_OPTIONS(UInt64, FSMountAttr) {
+    kFSMountAttrNone                    = 0,
+    kFSMountAttrRead                    = 1ull << 0,    /* grants read access in file system sandbox */
+    kFSMountAttrWrite                   = 1ull << 1,    /* grants write access in file system sandbox MARK: kFSMountAttrRead is required for this, otherwise will error with KERN_INVALID_ARGUMENT */
+    kFSMountAttrClear                   = 1ull << 2,    /* clears the mount_dir or bind_dir if passed */
+    kFSMountAttrReadPlatform            = 1ull << 3,    /* grants read access in file system sandbox if it is a platform process        TODO: not supported yet */
+    kFSMountAttrWritePlatform           = 1ull << 4,    /* grants write access in file system sandbox if it is a platform process       TODO: not supported yet */
+    kFSMountAttrReadEntitlement         = 1ull << 5,    /* grants read access in file system sandbox if a specific entitlement is met   TODO: not supported yet */
+    kFSMountAttrWriteEntitlement        = 1ull << 6,    /* grants write access in file system sandbox if a specific entitlement is met  TODO: not supported yet */
+};
+
+/* TODO: not supported yet */
+typedef struct {
+    CFStringRef readEntitlement;
+    CFStringRef writeEntitlement;
+} kFSMountAttrEntitlementDefinition;
+
+/* FIXME: mount_dir shall become src_dir and bind_dir the mount_dir */
+kern_return_t ksurface_fs_mount(FSMountAttr attributes, const char *mount_dir, const char *bind_dir, ...);
 
 #endif /* FS_MOUNT_H */

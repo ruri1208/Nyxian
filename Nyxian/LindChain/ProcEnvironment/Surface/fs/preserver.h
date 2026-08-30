@@ -38,15 +38,15 @@ typedef struct {
     char target[PATH_MAX];
 } FSPreserverNode;
 
-kern_return_t ksurface_fs_preserver_add_node(FSPreserverNode node);
-
 typedef struct {
     FSNodeType type;
     const char *name;
     const char *target;
 } FSPreserverDesc;
 
-kern_return_t ksurface_fs_preserver_add_nodes(const FSPreserverDesc *v, size_t count, size_t *failed_index);
+kern_return_t ksurface_fs_preserver_add_node(FSPreserverNode node);
+kern_return_t ksurface_fs_preserver_remove_node(const char *path);
+
 kern_return_t ksurface_fs_preserver_kickstart(void);
 
 #endif /* KSURFACE_FS_PRESERVER_H */
