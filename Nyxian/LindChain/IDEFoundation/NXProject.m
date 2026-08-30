@@ -281,7 +281,13 @@
                     @"CFBundleIdentifier": @"$(NXBundleIdentifier)",
                     @"CFBundleVersion": @"$(NXBundleVersion)",
                     @"CFBundleShortVersionString": @"$(NXBundleShortVersion)",
-                    @"PEMinimumVersion": [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
+                    @"PEDependencies": @[
+                        @"ksurface<min:0.11.4,max:0.11.4>",
+                        /*
+                         * you define the next dependency kexts your self by their bundleid,
+                         * in the future that will alter the kext load chain
+                         */
+                    ],
                 },
                 @"NXBundleVersion": @"1.0",
                 @"NXBundleShortVersion": @"1.0",
@@ -475,7 +481,7 @@
 - (NSURL*)resourcesURL { return [self.url URLByAppendingPathComponent:@"Resources"]; }
 - (NSURL*)payloadURL { return [self.cacheURL URLByAppendingPathComponent:@"Payload"]; }
 - (NSURL*)bundleURL {
-    if(self.projectConfig.formatKind == NXProjectSchemeKindKSurfaceKext)
+    if(self.projectConfig.schemeKind == NXProjectSchemeKindKSurfaceKext)
     {
         return [self.cacheURL  URLByAppendingPathComponent:[self.projectConfig.bundleid stringByAppendingPathExtension:@"kext"]];
     }

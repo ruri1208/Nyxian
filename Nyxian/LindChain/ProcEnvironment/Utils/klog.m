@@ -26,11 +26,13 @@
 /* not the kfd exploit dummy >:3 */
 int kfd = -1;
 
-static struct timespec g_process_start_time;
+struct timespec g_process_start_time;
+struct timespec g_process_start_time_sysctl;
 
 __attribute__((constructor))
 static void init_process_start_time(void)
 {
+    clock_gettime(CLOCK_REALTIME, &g_process_start_time_sysctl);
     clock_gettime(CLOCK_MONOTONIC, &g_process_start_time);
 }
 

@@ -42,10 +42,10 @@ sed -i -e "/BUILD_NUMBER =/ s/= .*/= $new_build_number/" Config.xcconfig
 rm -f Config.xcconfig-e
 
 # Exporting all headers
-KERNEL_SOURCE_DIR="$SRCROOT/Nyxian"
-SHARED_KERNEL_DIR="$SRCROOT/Shared/kernel"
+KERNEL_SOURCE_DIR="Nyxian"
+SHARED_KERNEL_DIR="Shared/kernel"
 rm -rf "$SHARED_KERNEL_DIR"
 mkdir -p "$SHARED_KERNEL_DIR"
 rsync -am --include='*/' --include='*.h' --exclude='*' "$KERNEL_SOURCE_DIR/" "$SHARED_KERNEL_DIR/"
-cp "$SRCROOT/ksurface_config.h" "$SRCROOT/Shared/kernel/ksurface_config.h"
-cp "$SRCROOT/ksurface_abi.h" "$SRCROOT/Shared/kernel/ksurface_abi.h"
+cp "ksurface_config.h" "Shared/kernel/ksurface_config.h"
+cp "ksurface_abi.h" "Shared/kernel/ksurface_abi.h"

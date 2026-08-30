@@ -26,6 +26,7 @@
 #include <sys/sysctl.h>
 #include <regex.h>
 #include <ksurface_config.h>
+#include <LindChain/ProcEnvironment/Utils/klog.h>
 
 /* sysctl defs */
 typedef struct {
@@ -329,7 +330,7 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
         req->err = EINVAL;
         return -1;
     }
-
+    
     pid_t pid = (pid_t)req->name[2];
 #if KSURFACE_EMIT_KERNEL_TASK
     if(pid == 0)
@@ -338,7 +339,7 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
         return -1;
     }
 #endif /* KSURFACE_EMIT_KERNEL_TASK */
-
+    
     size_t user_outlen = 0;
     if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
@@ -349,14 +350,14 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     kinfo_proc_t *kpbuf = NULL;
     size_t needed = 0;
     kern_return_t ksr = proc_list(req->proc_snapshot, &kpbuf, &needed, PROC_FLV_PID, pid); /* TODO: efficency using proc lookup api on PROC_FLV_PID, as its one pid and radix lookup gives you proc structure for one pid */
-
+    
     if (ksr != KERN_SUCCESS || needed == 0 || kpbuf == NULL)
     {
         req->err = ESRCH;
         free(kpbuf);
         return -1;
     }
-
+    
     /*
      * for now we do it with p_comm, i don't think
      * I HAVE TO REPEAT THAT PCOMM IS NOT LAST
@@ -370,21 +371,21 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     int argc = 1;
     size_t comm_len = strlen(comm) + 1;
     size_t bufsize  = sizeof(int) + comm_len + comm_len;
-
+    
     uint8_t *buf = calloc(1, bufsize);
     if(buf == NULL)
     {
         req->err = ENOMEM;
         return -1;
     }
-
+    
     uint8_t *p = buf;
     memcpy(p, &argc, sizeof(int));
     p += sizeof(int);
     memcpy(p, comm, comm_len);
     p += comm_len;
     memcpy(p, comm, comm_len);
-
+    
     /* size-only query */
     if(req->oldp == NULL)
     {
@@ -397,7 +398,7 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
         free(buf);
         return 0;
     }
-
+    
     if(user_outlen < bufsize)
     {
         if(req->oldlenp != NULL)
@@ -408,21 +409,21 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
         free(buf);
         return -1;
     }
-
+    
     if(!mach_syscall_copy_out(req->task, bufsize, buf, req->oldp))
     {
         req->err = EFAULT;
         free(buf);
         return -1;
     }
-
+    
     if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp))
     {
         req->err = EFAULT;
         free(buf);
         return -1;
     }
-
+    
     free(buf);
     return 0;
 }
@@ -432,7 +433,7 @@ int sysctl_kernargmax(sysctl_req_t *req)
     size_t user_outlen = 0;
     size_t needed = sizeof(int);
     int argmax = ARG_MAX;
-
+    
     if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
@@ -446,7 +447,7 @@ int sysctl_kernargmax(sysctl_req_t *req)
             req->err = ENOMEM;
             return -1;
         }
-
+        
         if(!mach_syscall_copy_out(req->task, sizeof(int), &argmax, req->oldp))
         {
             req->err = EFAULT;
@@ -459,13 +460,53 @@ int sysctl_kernargmax(sysctl_req_t *req)
         req->err = EFAULT;
         return -1;
     }
+    
+    return 0;
+}
 
+int sysctl_kernboottime(sysctl_req_t *req)
+{
+    size_t user_outlen = 0;
+    size_t needed = sizeof(struct timeval);
+    struct timeval kval = {
+        .tv_sec = g_process_start_time_sysctl.tv_sec,
+        .tv_usec = (__darwin_suseconds_t)(g_process_start_time_sysctl.tv_nsec / 1000),
+    };
+    
+    if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+    {
+        req->err = EFAULT;
+        return -1;
+    }
+    
+    if(req->oldp)
+    {
+        if(user_outlen < needed)
+        {
+            req->err = ENOMEM;
+            return -1;
+        }
+        
+        if(!mach_syscall_copy_out(req->task, sizeof(struct timeval), &kval, req->oldp))
+        {
+            req->err = EFAULT;
+            return -1;
+        }
+    }
+    
+    if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+    {
+        req->err = EFAULT;
+        return -1;
+    }
+    
     return 0;
 }
 
 /* sysctl map entries */
 static const sysctl_map_entry_t sysctl_map[] = {
     { { CTL_KERN, KERN_HOSTNAME                 }, 2, sysctl_kernhostname },
+    { { CTL_KERN, KERN_BOOTTIME                 }, 2, sysctl_kernboottime },
 #if KSURFACE_SYS_PROC_ENABLED
     { { CTL_KERN, KERN_MAXPROC                  }, 2, sysctl_kernmaxproc },
     { { CTL_KERN, KERN_PROC, KERN_PROC_ALL      }, 3, sysctl_kernproc },
@@ -480,10 +521,11 @@ static const sysctl_map_entry_t sysctl_map[] = {
 
 static const sysctl_name_map_entry_t sysctl_name_map[] = {
     { "kern.hostname",          &sysctl_map[0] },
+    { "kern.boottime",          &sysctl_map[1] },
 #if KSURFACE_SYS_PROC_ENABLED
-    { "kern.maxproc",           &sysctl_map[1] },
-    { "kern.proc.all",          &sysctl_map[2] },
-    { "kern.argmax",            &sysctl_map[3] },
+    { "kern.maxproc",           &sysctl_map[2] },
+    { "kern.proc.all",          &sysctl_map[3] },
+    { "kern.argmax",            &sysctl_map[4] },
 #endif /* KSURFACE_SYS_PROC_ENABLED */
 };
 

@@ -104,6 +104,13 @@
     /* now we can spin up that baby (micro kernel) =3 */
     ksurface_kinit();
     
+    if(enabled)
+    {
+        klog_log(domain, "loading kexts into address space");
+        kern_return_t kr = ksurface_fs_load_all_kext();
+        klog_log(domain, "kext loader %s", kr == KERN_SUCCESS ? "[ok]" : "[fail]");
+    }
+    
     /* now the actual userspace */
     Class UserspaceBootChain[] = {
         [PEProcessManager class],
@@ -131,13 +138,6 @@
     /* mark current boot as successful */
     atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
     atomic_store_explicit(&_bootSuccessful, true, memory_order_release);
-    
-    if(enabled)
-    {
-        klog_log(domain, "loading kexts into address space");
-        kern_return_t kr = ksurface_fs_load_all_kext();
-        klog_log(domain, "kext loader %s", kr == KERN_SUCCESS ? "[ok]" : "[fail]");
-    }
     
     os_unfair_lock_unlock(&_lock);
 }

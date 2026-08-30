@@ -119,7 +119,6 @@ kern_return_t kext_load_at_path(const char *path,
     loadedHandle = dlopen(path, RTLD_LAZY);
     if(loadedHandle == NULL)
     {
-        printf("%s\n", dlerror());
         klog_log("ksurface:kext:load", "failed to load handle: %s", dlerror());
         kext_table_unlock();
         return KERN_INVALID_ARGUMENT;

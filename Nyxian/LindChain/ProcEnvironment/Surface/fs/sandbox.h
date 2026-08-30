@@ -19,31 +19,23 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KLOG_H
-#define KLOG_H
+#ifndef KSURFACE_FS_SANDBOX_H
+#define KSURFACE_FS_SANDBOX_H
 
-#if __OBJC__
-#import <Foundation/Foundation.h>
-#endif /* __OBJC__ */
+#include <CoreFoundation/CoreFoundation.h>
+#include <mach/mach.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 
-extern struct timespec g_process_start_time;
-extern struct timespec g_process_start_time_sysctl;;
+typedef enum: UInt8 {
+    kFSMountPermissionNone      = 0,
+    kFSMountPermissionRead      = 1,
+    kFSMountPermissionReadWrite = 2,
+} FSMountPermissionFlags;
 
-#if HOST_ENV
+kern_return_t ksurface_fs_registry_add(FSMountPermissionFlags permission, FSNodeType type, const char *mount_dir, const char *bind_dir);
+kern_return_t ksurface_fs_registry_seal(void);
+CFArrayRef ksurface_fs_copy_sandbox_extensions(const char *guest_path, FSMountPermissionFlags wanted);
 
-#define klog_log(system, format, ...) \
-    klog_log_internal((system), (format), ##__VA_ARGS__)
-
-#else
-
-#define klog_log(system, format, ...)
-
-#endif
-
-void klog_log_internal(const char *system, const char *format, ...);
-
-#if __OBJC__
-NSString *klog_dump(void);
-#endif /* __OBJC__ */
-
-#endif /* KLOG_H */
+#endif /* KSURFACE_FS_SANDBOX_H */

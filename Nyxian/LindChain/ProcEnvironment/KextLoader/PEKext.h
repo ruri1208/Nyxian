@@ -19,31 +19,25 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KLOG_H
-#define KLOG_H
+#ifndef PEKEXT_H
+#define PEKEXT_H
 
-#if __OBJC__
 #import <Foundation/Foundation.h>
-#endif /* __OBJC__ */
+#import <LindChain/ProcEnvironment/KextLoader/PEDependency.h>
 
-extern struct timespec g_process_start_time;
-extern struct timespec g_process_start_time_sysctl;;
+@interface PEKext : NSObject
 
-#if HOST_ENV
+@property (nonatomic,copy) NSString *executablePath;
+@property (nonatomic,copy) NSString *bundlePath;
+@property (nonatomic,copy) NSString *bundleID;
+@property (nonatomic,copy) NSString *version;
+@property (nonatomic,strong) NSArray<PEDependency*> *dependencies;
 
-#define klog_log(system, format, ...) \
-    klog_log_internal((system), (format), ##__VA_ARGS__)
+- (instancetype)initWithPath:(NSString*)path;
 
-#else
++ (instancetype)ksurfaceMainKext;
++ (NSArray<PEKext*>*)generateLoadChainForPath:(NSString*)path;
 
-#define klog_log(system, format, ...)
+@end
 
-#endif
-
-void klog_log_internal(const char *system, const char *format, ...);
-
-#if __OBJC__
-NSString *klog_dump(void);
-#endif /* __OBJC__ */
-
-#endif /* KLOG_H */
+#endif /* PEKEXT_H */

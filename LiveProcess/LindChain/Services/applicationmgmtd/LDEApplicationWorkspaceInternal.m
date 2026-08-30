@@ -72,7 +72,6 @@
     self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/mobile"]];
     self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"tmp"]];
     self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"kstrapped.plist"]];
-    self.blastboxURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/blastbox"]];    /* we pissn on you blastbox xD */
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
@@ -121,7 +120,6 @@
     [fileManager createDirectoryAtURL:self.binaryURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.homeURL withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/root"]] withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/blastbox"]] withIntermediateDirectories:YES attributes:nil error:nil];
     [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
     
     // Enumerating all app bundles
@@ -457,7 +455,7 @@ create_container:
         return NO;
     }
     
-    NSURL *graveURL = [self.blastboxURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSURL *graveURL = [self.tmpURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     if([fileManager moveItemAtURL:url toURL:graveURL error:nil])
     {
         return YES;
@@ -495,10 +493,9 @@ create_container:
 
 - (void)drainBlastbox
 {
-    NSURL *blastboxURL = self.blastboxURL;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
         NSFileManager *fileManager = [[NSFileManager alloc] init];
-        NSArray<NSURL *> *graves = [fileManager contentsOfDirectoryAtURL:blastboxURL includingPropertiesForKeys:nil options:0 error:nil];
+        NSArray<NSURL *> *graves = [fileManager contentsOfDirectoryAtURL:self.tmpURL includingPropertiesForKeys:nil options:0 error:nil];
         for(NSURL *grave in graves)
         {
             [fileManager removeItemAtURL:grave error:nil];

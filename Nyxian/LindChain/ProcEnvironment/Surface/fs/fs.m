@@ -30,6 +30,7 @@
 #include <LindChain/ProcEnvironment/Surface/kext.h>
 #include <LindChain/ProcEnvironment/Shims/panic.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
+#import <LindChain/ProcEnvironment/KextLoader/PEKext.h>
 #include <mach/mach.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,31 +54,36 @@ kern_return_t ksurface_fs_init(void)
     kextFSRoot = [NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home];
     
     /* main mounts */
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionNone,       [[NSString stringWithFormat:@"%s/Documents/mntfs", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String], NULL);
     
     /* bind mounts */
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String]);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/bootloader", home] UTF8String], NSBundle.mainBundle.bundlePath.UTF8String);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/headers", home] UTF8String], [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/kernel"] UTF8String]);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kexts", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String]);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/dev", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String]);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/boot", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/bootloader", home] UTF8String], NSBundle.mainBundle.bundlePath.UTF8String);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/headers", home] UTF8String], [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/kernel"] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kexts", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/dev", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/boot", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String]);
     
     /* root mounts */
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/tmp", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/mobile", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/root", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/bin", home] UTF8String], NULL);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/sbin", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/tmp", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/mobile", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/root", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/mobile/tmp", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/root/tmp", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/mobile/Documents", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/var/root/Documents", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/bin", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/sbin", home] UTF8String], NULL);
+    ksurface_fs_mount(kFSMountPermissionRead,       [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/System/Library/LaunchDaemons/org.emexlabs.bootstrapd.plist", home] UTF8String], [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.bootstrapd.plist"] UTF8String]);
     
     /* root bind mounts */
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/bin", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/bin", home] UTF8String]);
-    ksurface_fs_mount([[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/sbin", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/sbin", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/bin", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/bin", home] UTF8String]);
+    ksurface_fs_mount(kFSMountPermissionReadWrite,  [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/sbin", home] UTF8String], [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/sbin", home] UTF8String]);
     
     klog_log("ksurface:fs", "starting mount preserver");
     kern_return_t kr = ksurface_fs_preserver_kickstart();
@@ -87,7 +93,8 @@ kern_return_t ksurface_fs_init(void)
         return KERN_FAILURE;
     }
     
-    return kr == KERN_SUCCESS ? KERN_SUCCESS : KERN_FAILURE;
+    klog_log("ksurface:fs", "sealing mount permission registry");
+    return ksurface_fs_registry_seal();
 }
 
 kern_return_t ksurface_fs_install_kext_at_path(const char *path)
@@ -251,35 +258,42 @@ kern_return_t ksurface_fs_load_kext_with_path(const char *path,
 
 kern_return_t ksurface_fs_load_all_kext(void)
 {
-    NSArray<NSString*> *kexts = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:kextFSRoot error:nil];
-    if(kexts == nil)
+    NSArray<PEKext*> *chain = [PEKext generateLoadChainForPath:kextFSRoot];
+    if(chain == nil)
     {
         return KERN_FAILURE;
     }
     
-    klog_log("ksurface:fs:loadallkext", "kext load chain:");
-    for(NSString *kext in kexts)
+    klog_log("ksurface:fs:kextloader", "kext load chain:");
+    for(PEKext *kext in chain)
     {
-        klog_log("ksurface:fs:loadallkext", "%@", kext);
+        klog_log("ksurface:fs:kextloader", "%@", kext.bundleID);
     }
     
-    klog_log("ksurface:fs:loadallkext", "loading all installed kext's");
-    for(NSString *kext in kexts)
+    klog_log("ksurface:fs:kextloader", "loading all installed kext's");
+    for(PEKext *kext in chain)
     {
-        NSString *fullKextPath = [NSString stringWithFormat:@"%@/%@", kextFSRoot, kext];
-        if(fullKextPath == nil)
+        if([kext.bundleID isEqualToString:@"ksurface"])
         {
-            environment_panic("failed to allocate full path for %@", kext);
+            /* we are ksurface lol */
+            continue;
         }
         
         uint64_t key;
-        kern_return_t kr = ksurface_fs_load_kext_with_path(fullKextPath.UTF8String, &key);
+        kern_return_t kr = ksurface_fs_load_kext_with_path(kext.bundlePath.UTF8String, &key);
+#if KSURFACE_KEXT_HARDENED_LOADING
         if(kr != KERN_SUCCESS)
         {
-            environment_panic("failed to load kext %@", kr);
+            environment_panic("failed to load kext: %s", mach_error_string(kr));
         }
+#else
+        if(kr != KERN_SUCCESS)
+        {
+            klog_log("ksurface:fs:kextloader","failed to load kext: %s", mach_error_string(kr));
+        }
+#endif /* KSURFACE_KEXT_HARDENED_LOADING */
     }
-    klog_log("ksurface:fs:loadallkext", "all kext's shall be loaded");
+    klog_log("ksurface:fs:kextloader", "all kext's shall be loaded");
     
     return KERN_SUCCESS;
 }

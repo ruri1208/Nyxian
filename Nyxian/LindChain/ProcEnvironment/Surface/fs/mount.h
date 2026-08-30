@@ -22,9 +22,11 @@
 #ifndef FS_MOUNT_H
 #define FS_MOUNT_H
 
+#include <CoreFoundation/CoreFoundation.h>
 #include <mach/kern_return.h>
 #include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
+#include <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
 
-kern_return_t ksurface_fs_mount(const char *mount_dir, const char *bind_dir);
+kern_return_t ksurface_fs_mount(FSMountPermissionFlags permissions, const char *mount_dir, const char *bind_dir);
 
 #endif /* FS_MOUNT_H */
