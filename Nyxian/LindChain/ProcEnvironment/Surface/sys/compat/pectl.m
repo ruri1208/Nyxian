@@ -300,7 +300,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             
             /* spinning the extension up~ */
             uint64_t key;
-            kern_return_t kr = kext_load_at_path(extensionPath, &key);
+            kern_return_t kr = ksurface_kext_load_at_path(extensionPath, &key);
             switch(kr)
             {
                 case KERN_SUCCESS: return (int64_t)key;
@@ -317,7 +317,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             }
             
             uint64_t key = (uint64_t)args[2];
-            kern_return_t kr = kext_unload_with_key(key);
+            kern_return_t kr = ksurface_kext_unload_with_key(key);
             switch(kr)
             {
                 case KERN_SUCCESS: return (int64_t)key;

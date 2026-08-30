@@ -37,12 +37,6 @@ syscall_list_item_t sys_list[] = {
     { .name = "SYS_pectl",          .sysnum = SYS_pectl,        .hndl = GET_SYSCALL_HANDLER(pectl)          },
     { .name = "sys_getppid",        .sysnum = SYS_getppid,      .hndl = GET_SYSCALL_HANDLER(getppid)        },
     
-#if KSURFACE_SYS_IO_ENABLED
-    { .name = "SYS_open",           .sysnum = SYS_open,         .hndl = GET_SYSCALL_HANDLER(open)           },
-    { .name = "SYS_faccessat",      .sysnum = SYS_faccessat,    .hndl = GET_SYSCALL_HANDLER(faccessat)      },
-    { .name = "SYS_getattrlist",    .sysnum = SYS_getattrlist,  .hndl = GET_SYSCALL_HANDLER(getattrlist)    },
-#endif /* KSURFACE_SYS_IO_ENABLED */
-    
 #if KSURFACE_SYS_IOCTL_ENABLED
     { .name = "SYS_ioctl",          .sysnum = SYS_ioctl,        .hndl = GET_SYSCALL_HANDLER(ioctl)          },
 #endif /* KSURFACE_SYS_IOCTL_ENABLED */

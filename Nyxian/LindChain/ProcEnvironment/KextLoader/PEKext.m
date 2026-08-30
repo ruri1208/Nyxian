@@ -22,6 +22,8 @@
 #import <LindChain/ProcEnvironment/KextLoader/PEKext.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/Surface/trust/signing.h>
+#import <LindChain/ProcEnvironment/Surface/kext.h>
+#import <LindChain/ProcEnvironment/Utils/klog.h>
 
 @implementation PEKext
 
@@ -85,23 +87,46 @@
             return nil;
         }
         
-        _bundleID = kextBundle.bundleIdentifier;
-        _version = [kextBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
         _executablePath = kextBundle.executablePath;
-        _bundlePath = kextBundle.bundlePath;
+        if(_executablePath == nil)
+        {
+            return nil;
+        }
+        
+        kinfo_mod_t info = {};
+        kmod_dependency_t *deps = NULL;
+        uint32_t ndeps = 0;
+        
+        kr = ksurface_kext_copy_kmod(_executablePath.UTF8String, &info, &deps, &ndeps);
+        if(kr != KERN_SUCCESS)
+        {
+            return nil;
+        }
         
         NSMutableArray<PEDependency*> *dependencies = [NSMutableArray array];
-        NSArray<NSString*> *dependencyStrings = [kextBundle objectForInfoDictionaryKey:@"PEDependencies"];
-        for(NSString *dependencyString in dependencyStrings)
+        
+        klog_log("ksurface:kextloader", "%s v%u.%u.%u (abi %u, flags 0x%llx)", info.identifier, KMOD_VERSION_MAJOR(info.version), KMOD_VERSION_MINOR(info.version), KMOD_VERSION_PATCH(info.version), info.abi_version, (unsigned long long)info.flags);
+        for(uint32_t i = 0; i < ndeps; i++)
         {
-            PEDependency *dependency = [PEDependency dependencyForString:dependencyString];
-            if(dependency == nil)
+            PEDependency *dependency = [[PEDependency alloc] init];
+            dependency.bundleID = [NSString stringWithCString:deps[i].identifier encoding:NSUTF8StringEncoding];
+            dependency.minVersion = [NSString stringWithFormat:@"%u.%u.%u", KMOD_VERSION_MAJOR(deps[i].min_version), KMOD_VERSION_MINOR(deps[i].min_version), KMOD_VERSION_PATCH(deps[i].min_version)];
+            dependency.maxVersion = [NSString stringWithFormat:@"%u.%u.%u", KMOD_VERSION_MAJOR(deps[i].max_version), KMOD_VERSION_MINOR(deps[i].max_version), KMOD_VERSION_PATCH(deps[i].max_version)];
+            
+            if(dependency.bundleID == nil || dependency.minVersion == nil || dependency.maxVersion == nil)
             {
+                ksurface_kext_free_deps(deps);
                 return nil;
             }
             [dependencies addObject:dependency];
+            klog_log("ksurface:kextloader", "  needs %s [%u.%u.%u .. %u.%u.%u]", deps[i].identifier, KMOD_VERSION_MAJOR(deps[i].min_version), KMOD_VERSION_MINOR(deps[i].min_version), KMOD_VERSION_PATCH(deps[i].min_version), KMOD_VERSION_MAJOR(deps[i].max_version), KMOD_VERSION_MINOR(deps[i].max_version), KMOD_VERSION_PATCH(deps[i].max_version));
         }
+        ksurface_kext_free_deps(deps);
+        
         _dependencies = [dependencies copy];
+        _bundleID = [NSString stringWithCString:info.identifier encoding:NSUTF8StringEncoding];
+        _version = [NSString stringWithFormat:@"%u.%u.%u", KMOD_VERSION_MAJOR(info.version), KMOD_VERSION_MINOR(info.version), KMOD_VERSION_PATCH(info.version)];
+        _bundlePath = kextBundle.bundlePath;
         
         /* final check */
         if(_bundleID == nil || _version == nil || _executablePath == nil || _dependencies == nil || _bundlePath == nil)

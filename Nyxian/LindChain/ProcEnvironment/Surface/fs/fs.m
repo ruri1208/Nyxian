@@ -358,7 +358,7 @@ kern_return_t ksurface_fs_load_kext_with_path(const char *path,
         return KERN_DENIED;
     }
     
-    return kext_load_at_path(executable.UTF8String, key);
+    return ksurface_kext_load_at_path(executable.UTF8String, key);
 }
 
 kern_return_t ksurface_fs_load_all_kext(void)

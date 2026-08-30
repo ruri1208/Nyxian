@@ -31,7 +31,6 @@
 #define KSURFACE_EMIT_LAUNCHD       0   /* adds a launchd entry MARK: unsupported currently */
 
 /* syscalling coverage configuration */
-#define KSURFACE_SYS_IO_ENABLED     0   /* very early in development */
 #define KSURFACE_SYS_IOCTL_ENABLED  1
 #define KSURFACE_SYS_SYSCTL_ENABLED 1
 #define KSURFACE_SYS_TASK_ENABLED   1
