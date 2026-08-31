@@ -123,9 +123,9 @@ bool wait4_proc_event_handler(uint32_t type,
     return false;
 
 out_trigger_unregister:
-    mach_syscall_copy_out(payload->task, sizeof(int), &(child->nyx.p_status), payload->status_ptr);
+    syscall_copy_out(payload->task, sizeof(int), &(child->nyx.p_status), payload->status_ptr);
     child->nyx.p_status = 0;
-    send_reply(&(payload->buffer->header), proc_getpid(child), NULL, 0, true, 0);
+    syscall_send_reply(&(payload->buffer->header), proc_getpid(child), NULL, 0, true, 0);
     kvo_unlock(child);
     pthread_mutex_unlock(&(parent->children.mutex));
     return true;
@@ -193,7 +193,7 @@ DEFINE_SYSCALL_HANDLER(wait4)
                 }
                 
             out_report:
-                mach_syscall_copy_out(sys_task_, sizeof(int), &(proc->nyx.p_status), (userspace_pointer_t)args[1]);
+                syscall_copy_out(sys_task_, sizeof(int), &(proc->nyx.p_status), (userspace_pointer_t)args[1]);
                 
                 /*
                  * set to none, so incase it was

@@ -34,39 +34,40 @@ static uint32_t rnd32(uint32_t v,
     return (v + r) & ~r;
 }
 
-LCMachO *LCMapMachO(const char *path, bool readOnly)
+LCMachO *LCMapMachO(const char *path,
+                    bool readOnly)
 {
-    LCMachO *machO = malloc(sizeof(LCMachO));
+    LCMachO *machO = calloc(1, sizeof(LCMachO));
     if(machO == nil)
     {
-        return nil;
+        return NULL;
     }
-    
-    machO->path = strdup(path);
-    if(machO->path == nil)
-    {
-        free(machO);
-        return nil;
-    }
+    machO->fd = -1; /* so close doesnt destroy STDIN_FILENO */
     
     /* initially opening the machO */
     machO->ro = readOnly;
     machO->fd = open(path, (readOnly ? O_RDONLY : O_RDWR) | O_EXLOCK, (mode_t)readOnly ? 0400 : 0600);
     if(machO->fd < 0)
     {
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_deallocate;
+    }
+    
+    machO->path = malloc(PATH_MAX);
+    if(machO->path == NULL)
+    {
+        goto out_fail_deallocate;
+    }
+    
+    if(fcntl(machO->fd, F_GETPATH, machO->path) != 0)
+    {
+        goto out_fail_deallocate_path;
     }
     
     /* getting its size and so on */
     struct stat s = {0};
     if(fstat(machO->fd, &s) != 0)
     {
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_deallocate_path;
     }
     
     machO->size = s.st_size;
@@ -75,14 +76,11 @@ LCMachO *LCMapMachO(const char *path, bool readOnly)
     machO->map = mmap(NULL, machO->size, readOnly ? PROT_READ : (PROT_READ | PROT_WRITE), readOnly ? MAP_PRIVATE : MAP_SHARED, machO->fd, 0);
     if(machO->map == MAP_FAILED)
     {
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_deallocate_path;
     }
     
     /* find the header */
-    machO->header = nil;
+    machO->header = NULL;
     uint32_t magic = *(uint32_t *)machO->map;
     if(magic == FAT_CIGAM)
     {
@@ -106,49 +104,56 @@ LCMachO *LCMapMachO(const char *path, bool readOnly)
     if(machO->header == nil)
     {
         /* incompatible */
-        munmap(machO->map, machO->size);
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_unmap;
     }
     
     return machO;
+    
+out_fail_unmap:
+    munmap(machO->map, machO->size);
+out_fail_deallocate_path:
+    free(machO->path);
+out_fail_deallocate_close:
+    close(machO->fd);
+out_fail_deallocate:
+    free(machO);
+    return NULL;
 }
 
 LCMachO *LCMapMachOFromFDRO(int fd)
 {
-    LCMachO *machO = malloc(sizeof(LCMachO));
-    if(machO == nil)
+    if(fd < 0)
     {
-        return nil;
+        return NULL;
     }
     
-    machO->path = strdup("I/Am/A/Silly/Cat");
-    if(machO->path == nil)
+    LCMachO *machO = calloc(1, sizeof(LCMachO));
+    if(machO == NULL)
     {
-        free(machO);
-        return nil;
+        close(fd);
+        return NULL;
+    }
+    
+    machO->path = malloc(PATH_MAX);
+    if(machO->path == NULL)
+    {
+        goto out_fail_deallocate;
+    }
+    
+    if(fcntl(machO->fd, F_GETPATH, machO->path) != 0)
+    {
+        goto out_fail_deallocate_path;
     }
     
     /* initially opening the machO */
     machO->ro = true;
     machO->fd = fd;
-    if(machO->fd < 0)
-    {
-        free(machO->path);
-        free(machO);
-        return nil;
-    }
     
     /* getting its size and so on */
     struct stat s = {0};
     if(fstat(machO->fd, &s) != 0)
     {
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_deallocate_path;
     }
     
     machO->size = s.st_size;
@@ -157,14 +162,11 @@ LCMachO *LCMapMachOFromFDRO(int fd)
     machO->map = mmap(NULL, machO->size, PROT_READ, MAP_SHARED, machO->fd, 0);
     if(machO->map == MAP_FAILED)
     {
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_deallocate_path;
     }
     
     /* find the header */
-    machO->header = nil;
+    machO->header = NULL;
     uint32_t magic = *(uint32_t *)machO->map;
     if(magic == FAT_CIGAM)
     {
@@ -185,17 +187,22 @@ LCMachO *LCMapMachOFromFDRO(int fd)
         machO->header = (struct mach_header_64 *)machO->map;
     }
     
-    if(machO->header == nil)
+    if(machO->header == NULL)
     {
         /* incompatible */
-        munmap(machO->map, machO->size);
-        close(machO->fd);
-        free(machO->path);
-        free(machO);
-        return nil;
+        goto out_fail_unmap;
     }
     
     return machO;
+
+out_fail_unmap:
+    munmap(machO->map, machO->size);
+out_fail_deallocate_path:
+    free(machO->path);
+out_fail_deallocate:
+    free(machO);
+    close(fd);
+    return NULL;
 }
 
 void LCUnmapMachO(LCMachO *machO)
@@ -582,17 +589,21 @@ struct code_signature_command* findSignatureCommand(struct mach_header_64* heade
 
 bool LCCheckCodeSignature(LCMachO *machO)
 {
+    /* if it is not ARM64 then it cannot run on this device */
     if(machO->header->cputype != CPU_TYPE_ARM64)
     {
         return false;
     }
     
+    /* binary must be signed, otherwise no execution */
     struct code_signature_command* codeSignatureCommand = findSignatureCommand(machO->header);
     if(!codeSignatureCommand)
     {
         return false;
     }
-    off_t sliceOffset = (void*)machO->header - machO->map;
+    
+    /* checking if the kernel says this is signed */
+    off_t sliceOffset = (uint8_t*)machO->header - (uint8_t*)machO->map;
     fsignatures_t siginfo;
     siginfo.fs_file_start = sliceOffset;
     siginfo.fs_blob_start = (void*)(long)(codeSignatureCommand->dataoff);
@@ -603,14 +614,12 @@ bool LCCheckCodeSignature(LCMachO *machO)
         return false;
     }
     
+    /* checking if this can be executed by us */
     fchecklv_t checkInfo;
-    char messageBuffer[512];
-    messageBuffer[0] = '\0';
-    checkInfo.lv_error_message_size = sizeof(messageBuffer);
-    checkInfo.lv_error_message = messageBuffer;
+    checkInfo.lv_error_message_size = 0;
+    checkInfo.lv_error_message = NULL;
     checkInfo.lv_file_start= sliceOffset;
     int checkLVresult = fcntl(machO->fd, F_CHECK_LV, &checkInfo);
-    
     if(checkLVresult == 0)
     {
         return true;

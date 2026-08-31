@@ -265,7 +265,6 @@
 				LindChain/ProcEnvironment/Shims/vfork.c,
 				LindChain/ProcEnvironment/Surface/extra/relax.c,
 				LindChain/ProcEnvironment/Surface/trust/signing.c,
-				LindChain/ProcEnvironment/Utils/dlfcn.c,
 				LindChain/ProcEnvironment/Utils/fd.c,
 				LindChain/ProcEnvironment/Utils/ktfp.c,
 				LindChain/ProcEnvironment/Utils/vnode.c,
@@ -931,9 +930,9 @@
 				79BF97F62E6291EE00C60D4C /* LiveProcess */,
 				860D91742FAE1F95000D321B /* MobileDevelopmentKit */,
 				86DCC2592FA5209600973169 /* CoreCompiler */,
-				79AA11BB2F7FFE24002FEAF2 /* nxtool */,
 				8FB3BADA302FFBAA00DB3ABC /* LiveShim */,
 				8FF32DEC3036F59E00C46FE4 /* HWHook */,
+				79AA11BB2F7FFE24002FEAF2 /* nxtool */,
 			);
 		};
 /* End PBXProject section */

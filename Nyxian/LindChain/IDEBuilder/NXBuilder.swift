@@ -210,20 +210,24 @@ final class NXBuilder: NSObject {
                 }
                 executablePathCallback(path)
             } else if self.project.projectConfig.schemeKind == .kSurfaceKext {
-                LCUtils.signMachOWithoutPatch(at: self.project.machoURL)
-                trust_nxt2_sign(self.project.machoURL.path, [
-                    "org.emexlabs.nyxian.ksurface.kernelextension.loading" : true
-                ] as CFDictionary, true)
-                vnode_refresh_at_path(self.project.machoURL.path)
-                var ret: kern_return_t = ksurface_fs_install_kext_at_path(self.project.bundleURL.path);
-                if ret != 0 {
-                    throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to install kext: \(String(cString: mach_error_string(ret)))"])
-                }
-                
-                var key: UInt64 = 0
-                ret = ksurface_fs_load_kext_with_bundleid(self.project.projectConfig.bundleid, &key)
-                if ret != 0 {
-                    throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to inject kext: \(String(cString: mach_error_string(ret)))"])
+                if let ptr = LCMapMachO(self.project.machoURL.path, false) {
+                    ptr.pointee.header.pointee.filetype = UInt32(MH_KEXT_BUNDLE)
+                    LCUnmapMachO(ptr)
+                    
+                    LCUtils.signMachOWithoutPatch(at: self.project.machoURL)
+                    trust_nxt2_sign(self.project.machoURL.path, [
+                        "org.emexlabs.nyxian.ksurface.kernelextension.loading" : true
+                    ] as CFDictionary, true)
+                    vnode_refresh_with_path(self.project.machoURL.path)
+                    var ret: kern_return_t = ksurface_fs_install_kext_at_path(self.project.bundleURL.path);
+                    if ret != 0 {
+                        throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to install kext: \(String(cString: mach_error_string(ret)))"])
+                    }
+                    
+                    ret = ksurface_fs_load_kext_with_bundleid(self.project.projectConfig.bundleid, nil)
+                    if ret != 0 {
+                        throw NSError(domain: "com.cr4zy.nyxian.builder.install", code: 1, userInfo: [NSLocalizedDescriptionKey:"Failed to inject kext: \(String(cString: mach_error_string(ret)))"])
+                    }
                 }
             }
         } else {

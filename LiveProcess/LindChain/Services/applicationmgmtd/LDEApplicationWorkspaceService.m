@@ -194,7 +194,7 @@ create_home:
     }
     else
     {
-        vnode_refresh_at_path([fastPath UTF8String]);
+        vnode_refresh_with_path([fastPath UTF8String]);
     }
     reply(fastPath, cs_valid);
 }

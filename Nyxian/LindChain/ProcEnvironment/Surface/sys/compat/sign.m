@@ -82,7 +82,7 @@ DEFINE_SYSCALL_HANDLER(sign)
     {
         sys_return_failure_with_errno(ENOEXEC);
     }
-    vnode_refresh_at_path([nsPath UTF8String]);
+    vnode_refresh_with_path([nsPath UTF8String]);
     
     sys_return;
 }

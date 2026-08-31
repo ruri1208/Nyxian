@@ -2,6 +2,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 
  Copyright (C) 2025 - 2026 emexlab
+ Copyright (C) 2026 semvis123
 
  This file is part of Nyxian.
 
@@ -19,10 +20,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MACH_SYSCALL_SERVER_H
-#define MACH_SYSCALL_SERVER_H
+#ifndef SYS_WORKER_H
+#define SYS_WORKER_H
 
-#import <LindChain/ProcEnvironment/Syscall/payload.h>
+#include <LindChain/ProcEnvironment/Surface/sys/payload.h>
+#include <LindChain/ProcEnvironment/Surface/proc/def.h>
 #include <mach/mach.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -30,10 +32,6 @@
 #include <unistd.h>
 
 #define SYSCALL_MAX_PAYLOAD     16384
-#define SYSCALL_QUEUE_LIMIT     32
-
-typedef struct ksurface_proc ksurface_proc_t;
-typedef struct ksurface_proc ksurface_proc_snapshot_t;
 
 /* safe snapshot */
 #define sys_proc_snapshot_ proc_snapshot
@@ -142,11 +140,7 @@ typedef int64_t (*syscall_handler_t)(
 
 typedef struct syscall_server syscall_server_t;
 
-syscall_server_t *syscall_server_create(void);
-int syscall_server_start(syscall_server_t *server);
-mach_port_t syscall_server_get_port(syscall_server_t *server);
-void syscall_server_register(syscall_server_t *server, uint32_t syscall_num, syscall_handler_t handler);
+void* syscall_worker(void *ctx);
+void syscall_send_reply(mach_msg_header_t *request, int64_t result, mach_port_t *out_ports, uint32_t out_ports_cnt, bool release_req, errno_t err);
 
-void send_reply(mach_msg_header_t *request, int64_t result, mach_port_t *out_ports, uint32_t out_ports_cnt, bool release_req, errno_t err);
-
-#endif /* MACH_SYSCALL_SERVER_H */
+#endif /* SYS_WORKER_H */

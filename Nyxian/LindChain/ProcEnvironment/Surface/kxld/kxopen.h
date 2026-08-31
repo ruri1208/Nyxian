@@ -19,14 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef NXCODETEMPLATE_H
-#define NXCODETEMPLATE_H
+#ifndef KXLD_KXOPEN_H
+#define KXLD_KXOPEN_H
 
-#import <Foundation/Foundation.h>
-#import <LindChain/IDEFoundation/NXType.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/image.h>
+#include <stdio.h>
 
-BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme, NXProjectLanguage language, NXProjectInterface interface, NSString *projectName, NSURL *projectURL, NSString *bundleIdentifier);
-NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
-NSArray<NSString*> *NXSwiftFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
+kxld_image_info_t *kxopen(const char *path, int mode);
+kxld_image_info_t *kxopen_with_fd(int fd, int mode);
+void kxclose(kxld_image_info_t *image_info);
 
-#endif /* NXCODETEMPLATE_H */
+#endif /* KXLD_KXOPEN_H */

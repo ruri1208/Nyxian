@@ -357,7 +357,7 @@
     NXProjectLanguage language = NXProjectLanguageFromLanguageKind(languageKind);
     NXProjectInterface interface = NXProjectInterfaceFromInterfaceKind(interfaceKind);
     
-    if(!NXCodeTemplateMakeProjectStructure(scheme, language, interface, name, projectURL))
+    if(!NXCodeTemplateMakeProjectStructure(scheme, language, interface, name, projectURL, bundleid))
     {
         [[NSFileManager defaultManager] removeItemAtURL:projectURL error:nil];
         return nil;

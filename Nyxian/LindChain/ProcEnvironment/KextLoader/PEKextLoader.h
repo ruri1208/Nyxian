@@ -19,14 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef NXCODETEMPLATE_H
-#define NXCODETEMPLATE_H
+#ifndef PEKEXTLOADER_H
+#define PEKEXTLOADER_H
 
 #import <Foundation/Foundation.h>
-#import <LindChain/IDEFoundation/NXType.h>
+#import <mach/mach.h>
 
-BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme, NXProjectLanguage language, NXProjectInterface interface, NSString *projectName, NSURL *projectURL, NSString *bundleIdentifier);
-NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
-NSArray<NSString*> *NXSwiftFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
+BOOL PEKextLoaderLoad(NSMutableString *errorString);
 
-#endif /* NXCODETEMPLATE_H */
+#endif /* PEKEXTLOADER_H */

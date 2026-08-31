@@ -19,11 +19,19 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_KEXT_H
-#define SURFACE_KEXT_H
+#ifndef KXLD_IMAGE_H
+#define KXLD_IMAGE_H
 
-#include <stdbool.h>
-#include <mach/kern_return.h>
+#include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <LindChain/ProcEnvironment/Surface/trust/signing.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <mach-o/loader.h>
+#include <mach-o/ldsyms.h>
 
 /*
  * this is not a toy API once a malicious kext is
@@ -51,9 +59,10 @@
     const kinfo_mod_t ksurface_kext_info = __VA_ARGS__;
 
 typedef enum {
-    KMOD_FLAG_NONE             = 0,         /* sentinel */
-    KMOD_FLAG_PERSISTENT       = (1 << 0),  /* cannot be unloaded */
-    KMOD_FLAG_BACKGROUND_ONLY  = (1 << 1),  /* requires it's own thread */
+    KMOD_FLAG_NONE              = 0,        /* sentinel */
+    KMOD_FLAG_PERSISTENT        = (1 << 0), /* cannot be unloaded */
+    KMOD_FLAG_BACKGROUND_ONLY   = (1 << 1), /* requires it's own thread */
+    KMOD_FLAG_OVERRIDE_CORE     = (1 << 2), /* can override ksurface symbols for other kexts */
 } kmod_flags_t;
 
 typedef struct {
@@ -81,9 +90,16 @@ typedef struct kinfo_mod {
     kmod_dependency_t dependencies[];
 } kinfo_mod_t;
 
-kern_return_t ksurface_kext_copy_kmod(const char *path, kinfo_mod_t *out_info, kmod_dependency_t **out_deps, uint32_t *out_dep_count);
-void ksurface_kext_free_deps(kmod_dependency_t *deps);
-kern_return_t ksurface_kext_load_at_path(const char *path, uint64_t *key);
-kern_return_t ksurface_kext_unload_with_key(uint64_t key);
+typedef struct {
+    char path[MAXPATHLEN];
+    intptr_t slide;
+    off_t sliceOffset;
+    void *base;
+    uint64_t len;
+    struct mach_header_64 *header;
+    kmod_dependency_t *deps;
+    uint32_t ndeps;
+    kinfo_mod_t *mod;
+} kxld_image_info_t;
 
-#endif /* SURFACE_KEXT_H */
+#endif /* KXLD_IMAGE_H */

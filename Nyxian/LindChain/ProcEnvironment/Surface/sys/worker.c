@@ -20,7 +20,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Syscall/mach_syscall_server.h>
+#include <LindChain/ProcEnvironment/Surface/sys/worker.h>
+#include <LindChain/ProcEnvironment/Surface/sys/core.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Shims/panic.h>
 #include <pthread.h>
@@ -30,24 +31,16 @@
 #include <errno.h>
 #include <assert.h>
 
-#define MAX_SYSCALLS 1024
-
-struct syscall_server {
-    mach_port_t port;
-    pthread_t *threads;
-    int threads_cnt;
-    syscall_handler_t handlers[MAX_SYSCALLS];
-};
-
 /*
- * To ensure safety in nyxian we rely on the XNU kernel, as asking processes for their pid is extremely stupid
- * So we ensure nothing can be tempered
+ * To ensure safety in nyxian we rely on the XNU kernel,
+ * as asking processes for their pid is extremely stupid.
+ * so we ensure nothing can be tempered.
  */
 static ksurface_proc_snapshot_t *get_caller_proc_snapshot(mach_msg_header_t *msg)
 {
     /*
-     * gives us a trailer, cuz the XNU kernel gurantees a trailer if asked
-     * and syscall_worker_thread was engineered to ask that lol.
+     * The XNU kernel gurantees a trailer if asked
+     * and syscall_worker was engineered to ask that lol ^^.
      */
     mach_msg_audit_trailer_t *trailer = (mach_msg_audit_trailer_t *)((uint8_t *)msg + round_msg(msg->msgh_size));
     
@@ -76,12 +69,12 @@ static ksurface_proc_snapshot_t *get_caller_proc_snapshot(mach_msg_header_t *msg
 /*
  * This is the symbol that sends the result from the syscall back to the guest process
  */
-void send_reply(mach_msg_header_t *request,
-                int64_t result,
-                mach_port_t *out_ports,
-                uint32_t out_ports_cnt,
-                bool release_req,
-                errno_t err)
+void syscall_send_reply(mach_msg_header_t *request,
+                        int64_t result,
+                        mach_port_t *out_ports,
+                        uint32_t out_ports_cnt,
+                        bool release_req,
+                        errno_t err)
 {
     /* stack allocating  */
     syscall_reply_t reply;
@@ -150,7 +143,7 @@ void send_reply(mach_msg_header_t *request,
  * this is the proper way for an kernel virtualisation layer to do it,
  * because we can control raw mach to 100%
  */
-static void* syscall_worker_thread(void *ctx)
+void* syscall_worker(void *ctx)
 {
     assert(ctx != NULL);
     
@@ -254,10 +247,12 @@ static void* syscall_worker_thread(void *ctx)
         syscall_handler_t handler = NULL;
         
         /* checking syscall bounds */
-        if(req->syscall_num < MAX_SYSCALLS)
+        os_unfair_lock_lock(&server->lock);
+        if(req->syscall_num < SYSCALL_HANDLERS_LIMIT)
         {
             handler = server->handlers[req->syscall_num];
         }
+        os_unfair_lock_unlock(&server->lock);
         
         /* checking if the handler was set by the kernel virtualisation layer */
         if(!handler)
@@ -300,71 +295,9 @@ static void* syscall_worker_thread(void *ctx)
          */
         if(buffer != NULL)
         {
-            send_reply(&(req->header), result, out_ports, out_ports_cnt, false, err);
+            syscall_send_reply(&(req->header), result, out_ports, out_ports_cnt, false, err);
         }
     }
     
     return NULL;
-}
-
-syscall_server_t* syscall_server_create(void)
-{
-    return calloc(1, sizeof(syscall_server_t));
-}
-
-void syscall_server_register(syscall_server_t *server,
-                             uint32_t syscall_num,
-                             syscall_handler_t handler)
-{
-    assert(server != NULL && syscall_num < MAX_SYSCALLS && handler != NULL);
-    
-#if DEBUG
-    syscall_handler_t phandler = server->handlers[syscall_num];
-    if(phandler != NULL)
-    {
-        environment_panic("syscall handler for %lu is already registered", syscall_num);
-    }
-#endif /* DEBUG */
-    
-    server->handlers[syscall_num] = handler;
-}
-
-int syscall_server_start(syscall_server_t *server)
-{
-    assert(server != NULL);
-    
-    mach_port_options_t options = {
-        .flags = MPO_PORT | MPO_IMMOVABLE_RECEIVE | MPO_INSERT_SEND_RIGHT | MPO_QLIMIT | MPO_STRICT | MPO_CONTEXT_AS_GUARD,
-        .mpl = SYSCALL_QUEUE_LIMIT,
-    };
-    
-    uint64_t guard_value;
-    arc4random_buf(&guard_value, sizeof(guard_value));
-    kern_return_t kr = mach_port_construct(mach_task_self(), &options, guard_value, &server->port);
-    guard_value = 0;    /* destroyed so nobody can even find it on the stack ever */
-    if(kr != KERN_SUCCESS)
-    {
-        mach_port_deallocate(mach_task_self(), server->port);
-        return -1;
-    }
-    
-    extern int CCGetMaximumPerformanceCores(void);
-    server->threads_cnt = (int)CCGetMaximumPerformanceCores();
-    if(server->threads_cnt == 0)
-    {
-        environment_panic("got 0 return from CCGetMaximumPerformanceCores()");
-    }
-    server->threads = calloc(server->threads_cnt, sizeof(pthread_t));
-    
-    for(int i = 0; i < server->threads_cnt; i++)
-    {
-        pthread_create(&server->threads[i], NULL, syscall_worker_thread, server);
-    }
-    
-    return 0;
-}
-
-mach_port_t syscall_server_get_port(syscall_server_t *server)
-{
-    return server->port;
 }

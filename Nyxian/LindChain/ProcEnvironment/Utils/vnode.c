@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-bool vnode_refresh_at_path(const char* path)
+bool vnode_refresh_with_path(const char* path)
 {
     int fd = open(path, O_RDWR);
     if(fd < 0)
@@ -40,11 +40,18 @@ bool vnode_refresh_at_path(const char* path)
         return false;
     }
     
+    bool success = vnode_recover_with_fd_to_path(fd, path);
+    close(fd);
+    return success;
+}
+
+bool vnode_recover_with_fd_to_path(int fd,
+                                   const char *path)
+{
     /* creates new node at zero cost */
     if(fclonefileat(fd, AT_FDCWD, path, 0) == 0)
     {
         /* yayyy =3 */
-        close(fd);
         return true;
     }
     
@@ -53,7 +60,6 @@ bool vnode_refresh_at_path(const char* path)
     if(copyfd < 0)
     {
         /* something went terribly wrong */
-        close(fd);
         return false;
     }
     
@@ -62,11 +68,9 @@ bool vnode_refresh_at_path(const char* path)
     {
         /* atleast this worked :3 */
         close(copyfd);
-        close(fd);
         return true;
     }
     
     close(copyfd);
-    close(fd);
     return false;
 }

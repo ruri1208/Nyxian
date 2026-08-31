@@ -149,13 +149,13 @@ static _Thread_local bool cdhash_must_valid;
 static _Thread_local bool open_hardlock;
 static _Thread_local const char *cdhash_data_container_match;
 static _Thread_local dlopen_cdhash_verifier_failed_callback_t cdhash_verifier_failed_callback;
-static int lv_bypass_open(int fd,
-                          int flags)
+static int path_validation_bypass_open(int fd,
+                                       int flags)
 {
     char actualPath[PATH_MAX];
     if(fcntl(fd, F_GETPATH, actualPath) != -1)
     {
-        dyld_hook_log("[lv_bypass_open:path] %s\n", actualPath);
+        dyld_hook_log("[path_validation_bypass_open:path] %s\n", actualPath);
         
         const char prefix[] = "/private/var/mobile/Containers/Data";
         if(strncmp(actualPath, prefix, sizeof(prefix) - 1) == 0)
@@ -164,8 +164,8 @@ static int lv_bypass_open(int fd,
             char newTmpPath[PATH_MAX];
             snprintf(newTmpPath, sizeof(newTmpPath),  "%s/tmp/%d/0x%llx.dylib", mmap_sandbox_map_exec_allowed_path, getpid(), inode_for_fd(fd));    /* use tmp so iOS clears it automatically in LP home */
             
-            dyld_hook_log("[lv_bypass_open] [library validation bypass] new path: %s\n", newTmpPath);
-            dyld_hook_log("[lv_bypass_open] [library validation bypass] dyld needs to think that %s is located at %s\n", newTmpPath, actualPath);
+            dyld_hook_log("[path_validation_bypass_open] [library validation bypass] new path: %s\n", newTmpPath);
+            dyld_hook_log("[path_validation_bypass_open] [library validation bypass] dyld needs to think that %s is located at %s\n", newTmpPath, actualPath);
             
             int copyfd = open(newTmpPath, flags);
             if(copyfd >= 0)
@@ -173,29 +173,29 @@ static int lv_bypass_open(int fd,
                 close(fd);
                 dup2(copyfd, fd);
                 close(copyfd);
-                dyld_hook_log("[lv_bypass_open] [library validation bypass] path already has APFS CoW copy\n");
+                dyld_hook_log("[path_validation_bypass_open] [library validation bypass] path already has APFS CoW copy\n");
                 goto lv_bypass_setup_done;
             }
             
-            dyld_hook_log("[lv_bypass_open] [library validation bypass] APFS CoW copy needed\n");
+            dyld_hook_log("[path_validation_bypass_open] [library validation bypass] APFS CoW copy needed\n");
             if(fclonefileat(fd, AT_FDCWD, newTmpPath, 0) == 0)
             {
-                dyld_hook_log("[lv_bypass_open] [library validation bypass] APFS CoW copy succeeded\n");
+                dyld_hook_log("[path_validation_bypass_open] [library validation bypass] APFS CoW copy succeeded\n");
                 copyfd = open(newTmpPath, flags);
                 if(copyfd < 0)
                 {
-                    dyld_hook_log("[lv_bypass_open] [library validation bypass] couldn't open file descriptor\n");
+                    dyld_hook_log("[path_validation_bypass_open] [library validation bypass] couldn't open file descriptor\n");
                     goto lv_bypass_setup_done;
                 }
             }
             else
             {
              
-                dyld_hook_log("[lv_bypass_open] [library validation bypass] APFS CoW copy failed(errno: %s), falling back to copyfile\n", strerror(errno));
+                dyld_hook_log("[path_validation_bypass_open] [library validation bypass] APFS CoW copy failed(errno: %s), falling back to copyfile\n", strerror(errno));
                 copyfd = open(newTmpPath, O_RDWR | O_CREAT | O_TRUNC, 0777);
                 if(copyfd < 0)
                 {
-                    dyld_hook_log("[lv_bypass_open] [library validation bypass] couldn't open file descriptor\n");
+                    dyld_hook_log("[path_validation_bypass_open] [library validation bypass] couldn't open file descriptor\n");
                     goto lv_bypass_setup_done;
                 }
             
@@ -203,22 +203,22 @@ static int lv_bypass_open(int fd,
                 close(copyfd);
                 if(ret != 0)
                 {
-                    dyld_hook_log("[lv_bypass_open] [library validation bypass] fcopyfile failed: %s\n", strerror(errno));
+                    dyld_hook_log("[path_validation_bypass_open] [library validation bypass] fcopyfile failed: %s\n", strerror(errno));
                     goto lv_bypass_setup_done;
                 }
-                dyld_hook_log("[lv_bypass_open] [library validation bypass] fcopyfile succeeded\n");
+                dyld_hook_log("[path_validation_bypass_open] [library validation bypass] fcopyfile succeeded\n");
                 
                 copyfd = open(newTmpPath, flags);
                 if(copyfd < 0)
                 {
-                    dyld_hook_log("[lv_bypass_open] [library validation bypass] couldn't open file descriptor\n");
+                    dyld_hook_log("[path_validation_bypass_open] [library validation bypass] couldn't open file descriptor\n");
                     goto lv_bypass_setup_done;
                 }
             }
             
             /* this to orient or selfs */
             ino_t inode = inode_for_fd(copyfd);
-            dyld_hook_log("[lv_bypass_open] [library validation bypass] setting up inode redirection for inode: 0x%llx\n", inode);
+            dyld_hook_log("[path_validation_bypass_open] [library validation bypass] setting up inode redirection for inode: 0x%llx\n", inode);
             inode_bank_put(inode, newTmpPath);
             inode_bank_set_redirect(inode, actualPath);
             
@@ -238,7 +238,7 @@ static int lv_bypass_open(int fd,
                 /* need to get cdhash and then reset it's position */
                 
                 char *cdhash = cdhash_of_fd(fd);
-                dyld_hook_log("[lv_bypass_open] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
+                dyld_hook_log("[path_validation_bypass_open] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
                 
                 /* match */
                 if(cdhash == NULL ||
@@ -246,7 +246,7 @@ static int lv_bypass_open(int fd,
                    memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
                 {
                     cdhash_verified = false;
-                    dyld_hook_log("[lv_bypass_open] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
+                    dyld_hook_log("[path_validation_bypass_open] [nyxian cdhash verifier] cdhash does not match, calling callback if givven\n");
                     
 #if KSURFACE_DYLD_HARDENED_CDHASH_VERIFIER
                     open_hardlock = true;
@@ -260,7 +260,7 @@ static int lv_bypass_open(int fd,
                     /* callback can set open hardlock */
                     if(open_hardlock)
                     {
-                        dyld_hook_log("[lv_bypass_open] [error: hard locked]\n");
+                        dyld_hook_log("[path_validation_bypass_open] [error: hard locked]\n");
                         errno = EACCES;
                         close(fd);
                         fd = -1;
@@ -268,7 +268,7 @@ static int lv_bypass_open(int fd,
                 }
                 else
                 {
-                    dyld_hook_log("[lv_bypass_open] [nyxian cdhash verifier] cdhash valid!\n");
+                    dyld_hook_log("[path_validation_bypass_open] [nyxian cdhash verifier] cdhash valid!\n");
                     cdhash_verified = true;
                     lseek(fd, 0, SEEK_SET);
                 }
@@ -299,7 +299,7 @@ static int hook_open(const char *path,
         goto just_return;
     }
     
-    fd = lv_bypass_open(fd, flags);
+    fd = path_validation_bypass_open(fd, flags);
     
 just_return:
     dyld_hook_log("[hook_open:return] (fd = %d)\n", fd);
@@ -325,7 +325,7 @@ static int hook_openat(int dirfd,
         goto just_return;
     }
     
-    fd = lv_bypass_open(fd, flags);
+    fd = path_validation_bypass_open(fd, flags);
     
 just_return:
     dyld_hook_log("[hook_openat:return] (fd = %d)\n", fd);

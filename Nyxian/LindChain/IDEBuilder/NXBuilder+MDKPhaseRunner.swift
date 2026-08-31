@@ -33,7 +33,9 @@ extension NXBuilder: MDKPhaseRunnerDelegate {
                 withResultingDiagnostics diagnostics: [MDKDiagnostic]?,
                 withMainSource mainSource: String?,
                 wasSuccessful success: Bool) {
-        if let diagnostics = diagnostics {
+        if let diagnostics = diagnostics,
+           let mainSource = mainSource {
+            self.database.removeFileDebug(ofPath: mainSource)
             if job.type == .linker {
                 self.database.addDiagnosticMessages(title: "Linker", items: diagnostics, clearPrevious: true)
             } else {

@@ -70,21 +70,10 @@ class SettingsViewController: UIThemedTableViewController {
             cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
             cell.textLabel?.text = "Customization"
             break
-#if DEBUG
-        case 4:
-            cell.imageView?.image = UIImage(systemName: "ant.fill")
-            cell.textLabel?.text = "Debug"
-            break
-        case 5:
-            cell.imageView?.image = UIImage(systemName: "person.3.fill")
-            cell.textLabel?.text = "Credits"
-            break
-#else
         case 4:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
-#endif // DEBUG
         default:
             break
         }

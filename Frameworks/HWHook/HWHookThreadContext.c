@@ -447,6 +447,7 @@ Boolean HWHookThreadContextExit(HWHookThreadContextRef context)
     /* safe cause this thread is not causing a exception in here xD */
     __asm__ volatile ("brk #2222" ::: "memory");
     tCurrentContext = NULL;
+    mach_port_deallocate(mach_task_self(), tCurrentServerContext.target);
     
     return true;
 }

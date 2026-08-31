@@ -700,12 +700,6 @@ void CCASTUnitSetArguments(CCMutableASTUnitRef mutableUnit,
             mutableUnit->BaseArgs.push_back(lang);
         }
         
-        std::string cachePath = std::string(std::getenv("HOME")) + "/Library/Caches/Clang";
-        if(!llvm::sys::fs::create_directories(cachePath))
-        {
-            mutableUnit->BaseArgs.push_back("-fmodules-cache-path=" + cachePath);
-        }
-        
         /*
          * silencing those weird linker warnings
          * on live typechecking, which libclang
@@ -714,6 +708,12 @@ void CCASTUnitSetArguments(CCMutableASTUnitRef mutableUnit,
          * developers and engineers like me.
          */
         mutableUnit->BaseArgs.push_back("--start-no-unused-arguments");
+        std::string cachePath = std::string(std::getenv("HOME")) + "/Library/Caches/Clang";
+        if(!llvm::sys::fs::create_directories(cachePath))
+        {
+            mutableUnit->BaseArgs.push_back("-fmodules-cache-path=" + cachePath);
+        }
+        
         CFIndex count = CFArrayGetCount(arguments);
         for(CFIndex i = 0; i < count; i++)
         {

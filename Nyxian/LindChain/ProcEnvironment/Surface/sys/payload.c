@@ -2,6 +2,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 
  Copyright (C) 2025 - 2026 emexlab
+ Copyright (C) 2026 semvis123
 
  This file is part of Nyxian.
 
@@ -19,12 +20,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Syscall/payload.h>
+#include <LindChain/ProcEnvironment/Surface/sys/payload.h>
 #include <assert.h>
 
-kern_return_t mach_syscall_payload_create(void *ptr,
-                                          size_t size,
-                                          vm_address_t *vm_address)
+kern_return_t syscall_payload_create(void *ptr,
+                                     size_t size,
+                                     vm_address_t *vm_address)
 {
     kern_return_t kr = vm_allocate(mach_task_self(), vm_address, size, VM_FLAGS_ANYWHERE);
     if(kr == KERN_SUCCESS && ptr != NULL)
@@ -37,10 +38,10 @@ kern_return_t mach_syscall_payload_create(void *ptr,
     return kr;
 }
 
-bool mach_syscall_copy_in(task_t task,
-                          size_t size,
-                          kernelspace_pointer_t kptr,
-                          userspace_pointer_t src)
+bool syscall_copy_in(task_t task,
+                     size_t size,
+                     kernelspace_pointer_t kptr,
+                     userspace_pointer_t src)
 {
     assert(kptr != NULL);
     
@@ -63,9 +64,9 @@ bool mach_syscall_copy_in(task_t task,
     return true;
 }
 
-kernelspace_pointer_t mach_syscall_alloc_in(task_t task,
-                                            size_t size,
-                                            userspace_pointer_t src)
+kernelspace_pointer_t syscall_alloc_in(task_t task,
+                                       size_t size,
+                                       userspace_pointer_t src)
 {
     if(src == NULL)
     {
@@ -82,7 +83,7 @@ kernelspace_pointer_t mach_syscall_alloc_in(task_t task,
         return NULL;
     }
     
-    if(!mach_syscall_copy_in(task, size, kptr, src))
+    if(!syscall_copy_in(task, size, kptr, src))
     {
         free(kptr);
         return NULL;
@@ -91,10 +92,10 @@ kernelspace_pointer_t mach_syscall_alloc_in(task_t task,
     return kptr;
 }
 
-bool mach_syscall_copy_out(task_t task,
-                           size_t size,
-                           kernelspace_pointer_t kptr,
-                           userspace_pointer_t dst)
+bool syscall_copy_out(task_t task,
+                      size_t size,
+                      kernelspace_pointer_t kptr,
+                      userspace_pointer_t dst)
 {
     assert(kptr != NULL);
     
@@ -118,17 +119,19 @@ bool mach_syscall_copy_out(task_t task,
     return true;
 }
 
-char *mach_syscall_copy_str_in(task_t task,
-                               userspace_pointer_t src,
-                               size_t len)
+char *syscall_copy_str_in(task_t task,
+                          userspace_pointer_t src,
+                          size_t len)
 {
-    if (len == SIZE_MAX) {
+    if(len == SIZE_MAX)
+    {
         return NULL;
     }
     
     size_t cap = (len < 1024 ? len : 1024) + 1;
     char *buf = malloc(cap);
-    if (!buf) {
+    if(!buf)
+    {
         return NULL;
     }
     
