@@ -22,7 +22,6 @@
 #import <LindChain/ProcEnvironment/PEExtension.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/PEMachPort.h>
-#import <LindChain/ProcEnvironment/Syscall/mach_syscall_server.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
 #import <LindChain/ProcEnvironment/Shims/environment.h>
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>

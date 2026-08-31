@@ -27,7 +27,8 @@ BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme,
                                         NXProjectLanguage language,
                                         NXProjectInterface interface,
                                         NSString *projectName,
-                                        NSURL *projectURL)
+                                        NSURL *projectURL,
+                                        NSString *bundleIdentifier)
 {
     assert(scheme != nil && language != nil);
     
@@ -47,7 +48,8 @@ BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme,
     }
     
     NSDictionary<NSString*,NSString*> *variables = @{
-        @"LDEDisplayName": projectName
+        @"LDEDisplayName": projectName,
+        @"NXBundleIdentifier": bundleIdentifier,
     };
     
     for(NSURL *srcURL in folderEntries)
@@ -133,12 +135,11 @@ NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind s
             @"$(SDKROOT)",
             @"-resource-dir",
             @"$(BSROOT)/Include",
-            @"-L$(BSROOT)/lib",
             @"-I$(SHDROOT)/kernel",
-            @"-DHOST_ENV",  /* kext becomes Nyxian */
+            @"-DHOST_ENV",              /* kext becomes Nyxian */
             
             /* main kext flags */
-            @"-shared",
+            @"-bundle",
             @"-ffreestanding",
             @"-fno-builtin",
             @"-fno-common",
@@ -147,8 +148,6 @@ NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind s
             
             /* relaxing the damn linker */
             @"-Wl,-undefined,dynamic_lookup",
-            
-            @"-lSystem",
         ];
     }
     

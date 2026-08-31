@@ -62,7 +62,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
         case TIOCGETA:
             kvo_rdlock(tty);
             
-            if(!mach_syscall_copy_out(sys_task_, sizeof(struct termios), &(tty->t), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(struct termios), &(tty->t), user_ptr))
             {
                 goto out_fault;
             }
@@ -74,7 +74,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             /* there is no rollback from a failed copy-in */
             struct termios temp;
             
-            if(!mach_syscall_copy_in(sys_task_, sizeof(struct termios), &(temp), user_ptr))
+            if(!syscall_copy_in(sys_task_, sizeof(struct termios), &(temp), user_ptr))
             {
                 goto out_fault;
             }
@@ -95,12 +95,12 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             kvo_wrlock(tty);
             pid_t user_pgrp = 0;
             
-            if(!mach_syscall_copy_in(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
+            if(!syscall_copy_in(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
             {
                 goto out_fault;
             }
             
-            if(!mach_syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
             {
                 goto out_fault;
             }
@@ -111,7 +111,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
                 goto out_perm;
             }
             
-            if(!mach_syscall_copy_out(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
             {
                 goto out_fault;
             }
@@ -119,14 +119,14 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             break;
         case TIOCGPGRP:
             kvo_rdlock(tty);
-            if(!mach_syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
             {
                 goto out_fault;
             }
             break;
         case TIOCGWINSZ:
             kvo_rdlock(tty);
-            if(!mach_syscall_copy_out(sys_task_, sizeof(struct winsize), &(tty->ws), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(struct winsize), &(tty->ws), user_ptr))
             {
                 goto out_fault;
             }

@@ -48,7 +48,6 @@
 - (NSString*)extractArchive
 {
     int tmpfd = xpc_fd_dup(self.fd);
-    
     if(tmpfd < 0)
     {
         return nil;

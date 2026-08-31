@@ -21,8 +21,9 @@
 
 #import <LindChain/ProcEnvironment/PEFileHandle.h>
 #include <LindChain/ProcEnvironment/Utils/fd.h>
-#include <fcntl.h>
+#include <LindChain/ProcEnvironment/Utils/vnode.h>
 #include <copyfile.h>
+#include <fcntl.h>
 
 @implementation PEFileHandle
 
@@ -136,21 +137,15 @@
         return NO;
     }
     
-    /* create or truncate the destination file */
-    int dstFd = open([path UTF8String], O_WRONLY | O_CREAT | O_TRUNC, 0777);
-    if(dstFd < 0)
+    bool success = vnode_recover_with_fd_to_path(tmpfd, [path UTF8String]);
+    close(tmpfd);
+    if(!success)
     {
         close(tmpfd);
         return NO;
     }
     
-    /* clone doesnt work hmmm, something breaks for some reason when cloning */
-    int ret = fcopyfile(tmpfd, dstFd, NULL, COPYFILE_DATA);
-    
-    close(tmpfd);
-    close(dstFd);
-    
-    return ret == 0;
+    return tmpfd == 0;
 }
 
 - (BOOL)writeIn:(NSString*)path
@@ -171,7 +166,6 @@
     ftruncate(tmpfd, 0);
     lseek(tmpfd, 0, SEEK_SET);
     
-    /* clone doesnt work hmmm, something breaks for some reason when cloning */
     int ret = fcopyfile(srcFd, tmpfd, NULL, COPYFILE_DATA);
     
     close(srcFd);

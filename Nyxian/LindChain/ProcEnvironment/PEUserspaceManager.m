@@ -28,6 +28,7 @@
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#import <LindChain/ProcEnvironment/KextLoader/PEKextLoader.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -104,11 +105,16 @@
     /* now we can spin up that baby (micro kernel) =3 */
     ksurface_kinit();
     
-    if(enabled)
+    if(enabled && strcmp(getenv("FORCE_DISABLE_KEXT_LOADING") ?: "0", "1") != 0)
     {
         klog_log(domain, "loading kexts into address space");
-        kern_return_t kr = ksurface_fs_load_all_kext();
-        klog_log(domain, "kext loader %s", kr == KERN_SUCCESS ? "[ok]" : "[fail]");
+        NSMutableString *string = [[NSMutableString alloc] init];
+        klog_log(domain, "kext loader %s", PEKextLoaderLoad(string) ? "[ok]" : "[fail]");
+        NSString *message = [string copy];
+        if(message.length > 0)
+        {
+            [NotificationServer NotifyUserWithLevel:NotifLevelError notification:message delay:1.0];
+        }
     }
     
     /* now the actual userspace */

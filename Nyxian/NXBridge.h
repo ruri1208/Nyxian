@@ -62,9 +62,9 @@
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
-#import <LindChain/ProcEnvironment/Surface/kext.h>
 #import <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#import <LindChain/ProcEnvironment/KextLoader/PEKext.h>
 
 /* Daemon Interfaces Headers */
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>

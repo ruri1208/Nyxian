@@ -27,7 +27,7 @@
 #include <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
-#include <LindChain/ProcEnvironment/Surface/kext.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
 #include <LindChain/ProcEnvironment/Shims/panic.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/KextLoader/PEKext.h>
@@ -358,47 +358,6 @@ kern_return_t ksurface_fs_load_kext_with_path(const char *path,
         return KERN_DENIED;
     }
     
-    return ksurface_kext_load_at_path(executable.UTF8String, key);
+    return kxopen(executable.UTF8String, 0) != NULL ? KERN_SUCCESS : KERN_FAILURE;
 }
 
-kern_return_t ksurface_fs_load_all_kext(void)
-{
-    NSArray<PEKext*> *chain = [PEKext generateLoadChainForPath:kextFSRoot];
-    if(chain == nil)
-    {
-        return KERN_FAILURE;
-    }
-    
-    klog_log("ksurface:fs:kextloader", "kext load chain:");
-    for(PEKext *kext in chain)
-    {
-        klog_log("ksurface:fs:kextloader", "%@", kext.bundleID);
-    }
-    
-    klog_log("ksurface:fs:kextloader", "loading all installed kext's");
-    for(PEKext *kext in chain)
-    {
-        if([kext.bundleID isEqualToString:@"ksurface"])
-        {
-            /* we are ksurface lol */
-            continue;
-        }
-        
-        uint64_t key;
-        kern_return_t kr = ksurface_fs_load_kext_with_path(kext.bundlePath.UTF8String, &key);
-#if KSURFACE_KEXT_HARDENED_LOADING
-        if(kr != KERN_SUCCESS)
-        {
-            environment_panic("failed to load kext: %s", mach_error_string(kr));
-        }
-#else
-        if(kr != KERN_SUCCESS)
-        {
-            klog_log("ksurface:fs:kextloader","failed to load kext: %s", mach_error_string(kr));
-        }
-#endif /* KSURFACE_KEXT_HARDENED_LOADING */
-    }
-    klog_log("ksurface:fs:kextloader", "all kext's shall be loaded");
-    
-    return KERN_SUCCESS;
-}

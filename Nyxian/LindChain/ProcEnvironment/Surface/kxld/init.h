@@ -19,14 +19,20 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef NXCODETEMPLATE_H
-#define NXCODETEMPLATE_H
+#ifndef KXLD_INIT_H
+#define KXLD_INIT_H
 
-#import <Foundation/Foundation.h>
-#import <LindChain/IDEFoundation/NXType.h>
+#include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/image.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <mach-o/loader.h>
+#include <mach-o/ldsyms.h>
 
-BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme, NXProjectLanguage language, NXProjectInterface interface, NSString *projectName, NSURL *projectURL, NSString *bundleIdentifier);
-NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
-NSArray<NSString*> *NXSwiftFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
+bool KXRunInitializers(kxld_image_info_t *image_info);
 
-#endif /* NXCODETEMPLATE_H */
+#endif /* KXLD_INIT_H */

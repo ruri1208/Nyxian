@@ -74,49 +74,49 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
 - (NSURL*)rootURL
 {
     dispatch_once(&_gatherRootURLOnce, ^{
-        _rootURL = [NSURL fileURLWithPath:[[@"/private" stringByAppendingPathComponent:NSHomeDirectory()] stringByAppendingPathComponent:@"/Documents"]];
+        _rootURL = [NSURL fileURLWithPath:[[@"/private" stringByAppendingPathComponent:NSHomeDirectory()] stringByAppendingPathComponent:@"Documents"]];
     });
     return _rootURL;
 }
 
 - (NSURL*)sdkURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/SDK/iPhoneOS26.5.sdk"];
+    return [self.rootURL URLByAppendingPathComponent:@"SDK/iPhoneOS26.5.sdk"];
 }
 
 - (NSURL*)includeURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/Include"];
+    return [self.rootURL URLByAppendingPathComponent:@"Include"];
 }
 
 - (NSURL*)projectsURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/Projects"];
+    return [self.rootURL URLByAppendingPathComponent:@"Projects"];
 }
 
 - (NSURL*)cacheURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/Cache"];
+    return [self.rootURL URLByAppendingPathComponent:@"Cache"];
 }
 
 - (NSURL*)bootstrapPlistURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/bootstrap.plist"];
+    return [self.rootURL URLByAppendingPathComponent:@"bootstrap.plist"];
 }
 
 - (NSURL*)swiftURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/swift"];
+    return [self.rootURL URLByAppendingPathComponent:@"swift"];
 }
 
 - (NSURL*)swiftModuleCacheURL
 {
-    return [self.rootURL URLByAppendingPathComponent:@"/ModuleCache"];
+    return [self.rootURL URLByAppendingPathComponent:@"ModuleCache"];
 }
 
 - (NSURL*)rootfsURL
 {
-    NSURL *rootfsURL = [self.rootURL URLByAppendingPathComponent:@"/rootfs"];
+    NSURL *rootfsURL = [self.rootURL URLByAppendingPathComponent:@"rootfs"];
     [[NSFileManager defaultManager] createDirectoryAtURL:rootfsURL withIntermediateDirectories:NO attributes:nil error:nil];
     return rootfsURL;
 }
@@ -234,7 +234,7 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 NSLog(@"bootstrapping libraries");
                 [[NSFileManager defaultManager] removeItemAtURL:[self.rootURL URLByAppendingPathComponent:@"lib"] error:nil];
                 
-                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"/Shared/lib.zip"].path, self.rootURL.path))
+                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Shared/lib.zip"].path, self.rootURL.path))
                 {
                     error = [NSError errorWithDomain:@"" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"extracting \"lib.zip\" failed" }];
                     goto report_error;
@@ -294,7 +294,7 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 [[NSFileManager defaultManager] removeItemAtURL:self.includeURL error:nil];
                 [[NSFileManager defaultManager] removeItemAtURL:self.swiftURL error:nil];
                 
-                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"/Shared/include.zip"].path, [self.rootURL URLByAppendingPathComponent:@"Include"].path))
+                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Shared/include.zip"].path, [self.rootURL URLByAppendingPathComponent:@"Include"].path))
                 {
                     error = [NSError errorWithDomain:@"" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"extracting \"include.zip\" failed" }];
                     goto report_error;
@@ -303,7 +303,7 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 /*
                  * this is necessary so swift works
                  */
-                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"/Shared/swift.zip"].path, self.rootURL.path))
+                if(!unzipArchiveAtPath([NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Shared/swift.zip"].path, self.rootURL.path))
                 {
                     error = [NSError errorWithDomain:@"" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"extracting \"swift.zip\" failed" }];
                     goto report_error;
@@ -312,7 +312,7 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 self.version = 23;
             }
             
-            if(self.version < 26)
+            if(self.version < 27)
             {
                 /*
                  * the SDK is very important to use iOS API which
@@ -342,13 +342,13 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 
                 for(NSURL *symlink in symlinkSDKs)
                 {
-                    if(![[NSFileManager defaultManager] createSymbolicLinkAtURL:symlink withDestinationURL:self.sdkURL error:&error])
+                    if(![[NSFileManager defaultManager] createSymbolicLinkAtPath:symlink.path withDestinationPath:self.sdkURL.lastPathComponent error:&error])
                     {
                         goto report_error;
                     }
                 }
                 
-                self.version = 26;
+                self.version = 27;
             }
         }
         

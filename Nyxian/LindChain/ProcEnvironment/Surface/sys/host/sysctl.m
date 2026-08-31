@@ -64,7 +64,7 @@ int sysctl_kernmaxproc(sysctl_req_t *req)
     
     /* if user provided oldlenp, copy it in */
     if(req->oldlenp != NULL &&
-       !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+       !syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -80,7 +80,7 @@ int sysctl_kernmaxproc(sysctl_req_t *req)
             return -1;
         }
         
-        if(!mach_syscall_copy_out(req->task, sizeof(int), &maxproc, req->oldp))
+        if(!syscall_copy_out(req->task, sizeof(int), &maxproc, req->oldp))
         {
             req->err = EFAULT;
             return -1;
@@ -89,7 +89,7 @@ int sysctl_kernmaxproc(sysctl_req_t *req)
     
     /* always copy out size */
     if(req->oldlenp != NULL &&
-       !mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+       !syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -139,7 +139,7 @@ int sysctl_kernproc(sysctl_req_t *req)
     
     /* if user provided oldlenp, copy it in */
     if(req->oldlenp != NULL &&
-       !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+       !syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -166,7 +166,7 @@ int sysctl_kernproc(sysctl_req_t *req)
     /* size only query */
     if(req->oldp == NULL)
     {
-        if(!mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+        if(!syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
         {
             req->err = EFAULT;
             goto out_free_kpbuf_and_ret_excp;
@@ -177,7 +177,7 @@ int sysctl_kernproc(sysctl_req_t *req)
     /* copy request fails (buffer too small) */
     if(user_outlen < needed)
     {
-        if(!mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+        if(!syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
         {
             req->err = EFAULT;
             goto out_free_kpbuf_and_ret_excp;
@@ -187,7 +187,7 @@ int sysctl_kernproc(sysctl_req_t *req)
     }
     else
     {
-        if(!mach_syscall_copy_out(req->task, needed, kpbuf, req->oldp))
+        if(!syscall_copy_out(req->task, needed, kpbuf, req->oldp))
         {
             req->err = EFAULT;
             goto out_free_kpbuf_and_ret_excp;
@@ -195,7 +195,7 @@ int sysctl_kernproc(sysctl_req_t *req)
     }
     
     /* copy out buffer lenght */
-    if(!mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+    if(!syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
     {
         req->err = EFAULT;
         goto out_free_kpbuf_and_ret_excp;
@@ -258,7 +258,7 @@ int sysctl_kernhostname(sysctl_req_t *req)
         size_t hlen = strlen(ksurface->host_info.hostname) + 1;
         
         size_t oldlenp = 0;
-        if(!mach_syscall_copy_in(req->task, sizeof(size_t), &oldlenp, req->oldlenp))
+        if(!syscall_copy_in(req->task, sizeof(size_t), &oldlenp, req->oldlenp))
         {
             host_unlock();
             req->err = EFAULT;
@@ -272,8 +272,8 @@ int sysctl_kernhostname(sysctl_req_t *req)
             return -1;
         }
         
-        if(!mach_syscall_copy_out(req->task, hlen, ksurface->host_info.hostname, req->oldp) ||
-           !mach_syscall_copy_out(req->task, sizeof(size_t), &hlen, req->oldlenp))
+        if(!syscall_copy_out(req->task, hlen, ksurface->host_info.hostname, req->oldp) ||
+           !syscall_copy_out(req->task, sizeof(size_t), &hlen, req->oldlenp))
         {
             host_unlock();
             req->err = EFAULT;
@@ -297,7 +297,7 @@ int sysctl_kernhostname(sysctl_req_t *req)
         }
         
         /* copy buffer in */
-        char *newname = mach_syscall_alloc_in(req->task, req->newlen, req->newp);
+        char *newname = syscall_alloc_in(req->task, req->newlen, req->newp);
         if(!newname)
         {
             req->err = EFAULT;
@@ -341,7 +341,7 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
 #endif /* KSURFACE_EMIT_KERNEL_TASK */
     
     size_t user_outlen = 0;
-    if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -389,7 +389,7 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     /* size-only query */
     if(req->oldp == NULL)
     {
-        if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp))
+        if(req->oldlenp != NULL && !syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp))
         {
             req->err = EFAULT;
             free(buf);
@@ -403,21 +403,21 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     {
         if(req->oldlenp != NULL)
         {
-            mach_syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp);
+            syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp);
         }
         req->err = ENOMEM;
         free(buf);
         return -1;
     }
     
-    if(!mach_syscall_copy_out(req->task, bufsize, buf, req->oldp))
+    if(!syscall_copy_out(req->task, bufsize, buf, req->oldp))
     {
         req->err = EFAULT;
         free(buf);
         return -1;
     }
     
-    if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_out(req->task, sizeof(size_t), &bufsize, req->oldlenp))
     {
         req->err = EFAULT;
         free(buf);
@@ -434,7 +434,7 @@ int sysctl_kernargmax(sysctl_req_t *req)
     size_t needed = sizeof(int);
     int argmax = ARG_MAX;
     
-    if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -448,14 +448,14 @@ int sysctl_kernargmax(sysctl_req_t *req)
             return -1;
         }
         
-        if(!mach_syscall_copy_out(req->task, sizeof(int), &argmax, req->oldp))
+        if(!syscall_copy_out(req->task, sizeof(int), &argmax, req->oldp))
         {
             req->err = EFAULT;
             return -1;
         }
     }
     
-    if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -473,7 +473,7 @@ int sysctl_kernboottime(sysctl_req_t *req)
         .tv_usec = (__darwin_suseconds_t)(g_process_start_time_sysctl.tv_nsec / 1000),
     };
     
-    if(req->oldlenp != NULL && !mach_syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -487,14 +487,14 @@ int sysctl_kernboottime(sysctl_req_t *req)
             return -1;
         }
         
-        if(!mach_syscall_copy_out(req->task, sizeof(struct timeval), &kval, req->oldp))
+        if(!syscall_copy_out(req->task, sizeof(struct timeval), &kval, req->oldp))
         {
             req->err = EFAULT;
             return -1;
         }
     }
     
-    if(req->oldlenp != NULL && !mach_syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+    if(req->oldlenp != NULL && !syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
     {
         req->err = EFAULT;
         return -1;
@@ -582,7 +582,7 @@ DEFINE_SYSCALL_HANDLER(sysctl)
     }
     
     /* copy name array from userspace */
-    if(!mach_syscall_copy_in(sys_task_, count * sizeof(int), &(req.name), (userspace_pointer_t)args[0]))
+    if(!syscall_copy_in(sys_task_, count * sizeof(int), &(req.name), (userspace_pointer_t)args[0]))
     {
         sys_return_failure_with_errno(EFAULT);
     }
@@ -601,7 +601,7 @@ DEFINE_SYSCALL_HANDLER(sysctl)
 
 DEFINE_SYSCALL_HANDLER(sysctlbyname)
 {    
-    char *name_buf = mach_syscall_copy_str_in(sys_task_, (userspace_pointer_t)args[0], 128);
+    char *name_buf = syscall_copy_str_in(sys_task_, (userspace_pointer_t)args[0], 128);
     
     if(name_buf == NULL)
     {

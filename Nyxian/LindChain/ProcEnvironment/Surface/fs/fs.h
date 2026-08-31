@@ -27,11 +27,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+extern NSString *kextFSRoot;
+
 kern_return_t ksurface_fs_init(void);
 
 kern_return_t ksurface_fs_install_kext_at_path(const char *path);
 kern_return_t ksurface_fs_load_kext_with_bundleid(const char *bundleid, uint64_t *key);
 kern_return_t ksurface_fs_load_kext_with_path(const char *path, uint64_t *key);
-kern_return_t ksurface_fs_load_all_kext(void);
 
 #endif /* FS_FS_H */

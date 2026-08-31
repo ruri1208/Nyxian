@@ -19,13 +19,20 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROCENVIRONMENT_DYLD_H
-#define PROCENVIRONMENT_DYLD_H
+#ifndef KXLD_OBJC_H
+#define KXLD_OBJC_H
 
-#include <dlfcn.h>
+#include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/image.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <mach-o/loader.h>
+#include <mach-o/ldsyms.h>
 
-#define RTLD_EXACT_PATH 0x40000000  /* doesn't allow dependencies nor path resolution */
+bool KXRegisterObjCImage(kxld_image_info_t *image_info);
 
-void *dlopen_from_fd(int fd, int mode);
-
-#endif /* PROCENVIRONMENT_DYLD_H */
+#endif /* KXLD_OBJC_H */

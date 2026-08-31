@@ -24,6 +24,8 @@
 
 #include <stdbool.h>
 
-bool vnode_refresh_at_path(const char* path);
+/* very efficient vnode tricks :3 */
+bool vnode_refresh_with_path(const char* path);
+bool vnode_recover_with_fd_to_path(int fd, const char *path);
 
 #endif /* __VNODE_H */

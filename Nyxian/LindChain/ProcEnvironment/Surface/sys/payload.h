@@ -2,6 +2,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 
  Copyright (C) 2025 - 2026 emexlab
+ Copyright (C) 2026 semvis123
 
  This file is part of Nyxian.
 
@@ -19,14 +20,21 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef NXCODETEMPLATE_H
-#define NXCODETEMPLATE_H
+#ifndef SYS_PAYLOAD_H
+#define SYS_PAYLOAD_H
 
-#import <Foundation/Foundation.h>
-#import <LindChain/IDEFoundation/NXType.h>
+#include <mach/mach.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-BOOL NXCodeTemplateMakeProjectStructure(NXProjectScheme scheme, NXProjectLanguage language, NXProjectInterface interface, NSString *projectName, NSURL *projectURL, NSString *bundleIdentifier);
-NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
-NSArray<NSString*> *NXSwiftFlagsForCodeTemplateLanguage(NXProjectSchemeKind schemeKind, NXProjectLanguageKind languageKind);
+typedef void* userspace_pointer_t;
+typedef void* kernelspace_pointer_t;
 
-#endif /* NXCODETEMPLATE_H */
+kern_return_t syscall_payload_create(void *ptr, size_t size, vm_address_t *vm_address);
+
+bool syscall_copy_in(task_t task, size_t size, kernelspace_pointer_t kptr, userspace_pointer_t src);
+kernelspace_pointer_t syscall_alloc_in(task_t task, size_t size, userspace_pointer_t src);
+bool syscall_copy_out(task_t task, size_t size, kernelspace_pointer_t kptr, userspace_pointer_t dst);
+char *syscall_copy_str_in(task_t task, userspace_pointer_t src, size_t len);
+
+#endif /* SYS_PAYLOAD_H */
