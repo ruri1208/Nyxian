@@ -23,6 +23,7 @@
 #import <LindChain/ProcEnvironment/KextLoader/PEKext.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <LindChain/ProcEnvironment/Surface/kxld/image.h>
+#import <LindChain/ProcEnvironment/Utils/klog.h>
 
 static BOOL PEKextIsVersionInBetweenMinMax(NSString *version,
                                            NSString *minVersion,
@@ -211,6 +212,16 @@ BOOL PEKextLoaderLoad(NSMutableString *errorString)
     if(loadOrder.count != kextMap.count)
     {
         return nil;
+    }
+    
+    klog_log("kextloader", "kernel extension load chain:");
+    for(PEKext *kext in loadOrder)
+    {
+        klog_log("kextloader", "%@ %@ (abi %u, flags 0x%llx)", kext.bundleID, kext.version, kext.abi_version, (unsigned long long)kext.flags);
+        for(PEDependency *dependency in kext.dependencies)
+        {
+            klog_log("kextloader", "  needs %@ [%@ .. %@]", dependency.bundleID, dependency.minVersion, dependency.maxVersion);
+        }
     }
     
     NSMutableSet<NSString *> *failed = [NSMutableSet set];

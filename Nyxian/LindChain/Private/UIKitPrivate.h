@@ -516,6 +516,7 @@
 @end
 
 @interface RBSProcessHandle
+@property (nonatomic, readonly) audit_token_t auditToken;
 @property(nonatomic, copy, readonly) RBSProcessIdentity *identity;
 + (instancetype)handleForPredicate:(RBSProcessPredicate *)predicate error:(NSError **)error;
 - (audit_token_t)auditToken;

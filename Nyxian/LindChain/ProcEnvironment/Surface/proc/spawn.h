@@ -25,7 +25,7 @@
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
 
-kern_return_t proc_spawn(ksurface_proc_t *parent, ksurface_proc_t **child, pid_t child_pid, ksurface_trust_identity_t *identity);
+kern_return_t proc_spawn(ksurface_proc_t *parent, ksurface_proc_t **child, pid_t child_pid, int child_pidv, ksurface_trust_identity_t *identity);
 kern_return_t proc_kill(ksurface_proc_t *child, int sig);
 
 kern_return_t proc_reap(ksurface_proc_t *child);

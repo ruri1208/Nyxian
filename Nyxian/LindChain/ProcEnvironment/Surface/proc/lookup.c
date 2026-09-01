@@ -55,6 +55,32 @@ kern_return_t proc_for_pid(pid_t pid,
     return KERN_SUCCESS;
 }
 
+kern_return_t proc_for_pid_with_pidv(pid_t pid,
+                                     int pidv,
+                                     ksurface_proc_t **proc)
+{
+    /* aquiring proc object */
+    ksurface_proc_t *found = NULL;
+    kern_return_t ret = proc_for_pid(pid, &found);
+    if(ret != KERN_SUCCESS)
+    {
+        return ret;
+    }
+    
+    /* perform pidv validation */
+    kvo_rdlock(found);
+    bool valid = (proc_getpidv(found) == pidv);
+    kvo_unlock(found);
+    if(!valid)
+    {
+        kvo_release(found);
+        return KERN_NOT_FOUND;
+    }
+    
+    *proc = found;
+    return KERN_SUCCESS;
+}
+
 kern_return_t proc_task_for_proc(ksurface_proc_t *proc,
                                  task_special_port_t flavour,
                                  task_t *task)

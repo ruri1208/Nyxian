@@ -126,6 +126,20 @@ kern_return_t KXRegisterKext(kxld_image_info_t *image_info)
     return KERN_SUCCESS;
 }
 
+kern_return_t KXUnregisterKext(kxld_image_info_t *image_info)
+{
+    os_unfair_lock_lock(&g_kext_symbol_lock);
+    uint64_t key = KXSymbolKey(image_info->mod->identifier);
+    kxld_image_info_t *found = radix_remove(&g_kext_identity_tree, key);
+    if(found == NULL)
+    {
+        os_unfair_lock_unlock(&g_kext_symbol_lock);
+        return KERN_NOT_FOUND;
+    }
+    os_unfair_lock_unlock(&g_kext_symbol_lock);
+    return KERN_SUCCESS;
+}
+
 kern_return_t KXGetRegisteredKextForIdentifier(const char *identifier,
                                                kxld_image_info_t **image_info)
 {

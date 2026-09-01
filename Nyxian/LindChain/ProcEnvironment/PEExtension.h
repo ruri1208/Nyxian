@@ -43,6 +43,6 @@ NSBundle *PEGetLiveProcessBundle(void);
 BOOL PEExtensionHasGetTaskAllowed(void);
 NSExtension *PEGetNSExtension(void);
 void PESpawnTimeout(void);
-FBProcess *PESpawnFBProcess(NSDictionary *items);
+FBProcess *PESpawnFBProcess(NSDictionary *items, pid_t *processIdentifier, int *processIdentifierVersion);
 
 #endif /* PEEXTENSION_H */

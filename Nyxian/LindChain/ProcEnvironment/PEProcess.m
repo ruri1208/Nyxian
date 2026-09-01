@@ -99,13 +99,12 @@
     self.displayName = self.applicationObject ? self.applicationObject.localizedName : [self.executablePath lastPathComponent];
     
     /* spawning process */
-    self.process = PESpawnFBProcess(items);
+    self.process = PESpawnFBProcess(items, &(self->_pid), &(self->_pidv));
     if(self.process == nil)
     {
         proctil(kProctilActionUnlock);
         return nil;
     }
-    _pid = self.process.pid;
     
     [self.process addObserver:self];
     if(!self.process.running)
@@ -119,7 +118,7 @@
     }
     
     ksurface_proc_t *child = NULL;
-    kern_return_t kr = proc_spawn(proc ?: kernel_proc_, &child, self.pid, identity);
+    kern_return_t kr = proc_spawn(proc ?: kernel_proc_, &child, self.pid, self.pidv, identity);
     if(kr != KERN_SUCCESS)
     {
         [self terminate];

@@ -43,6 +43,7 @@ void KXRegisterExport(const char *name, void *addr);
 void *KXResolve(const char *name);
 
 kern_return_t KXRegisterKext(kxld_image_info_t *image_info);
+kern_return_t KXUnregisterKext(kxld_image_info_t *image_info);
 kern_return_t KXGetRegisteredKextForIdentifier(const char *identifier, kxld_image_info_t **image_info);
 
 #endif /* KXLD_RESOLVE_H */

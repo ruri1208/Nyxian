@@ -20,6 +20,7 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/kxld/init.h>
+#include <LindChain/ProcEnvironment/Utils/klog.h>
 
 typedef void (*kx_init_fn)(int argc, char **argv, char **envp, char **apple, void *vars);
 

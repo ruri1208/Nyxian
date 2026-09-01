@@ -43,7 +43,8 @@
 @property (nonatomic,strong) NSString *displayName;
 @property (nonatomic,strong) NSString *executablePath;
 
-@property (nonatomic) pid_t pid;
+@property (nonatomic,readonly) pid_t pid;
+@property (nonatomic,readonly) int pidv;
 
 - (instancetype)initWithItems:(NSDictionary*)items withKernelSurfaceProcess:(ksurface_proc_t*)proc;
 
