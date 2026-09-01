@@ -522,7 +522,6 @@ void klog_log_internal(const char *system, const char *format, ...)
 #if DEBUG
             NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
             int rfd = open([kfd_path UTF8String], O_RDONLY);
-            unlink([kfd_path UTF8String]);
             
             /* we need the tail in-case of a panic when debugging */
             NSString *tail = @"";

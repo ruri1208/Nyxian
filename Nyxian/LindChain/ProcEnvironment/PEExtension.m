@@ -128,7 +128,9 @@ void PESpawnTimeout(void)
     lastSpawnTick = mach_absolute_time();
 }
 
-FBProcess *PESpawnFBProcess(NSDictionary *items)
+FBProcess *PESpawnFBProcess(NSDictionary *items,
+                            pid_t *processIdentifier,
+                            int *processIdentifierVersion)
 {
     assert(items != nil);
     
@@ -210,6 +212,22 @@ FBProcess *PESpawnFBProcess(NSDictionary *items)
     {
         [extension _kill:SIGKILL];
         return nil;
+    }
+    
+    audit_token_t at = processHandle.auditToken;    /* entry to validation */
+    if(at.val[5] != pid)
+    {
+        [extension _kill:SIGKILL];
+        return nil;
+    }
+    
+    if(processIdentifier)
+    {
+        *processIdentifier = at.val[5];
+    }
+    if(processIdentifierVersion)
+    {
+        *processIdentifierVersion = at.val[7];
     }
     
     FBProcessManager *manager = [PrivClass(FBProcessManager) sharedInstance];

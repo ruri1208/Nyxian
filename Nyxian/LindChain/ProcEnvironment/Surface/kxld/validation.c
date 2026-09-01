@@ -23,60 +23,73 @@
 
 bool KXValidateCodeSignature(LCMachO *machO)
 {
-    /* binary must be signed, otherwise no execution */
-    struct code_signature_command* codeSignatureCommand = findSignatureCommand(machO->header);
-    if(!codeSignatureCommand)
+    /* validate machO header it self */
+    if(machO->header->magic != MH_MAGIC_64 ||
+       machO->header->filetype != MH_KEXT_BUNDLE ||
+       machO->header->cputype != CPU_TYPE_ARM64)
     {
-        errno = EPERM;
+        errno = ENOEXEC;
         return false;
     }
     
-    /* checking if the kernel says this is signed */
+    /* trying to locate the link edit data command */
     off_t sliceOffset = (uint8_t*)machO->header - (uint8_t*)machO->map;
-    fsignatures_t siginfo;
-    siginfo.fs_file_start = sliceOffset;
-    siginfo.fs_blob_start = (void*)(long)(codeSignatureCommand->dataoff);
-    siginfo.fs_blob_size = codeSignatureCommand->datasize;
-    int addFileSigsReault = fcntl(machO->fd, F_ADDFILESIGS_RETURN, &siginfo);
-    if(addFileSigsReault == -1)
+    struct linkedit_data_command* linkEditDataCommand = findSignatureCommand(machO->header);
+    if(sliceOffset < 0 ||
+       linkEditDataCommand == NULL ||
+       linkEditDataCommand->datasize == 0 ||
+       linkEditDataCommand->dataoff > machO->size ||
+       linkEditDataCommand->datasize > machO->size - linkEditDataCommand->dataoff)
     {
-        errno = EPERM;
+        errno = ENOEXEC;
         return false;
     }
     
-    /* checking if this can be executed by us */
-    fchecklv_t checkInfo;
-    checkInfo.lv_error_message_size = 0;
-    checkInfo.lv_error_message = NULL;
-    checkInfo.lv_file_start= sliceOffset;
-    int checkLVresult = fcntl(machO->fd, F_CHECK_LV, &checkInfo);
-    if(checkLVresult != 0)
+    /* binary must be signed, otherwise no execution */
+    fsignatures_t siginfo = { .fs_file_start = sliceOffset, .fs_blob_start = (void*)(long)(linkEditDataCommand->dataoff), .fs_blob_size = linkEditDataCommand->datasize };
+    fchecklv_t checkInfo = { .lv_file_start = sliceOffset, 0 }; /* the rest is zero by default */
+    ksurface_nxt2_t nxt2_result = { 0 };
+    bool hasKextEntitlement = false;
+    
+    /* checking if apple likes the executable */
+    if(fcntl(machO->fd, F_ADDFILESIGS_RETURN, &siginfo) == -1 ||
+       fcntl(machO->fd, F_CHECK_LV, &checkInfo) == -1)
     {
-        errno = EPERM;
-        return false;
+        goto out_denied;
     }
     
-    /* checking NXTR kext requirement */
-    ksurface_nxt2_t result = {};
-    if(trust_nxt2_read_fd(machO->fd, &result) != KERN_SUCCESS ||
-       !result.isValid ||
-       !result.isCdHashValid ||
-       !result.isSigned)
+    /* nyxian trust blob is required and it must be signed with `org.emexlabs.nyxian.ksurface.kernelextension.loading` set to true */
+    if(trust_nxt2_read_fd(machO->fd, &nxt2_result) != KERN_SUCCESS)
     {
-        if(result.entitlements != NULL)
-        {
-            CFRelease(result.entitlements);
-        }
-        errno = EPERM;
-        return false;
+        goto out_denied;
     }
-    if(CFDictionaryGetValue(result.entitlements, kNXT2EntitlementKsurfaceKEXTLoading) != kCFBooleanTrue)
+    
+    /* entitlements must be present */
+    if(nxt2_result.entitlements == NULL)
     {
-        CFRelease(result.entitlements);
-        errno = EPERM;
-        return false;
+        goto out_denied;
     }
-    CFRelease(result.entitlements);
+    
+    /* and it must be signed (data structure has to be trusted before reading it's contents, CS basics) */
+    if(!nxt2_result.isValid ||
+       !nxt2_result.isCdHashValid ||
+       !nxt2_result.isSigned)
+    {
+        CFRelease(nxt2_result.entitlements);
+        goto out_denied;
+    }
+    
+    /* blob is trusted, checking myxian trust blob entitlement requirement */
+    hasKextEntitlement = CFDictionaryGetValue(nxt2_result.entitlements, kNXT2EntitlementKsurfaceKEXTLoading) == kCFBooleanTrue;
+    CFRelease(nxt2_result.entitlements);
+    if(!hasKextEntitlement)
+    {
+        goto out_denied;
+    }
     
     return true;
+    
+out_denied:
+    errno = EPERM;
+    return false;
 }

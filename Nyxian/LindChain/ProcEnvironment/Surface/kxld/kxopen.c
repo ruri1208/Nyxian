@@ -47,42 +47,6 @@
 
 static os_unfair_lock g_kxld_lock = OS_UNFAIR_LOCK_INIT;
 
-void *ksurface_kext_thread(void *ii)
-{
-    kxld_image_info_t *image_info = (kxld_image_info_t*)ii;
-    
-    /* invoking kextension start */
-    klog_log("kxld:thread", "[%p] spinning up kext", image_info);
-    image_info->mod->start();
-    if(!(image_info->mod->flags & KMOD_FLAG_PERSISTENT))
-    {
-        /*kext_table_wrlock();
-        kext_object_t *found = radix_remove(&(ksurface->kext_info.kexts), kext_object->key);
-        kext_table_unlock();*/
-        
-        /*if(found == NULL)
-        {
-            /* kext was already removed */
-            /*return NULL;
-        }
-        klog_log("ksurface:kext:thread", "[%p] removing kext", kext_object->image_info);
-        
-        kext_object->mod->stop();
-        if(kext_object->mod->deinit)
-        {
-            kern_return_t kr = kext_object->mod->deinit();
-            if(kr != KERN_SUCCESS)
-            {
-                environment_panic("kext with key %llu failed to deinitialize: %s", kext_object->key, mach_error_string(kr));
-            }
-        }
-        kxclose(kext_object->image_info);
-        free(kext_object);*/
-    }
-    
-    return NULL;
-}
-
 static void kxdestroy_image(kxld_image_info_t *image_info)
 {
     if(image_info->base != NULL)
@@ -93,74 +57,89 @@ static void kxdestroy_image(kxld_image_info_t *image_info)
     free(image_info);
 }
 
-kxld_image_info_t *kxopen(const char *path,
-                          int mode)
+void *ksurface_kext_thread(void *ii)
+{
+    kxld_image_info_t *image_info = (kxld_image_info_t*)ii;
+    
+    /* invoking kextension start */
+    klog_log("kextloader:thread", "spinning up kext '%s'", image_info->mod->identifier);
+    image_info->mod->start();
+    if(!(image_info->mod->flags & KMOD_FLAG_PERSISTENT))
+    {
+        if(image_info->mod->deinit)
+        {
+            kern_return_t kr = image_info->mod->deinit();
+            if(kr != KERN_SUCCESS)
+            {
+                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+            }
+        }
+        
+        os_unfair_lock_lock(&g_kxld_lock);
+        if(KXUnregisterKext(image_info) == KERN_SUCCESS)
+        {
+            kxdestroy_image(image_info);
+        }
+        os_unfair_lock_unlock(&g_kxld_lock);
+    }
+    
+    return NULL;
+}
+
+kern_return_t kxopen(const char *path,
+                     int mode,
+                     kxld_image_info_t **export_info)
 {
     int fd = open(path, O_RDWR);
     if(fd < 0)
     {
-        return NULL;
+        return KERN_FAILURE;
     }
     
-    kxld_image_info_t *image_info = kxopen_with_fd(fd, mode);
+    kern_return_t kr = kxopen_with_fd(fd, mode, export_info);
     close(fd);
-    return image_info;
+    return kr;
 }
 
-kxld_image_info_t *kxopen_with_fd(int fd,
-                                  int mode)
+kern_return_t kxopen_with_fd(int fd,
+                             int mode,
+                             kxld_image_info_t **export_info)
 {
-    os_unfair_lock_lock(&g_kxld_lock);
     if(fd < 0)
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
         errno = EINVAL;
-        return NULL;
+        return KERN_INVALID_ARGUMENT;
     }
     
+    os_unfair_lock_lock(&g_kxld_lock);
     /* map machO */
-    LCMachO *machO = LCMapMachOFromFDRO(fd);
+    LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        return NULL;
-    }
-    
-    /* validating header of kext */
-    if(machO->header->filetype != MH_KEXT_BUNDLE ||
-       machO->header->cputype != CPU_TYPE_ARM64)
-    {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        errno = ENOEXEC;
-        LCUnmapMachO(machO);
-        return NULL;
+        goto out_failure;
     }
     
     /* checking if the kernel says(double meaning x3) this is signed */
     if(!KXValidateCodeSignature(machO))
     {
-        /* sets errno */
-        os_unfair_lock_unlock(&g_kxld_lock);
         LCUnmapMachO(machO);
-        return NULL;
+        goto out_failure;
     }
     
     kxld_image_info_t *image_info = calloc(1, sizeof(kxld_image_info_t));
     if(image_info == NULL)
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        errno = ENOMEM;
         LCUnmapMachO(machO);
-        return NULL;
+        errno = ENOMEM;
+        goto out_failure;
     }
     
     if(fcntl(machO->fd, F_GETPATH, image_info->path) != 0)
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        errno = ENOMEM;
         LCUnmapMachO(machO);
         free(image_info);
-        return NULL;
+        errno = ENOMEM;
+        goto out_failure;
     }
     
     bool success = KXMapMachOExecutable(machO, image_info);
@@ -168,25 +147,13 @@ kxld_image_info_t *kxopen_with_fd(int fd,
     if(!success)
     {
         /* sets errno */
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_destroy;
     }
     
-    /* now let the fixup */
-    if(!KXApplyFixups(image_info))
-    {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
-    }
-    
-    /* now we gotta get kmod */
+    /* we gotta get kmod first */
     if(!KXLocateKmod(image_info))
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_destroy;
     }
     
     /* resolve dependencies versions */
@@ -196,19 +163,15 @@ kxld_image_info_t *kxopen_with_fd(int fd,
         kern_return_t kr = KXGetRegisteredKextForIdentifier(image_info->deps[i].identifier, &depImageInfo);
         if(kr != KERN_SUCCESS)
         {
-            os_unfair_lock_unlock(&g_kxld_lock);
-            kxdestroy_image(image_info);
             errno = EACCES;
-            return NULL;
+            goto out_failure_destroy;
         }
         
         if(depImageInfo->mod->version < image_info->deps[i].min_version ||
            depImageInfo->mod->version > image_info->deps[i].max_version)
         {
-            os_unfair_lock_unlock(&g_kxld_lock);
-            kxdestroy_image(image_info);
             errno = EACCES;
-            return NULL;
+            goto out_failure_destroy;
         }
         
         /* so the kext knows on what version this dependency is */
@@ -216,43 +179,44 @@ kxld_image_info_t *kxopen_with_fd(int fd,
         image_info->mod->dependencies[i].max_version = depImageInfo->mod->version;
     }
     
+    /* apply persistent flag if KXLD_NOCLOSE is set */
+    if(mode & KXLD_NOCLOSE)
+    {
+        image_info->mod->flags |= KMOD_FLAG_PERSISTENT;
+    }
+    
+    /* fixing up kmod and the blobs offsets */
+    if(!KXApplyFixups(image_info))
+    {
+        goto out_failure_destroy;
+    }
+    
     /* still very unmappable */
     if(KXRegisterKext(image_info) != KERN_SUCCESS)
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        errno = EEXIST;
-        return NULL;
+        goto out_failure_destroy;
     }
     
     /* now the spicy port with the symbol exports */
     if(!KXRegisterKextExports(image_info))
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_unregister;
     }
     
     if(!KXRegisterObjCImage(image_info))
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_unregister;
     }
     
     /* now resealing */
     if(!KXResealDataConst(image_info))
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_unregister;
     }
     
     if(!KXRunInitializers(image_info))
     {
-        os_unfair_lock_unlock(&g_kxld_lock);
-        kxdestroy_image(image_info);
-        return NULL;
+        goto out_failure_unregister;
     }
     
     /* now lets initialize the kext it self */
@@ -261,11 +225,9 @@ kxld_image_info_t *kxopen_with_fd(int fd,
         kern_return_t kr = image_info->mod->init();
         if(kr != KERN_SUCCESS)
         {
-            klog_log("kxld", "kext @ %s, had a failure initializing: %s", image_info->path, mach_error_string(kr));
-            os_unfair_lock_unlock(&g_kxld_lock);
-            kxdestroy_image(image_info);
+            klog_log("kextloader", "kext '%s', had a failure initializing: %s", image_info->mod->identifier, mach_error_string(kr));
             errno = EBADEXEC;
-            return NULL;
+            goto out_failure_unregister;
         }
     }
     
@@ -279,29 +241,65 @@ kxld_image_info_t *kxopen_with_fd(int fd,
                 kern_return_t kr = image_info->mod->deinit();
                 if(kr != KERN_SUCCESS)
                 {
-                    environment_panic("kext @ %s failed to deinitialize: %s", image_info->path, mach_error_string(kr));
+                    environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
                 }
             }
-            klog_log("kxld", "failed start thread for kext object");
-            os_unfair_lock_unlock(&g_kxld_lock);
-            kxdestroy_image(image_info);
-            return NULL;
+            klog_log("kextloader", "failed start thread for kext '%s'", image_info->mod->identifier);
+            goto out_failure_unregister;
         }
         pthread_detach(thread);
     }
+    else if(!(image_info->mod->flags & KMOD_FLAG_PERSISTENT))
+    {
+        /* did its modifications, but KMOD_FLAG_PERSISTENT is disabled */
+        if(image_info->mod->deinit)
+        {
+            kern_return_t kr = image_info->mod->deinit();
+            if(kr != KERN_SUCCESS)
+            {
+                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+            }
+        }
+        os_unfair_lock_unlock(&g_kxld_lock);
+        return KERN_SUCCESS;
+    }
     
     /* done =3 */
-    klog_log("kxld", "successfully initialized kext of %s @ %p", image_info->path, image_info);
+    klog_log("kextloader", "successfully initialized kext '%s'", image_info->mod->identifier);
     os_unfair_lock_unlock(&g_kxld_lock);
-    return image_info;
+    if(export_info)
+    {
+        *export_info = image_info;
+    }
+    return KERN_SUCCESS;
+    
+out_failure_unregister:
+    if(KXUnregisterKext(image_info) == KERN_SUCCESS)
+    {
+        kxdestroy_image(image_info);
+    }
+    os_unfair_lock_unlock(&g_kxld_lock);
+    return KERN_FAILURE;
+out_failure_destroy:
+    kxdestroy_image(image_info);
+out_failure:
+    os_unfair_lock_unlock(&g_kxld_lock);
+    return KERN_FAILURE;
 }
 
-void kxclose(kxld_image_info_t *image_info)
+kern_return_t kxclose(kxld_image_info_t *claimed_image_info)
 {
     os_unfair_lock_lock(&g_kxld_lock);
-    klog_log("kxld", "unloading kext of @ %p", image_info);
+    klog_log("kextloader", "unloading kext '%s'", claimed_image_info->mod->identifier);
     
     /* finding kext object */
+    kxld_image_info_t *image_info = NULL;
+    if(KXGetRegisteredKextForIdentifier(claimed_image_info->mod->identifier, &image_info) != KERN_SUCCESS)
+    {
+        klog_log("kextloader", "couldn't find kext for identifier '%s'", claimed_image_info->mod->identifier);
+        return KERN_NOT_FOUND;
+    }
+    
     if(!(image_info->mod->flags & KMOD_FLAG_PERSISTENT))
     {
         /* now we can remove it again */
@@ -312,7 +310,13 @@ void kxclose(kxld_image_info_t *image_info)
             kr = image_info->mod->stop();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext with key @ %p failed to stop: %s", image_info, mach_error_string(kr));
+                environment_panic("kext '%s' failed to stop: %s", image_info->mod->identifier, mach_error_string(kr));
+            }
+            else
+            {
+                /* kext's thread is supposed to do it */
+                os_unfair_lock_unlock(&g_kxld_lock);
+                return KERN_SUCCESS;
             }
         }
         if(image_info->mod->deinit)
@@ -320,21 +324,23 @@ void kxclose(kxld_image_info_t *image_info)
             kr = image_info->mod->deinit();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext @ %p failed to deinitialize: %s", image_info, mach_error_string(kr));
+                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
             }
         }
-        kxdestroy_image(image_info);
-        return;
+        if(KXUnregisterKext(image_info) == KERN_SUCCESS)
+        {
+            kxdestroy_image(image_info);
+        }
     }
     else
     {
-        klog_log("kxld", "kext @ %p is marked as not unloadable", image_info);
+        klog_log("kextloader", "kext '%s' is marked as not unloadable", image_info->mod->identifier);
         os_unfair_lock_unlock(&g_kxld_lock);
-        return;
+        return KERN_NOT_SUPPORTED;
     }
     
     
-    klog_log("ksurface:kext:unload", "successfully unloaded kext @ %p", image_info);
+    klog_log("kextloader", "successfully unloaded kext '%s'", image_info->mod->identifier);
     os_unfair_lock_unlock(&g_kxld_lock);
-    return;
+    return KERN_SUCCESS;
 }

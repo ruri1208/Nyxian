@@ -309,9 +309,6 @@ void ksurface_kinit(void)
     klog_log("ksurface:kinit", "-(((---(((--------");
     klog_log("ksurface:kinit", "");
     
-    /* sets where the virtual /Developer mount will reference too */
-    setenv("VFSROOT", [[NSString stringWithFormat:@"%@/Documents", NSHomeDirectory()] UTF8String], 1);
-    
     /*
      * allocates the surface where everything nyxian kernel
      * related exists, structures that are made to store
@@ -326,9 +323,17 @@ void ksurface_kinit(void)
         environment_panic("fs didn't initialize");
     }
     
-    /* now mapping klog to its dev device position */
     NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
     NSString *entry_path = [NSString stringWithFormat:@"%@/Documents/klog.txt", NSHomeDirectory()];
+    
+    /* now mapping klog to its dev device position */
+    if([[NSFileManager defaultManager] fileExistsAtPath:kfd_path])
+    {
+        NSString *kfd_path_old = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog_old", NSHomeDirectory()];
+        unlink([kfd_path_old UTF8String]);
+        rename([kfd_path UTF8String], [kfd_path_old UTF8String]);
+    }
+    
     if(rename([entry_path UTF8String], [kfd_path UTF8String]) != 0)
     {
         perror("rename");

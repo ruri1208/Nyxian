@@ -25,9 +25,10 @@
 
 #include <LindChain/ProcEnvironment/Surface/sys/worker.h>
 #include <os/lock.h>
+#include <stdint.h>
 
 #define SYSCALL_QUEUE_LIMIT     32
-#define SYSCALL_HANDLERS_LIMIT  1024
+#define SYSCALL_HANDLERS_LIMIT  UINT16_MAX
 
 struct syscall_server {
     mach_port_t port;
@@ -35,7 +36,7 @@ struct syscall_server {
     int threads_cnt;
     atomic_flag init_once;
     os_unfair_lock lock;
-    syscall_handler_t handlers[SYSCALL_HANDLERS_LIMIT];
+    syscall_handler_t handlers[SYSCALL_HANDLERS_LIMIT]; /* for performance reasons this array has to stay flat */
 };
 
 syscall_server_t *syscall_server_create(void);

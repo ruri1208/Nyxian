@@ -259,12 +259,7 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
 
 - (kern_return_t)load
 {
-    void *image = kxopen(self.executablePath.UTF8String, 0);
-    if(image != NULL)
-    {
-        return KERN_SUCCESS;
-    }
-    return KERN_FAILURE;
+    return kxopen(self.executablePath.UTF8String, 0, NULL);
 }
 
 - (instancetype)initWithPath:(NSString*)path
@@ -344,10 +339,10 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
         }
         
         self.flags = info.flags;
+        self.abi_version = info.abi_version;
         
         NSMutableArray<PEDependency*> *dependencies = [NSMutableArray array];
         
-        klog_log("ksurface:kextloader", "%s v%u.%u.%u (abi %u, flags 0x%llx)", info.identifier, KMOD_VERSION_MAJOR(info.version), KMOD_VERSION_MINOR(info.version), KMOD_VERSION_PATCH(info.version), info.abi_version, (unsigned long long)info.flags);
         for(uint32_t i = 0; i < ndeps; i++)
         {
             PEDependency *dependency = [[PEDependency alloc] init];
@@ -361,7 +356,6 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
                 return nil;
             }
             [dependencies addObject:dependency];
-            klog_log("ksurface:kextloader", "  needs %s [%u.%u.%u .. %u.%u.%u]", deps[i].identifier, KMOD_VERSION_MAJOR(deps[i].min_version), KMOD_VERSION_MINOR(deps[i].min_version), KMOD_VERSION_PATCH(deps[i].min_version), KMOD_VERSION_MAJOR(deps[i].max_version), KMOD_VERSION_MINOR(deps[i].max_version), KMOD_VERSION_PATCH(deps[i].max_version));
         }
         ksurface_kext_free_deps(deps);
         

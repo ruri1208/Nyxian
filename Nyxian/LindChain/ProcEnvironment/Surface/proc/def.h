@@ -30,12 +30,14 @@
 
 /// Helper macros
 #define proc_getpid(proc) ((proc)->bsd.kp_proc.p_pid)
+#define proc_getpidv(proc) ((proc)->nyx.pidv)
 #define proc_getppid(proc) ((proc)->bsd.kp_eproc.e_ppid)
 #define proc_getentitlements(proc) ((proc)->nyx.entitlements)
 #define proc_getmaxentitlements(proc) ((proc)->nyx.maxEntitlements)
 
 #define proc_setpid(proc, pid) (proc)->bsd.kp_proc.p_pid = pid
 #define proc_setppid(proc, ppid) (proc)->bsd.kp_proc.p_oppid = ppid; (proc)->bsd.kp_eproc.e_ppid = ppid; (proc)->bsd.kp_eproc.e_pgid = ppid
+#define proc_setpidv(proc, spidv) (proc)->nyx.pidv = (spidv)
 #define proc_setentitlements(proc, entitlement) (proc)->nyx.entitlements = entitlement
 #define proc_setmaxentitlements(proc, entitlement) (proc)->nyx.maxEntitlements = entitlement
 
@@ -129,6 +131,7 @@ struct ksurface_proc {
     struct knyx_proc {
         /* session identifier */
         pid_t sid;
+        int pidv;
         
         /* wait4 markers */
         int64_t p_status;

@@ -139,7 +139,7 @@ static bool KXApplyRebases(kxld_image_info_t *ii,
                 break;
             }
             default:
-                klog_log("kxld", "unknown rebase opcode 0x%x\n", opcode);
+                klog_log("kextloader", "unknown rebase opcode 0x%x", opcode);
                 return false;
         }
     }
@@ -161,6 +161,7 @@ static bool KXApplyBinds(kxld_image_info_t *ii,
     int64_t addend = 0;
     uint32_t segIdx = 0;
     uint64_t segOff = 0;
+    bool unresolvedAllowed = ii->mod->flags & KMOD_FLAG_ALLOW_UNRESOLVED;
     
 #define BIND_SLOT()                                                     \
     do {                                                                \
@@ -171,7 +172,12 @@ static bool KXApplyBinds(kxld_image_info_t *ii,
         void *addr = KXResolve(symName);                                \
         if(!addr && !weak)                                              \
         {                                                               \
-            klog_log("kxld", "unresolved symbol %s, skipping due to kext compat\n", symName ? symName : "(null)"); \
+            klog_log("kextloader", "unresolved symbol %s, %s", symName ? symName : "(null)", unresolvedAllowed ? "skipping due to kext compat" : "rejecting, because unresolved"); \
+            if(!unresolvedAllowed)                                      \
+            {                                                           \
+                return false;                                           \
+            }                                                           \
+            addr = NULL;                                                \
         }                                                               \
         uint64_t *slot = (uint64_t *)(segBase[segIdx] + segOff);        \
         *slot = addr ? (uint64_t)addr + addend : 0;                     \
@@ -247,7 +253,7 @@ static bool KXApplyBinds(kxld_image_info_t *ii,
                 break;
             }
             default:
-                klog_log("kxle", "unknown bind opcode 0x%x\n", opcode);
+                klog_log("kextloader", "unknown bind opcode 0x%x", opcode);
                 return false;
         }
     }
@@ -294,6 +300,7 @@ static bool KXApplyChainedFixups(kxld_image_info_t *image_info,
     const struct dyld_chained_starts_in_image *starts = (const void *)((const uint8_t *)hdr + hdr->starts_offset);
     const struct dyld_chained_import *imports = (const void *)((const uint8_t *)hdr + hdr->imports_offset);
     const char *symbolPool = (const char *)((const uint8_t *)hdr + hdr->symbols_offset);
+    bool unresolvedAllowed = image_info->mod->flags & KMOD_FLAG_ALLOW_UNRESOLVED;
     
     for(uint32_t segIdx = 0; segIdx < starts->seg_count; segIdx++)
     {
@@ -306,7 +313,7 @@ static bool KXApplyChainedFixups(kxld_image_info_t *image_info,
         const struct dyld_chained_starts_in_segment *seg = (const void *)((const uint8_t *)starts + segInfoOff);
         if(seg->pointer_format != DYLD_CHAINED_PTR_64 && seg->pointer_format != DYLD_CHAINED_PTR_64_OFFSET)
         {
-            klog_log("kxld", "unsupported pointer_format %u in seg %u\n", seg->pointer_format, segIdx);
+            klog_log("kextloader", "unsupported pointer_format %u in seg %u", seg->pointer_format, segIdx);
             return false;
         }
         
@@ -330,7 +337,7 @@ static bool KXApplyChainedFixups(kxld_image_info_t *image_info,
                 {
                     if(b->ordinal >= hdr->imports_count)
                     {
-                        fprintf(stderr, "kxld: bind ordinal %u out of range (%u)\n", b->ordinal, hdr->imports_count);
+                        klog_log("kextloader", "bind ordinal %u out of range (%u)", b->ordinal, hdr->imports_count);
                         return false;
                     }
                     const struct dyld_chained_import *imp = &imports[b->ordinal];
@@ -338,8 +345,12 @@ static bool KXApplyChainedFixups(kxld_image_info_t *image_info,
                     void *addr = KXResolve(name);
                     if(!addr && !imp->weak_import)
                     {
-                        klog_log("kxld", "unresolved symbol %s\n", name);
-                        return false;
+                        klog_log("kextloader", "unresolved symbol %s, %s", name?: "(null)", unresolvedAllowed ? "skipping due to kext compat" : "rejecting, because unresolved");
+                        if(!unresolvedAllowed)
+                        {
+                            return false;
+                        }
+                        addr = NULL;
                     }
                     *(uint64_t *)cursor = addr ? (uint64_t)addr + b->addend : 0;
                 }

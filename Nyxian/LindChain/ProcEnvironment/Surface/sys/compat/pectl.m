@@ -299,13 +299,12 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             }
             
             /* spinning the extension up~ */
-            uint64_t key;
-            void *image = kxopen(extensionPath, 0);
-            if(image == NULL)
+            kxld_image_info_t *image_info = NULL;
+            if(kxopen(extensionPath, 0, &image_info) != KERN_SUCCESS)
             {
                 sys_return_failure_with_errno(errno);
             }
-            sys_return;
+            return (int64_t)image_info;
         }
         case kPECTLCodeSigningUnloadKernelExtension:
         {

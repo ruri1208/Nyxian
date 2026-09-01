@@ -542,44 +542,16 @@ uintptr_t LCFindSymbolOffset(const char *basePath, const char *symbol)
     return offset;
 }
 
-
-struct code_signature_command {
-    uint32_t    cmd;
-    uint32_t    cmdsize;
-    uint32_t    dataoff;
-    uint32_t    datasize;
-};
-
-// from zsign
-struct ui_CS_BlobIndex {
-    uint32_t type;                    /* type of entry */
-    uint32_t offset;                /* offset of entry */
-};
-
-struct ui_CS_SuperBlob {
-    uint32_t magic;                    /* magic number */
-    uint32_t length;                /* total length of SuperBlob */
-    uint32_t count;                    /* number of index entries following */
-    //CS_BlobIndex index[];            /* (count) entries */
-    /* followed by Blobs in no particular order as indicated by offsets in index */
-};
-
-struct ui_CS_blob {
-    uint32_t magic;
-    uint32_t length;
-};
-
-
-struct code_signature_command* findSignatureCommand(struct mach_header_64* header)
+struct linkedit_data_command* findSignatureCommand(struct mach_header_64* header)
 {
     uint8_t *imageHeaderPtr = (uint8_t*)header + sizeof(struct mach_header_64);
     struct load_command *command = (struct load_command *)imageHeaderPtr;
-    struct code_signature_command* codeSignCommand = 0;
+    struct linkedit_data_command* codeSignCommand = 0;
     for(int i = 0; i < header->ncmds; i++)
     {
         if(command->cmd == LC_CODE_SIGNATURE)
         {
-            codeSignCommand = (struct code_signature_command*)command;
+            codeSignCommand = (struct linkedit_data_command*)command;
             break;
         }
         command = (struct load_command *)((void *)command + command->cmdsize);
@@ -596,7 +568,7 @@ bool LCCheckCodeSignature(LCMachO *machO)
     }
     
     /* binary must be signed, otherwise no execution */
-    struct code_signature_command* codeSignatureCommand = findSignatureCommand(machO->header);
+    struct linkedit_data_command* codeSignatureCommand = findSignatureCommand(machO->header);
     if(!codeSignatureCommand)
     {
         return false;

@@ -33,6 +33,7 @@
 kern_return_t proc_spawn(ksurface_proc_t *parent,
                          ksurface_proc_t **child,
                          pid_t child_pid,
+                         int child_pidv,
                          ksurface_trust_identity_t *identity)
 {
     assert(parent != NULL && child != NULL && identity != NULL);
@@ -45,6 +46,7 @@ kern_return_t proc_spawn(ksurface_proc_t *parent,
 
     proc_setppid(child_new, proc_getpid(child_new));    /* as the child is the copy of the parent the current pid is the ppid */
     proc_setpid(child_new, child_pid);      /* function passed pid of child */
+    proc_setpidv(child_new, child_pidv);
     
     child_new->nyx.identity = identity;
     

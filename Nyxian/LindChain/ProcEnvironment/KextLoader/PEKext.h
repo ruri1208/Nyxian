@@ -33,6 +33,7 @@
 @property (nonatomic,copy) NSString *version;
 @property (nonatomic,strong) NSArray<PEDependency*> *dependencies;
 @property (nonatomic) uint64_t flags;
+@property (nonatomic) uint32_t abi_version;
 
 - (int)load;
 

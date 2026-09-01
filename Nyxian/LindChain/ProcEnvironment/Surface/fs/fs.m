@@ -77,7 +77,7 @@ kern_return_t ksurface_fs_init(void)
             [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String],
         },
         {
-            kFSMountAttrRead | kFSMountAttrClear,
+            kFSMountAttrRead,
             [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String],
         },
         {
@@ -358,6 +358,6 @@ kern_return_t ksurface_fs_load_kext_with_path(const char *path,
         return KERN_DENIED;
     }
     
-    return kxopen(executable.UTF8String, 0) != NULL ? KERN_SUCCESS : KERN_FAILURE;
+    return kxopen(executable.UTF8String, 0, NULL);
 }
 
