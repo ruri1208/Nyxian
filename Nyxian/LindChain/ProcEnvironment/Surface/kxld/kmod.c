@@ -148,33 +148,5 @@ bool KXLocateKmod(kxld_image_info_t *image_info)
         return false;
     }
     
-    image_info->ndeps = image_info->mod->dependency_count;
-    if(image_info->ndeps > KMOD_MAX_DEPENDENCIES ||
-       sec_len < sizeof(kinfo_mod_t) + (uint64_t)image_info->ndeps * sizeof(kmod_dependency_t))
-    {
-        return false;
-    }
-    
-    if(image_info->ndeps > 0)
-    {
-        image_info->deps = calloc(image_info->ndeps, sizeof(*image_info->deps));
-        if(image_info->deps == NULL)
-        {
-            errno = ENOMEM;
-            return false;
-        }
-        
-        memcpy(image_info->deps, blob + sizeof(kinfo_mod_t), image_info->ndeps * sizeof(*image_info->deps));
-        
-        for(uint32_t i = 0; i < image_info->ndeps; i++)
-        {
-            if(strnlen(image_info->deps[i].identifier, KMOD_MAX_NAME) == KMOD_MAX_NAME)
-            {
-                free(image_info->deps);
-                return false;
-            }
-        }
-    }
-    
     return true;
 }

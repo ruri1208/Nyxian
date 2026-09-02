@@ -42,7 +42,19 @@ The only current limitation is that we cannot intercept a arm64 supervisor call,
     - [x] object API
     - [x] process object
     - [x] privelege model
-    - [x] custom entitlement blob (you can also sign apps like CocoaTop on your desktop using nxtool)
+    - [x] custom entitlement blob (translated from AppleCS to NXT2 aswell!)
+    - kext link editor (kxld)
+      - [x] validate code signature of kext
+      - [x] validate it's nyxian trust blob
+      - [x] load kext executable into nyxian address space
+      - [x] find it's kmod
+      - [x] apply fixups for kext
+      - [x] fix ObjC
+      - [ ] fix thread local storage
+      - [x] handle it's exports
+      - [x] reseal constant data section
+      - [x] run it's initializers
+      - [x] act upon `kmod_info_t`
     - Syscall handling
       - [x] Mach IPC syscall server
       - [x] Task port handoff (usually they are guarded we bypass that by moving a receive right after the send right has been set as exception port to the host and then executing a `__builtin_trap` which then causes the host to get a `ÌKOT_TASK` which is a control task port which can be reference retained and boom we got our redistributable unguarded task port)
