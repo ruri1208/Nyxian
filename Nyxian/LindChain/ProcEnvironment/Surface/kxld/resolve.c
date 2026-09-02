@@ -21,6 +21,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/kxld/resolve.h>
 #include <LindChain/ProcEnvironment/Surface/radix/radix.h>
+#include <sys/sysctl.h>
 #include <dlfcn.h>
 #include <os/lock.h>
 
@@ -156,24 +157,60 @@ kern_return_t KXGetRegisteredKextForIdentifier(const char *identifier,
     return KERN_NOT_FOUND;
 }
 
-EXPORT_KSURFACE_MODULE({
+static uint32_t platform_query_version(void)
+{
+    char buf[32];
+    size_t len = sizeof(buf);
+    unsigned maj = 0, min = 0, pat = 0;
+    
+    if(sysctlbyname("kern.osproductversion", buf, &len, NULL, 0) != 0)
+    {
+        return 0;
+    }
+    if(sscanf(buf, "%u.%u.%u", &maj, &min, &pat) < 1)
+    {
+        return 0;
+    }
+    
+    return KMOD_VERSION(maj, min, pat);
+}
+
+static kinfo_mod_t g_ksurface_kmod = {
     .magic = KSURFACE_KMOD_MAGIC,
     .abi_version = KSURFACE_KMOD_ABI_VERSION,
     .identifier = "ksurface",
     .version = KMOD_VERSION(0, 11, 4),
     .flags = KMOD_FLAG_PERSISTENT,
+    .dependency_count = 1,
+    .dependencies = {
+        {
+            .identifier = "com.apple.iphoneos",
+            .min_version = KMOD_VERSION(18, 4, 0),      /* bottom */
+            .max_version = KMOD_VERSION(99, 99, 99),    /* ceiling is unclear, dependant on apples mood swings >~< */
+        }
+    },
+};
+
+static kinfo_mod_t g_ios_kmod = {
+    .magic = KSURFACE_KMOD_MAGIC,
+    .abi_version = KSURFACE_KMOD_ABI_VERSION,
+    .identifier = "com.apple.iphoneos",
+    .version = 0,
+    .flags = KMOD_FLAG_PERSISTENT,
     .dependency_count = 0,
-    .init = NULL,
-    .deinit = NULL,
-    .start = NULL,
-    .stop = NULL,
-});
+};
 
 __attribute__((constructor))
 static void register_nximage(void)
 {
     /* pre-register ksurface */
-    kxld_image_info_t *image_info = calloc(1, sizeof(kxld_image_info_t));
-    image_info->mod = (kinfo_mod_t*)&ksurface_kext_info;
-    KXRegisterKext(image_info);
+    kxld_image_info_t *image_ksurface_info = calloc(1, sizeof(kxld_image_info_t));
+    image_ksurface_info->mod = &g_ksurface_kmod;
+    KXRegisterKext(image_ksurface_info);
+    
+    /* pre-register com.apple.iphoneos */
+    g_ios_kmod.version = platform_query_version();
+    kxld_image_info_t *image_ios_info = calloc(1, sizeof(kxld_image_info_t));
+    image_ios_info->mod = &g_ios_kmod;
+    KXRegisterKext(image_ios_info);
 }

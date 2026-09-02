@@ -25,6 +25,7 @@
 #import <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <sys/stat.h>
+#import <sys/sysctl.h>
 
 /* temporary so we can switch to kxopen now */
 
@@ -373,12 +374,40 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
     return self;
 }
 
++ (instancetype)appleIOSKext
+{
+    char buf[32];
+    size_t len = sizeof(buf);
+    unsigned maj = 0, min = 0, pat = 0;
+    if(sysctlbyname("kern.osproductversion", buf, &len, NULL, 0) != 0)
+    {
+        return nil;
+    }
+    if(sscanf(buf, "%u.%u.%u", &maj, &min, &pat) < 1)
+    {
+        return nil;
+    }
+    
+    PEKext *kext = [[self alloc] init];
+    kext.executablePath = @"com.apple.iphoneos";
+    kext.bundleID = @"com.apple.iphoneos";
+    kext.version = [NSString stringWithFormat:@"%u.%u.%u", maj, min, pat];
+    return kext;
+}
+
 + (instancetype)ksurfaceMainKext
 {
     PEKext *kext = [[self alloc] init];
     kext.executablePath = @"ksurface";
     kext.bundleID = @"ksurface";
     kext.version = @"0.11.4";
+    
+    PEDependency *dependency = [[PEDependency alloc] init];
+    dependency.bundleID = @"com.apple.iphoneos";
+    dependency.minVersion = @"18.4.0";
+    dependency.maxVersion = @"99.99.99";
+    
+    kext.dependencies = @[dependency];
     return kext;
 }
 

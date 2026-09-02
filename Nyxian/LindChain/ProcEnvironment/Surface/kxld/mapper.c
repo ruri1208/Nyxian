@@ -51,7 +51,6 @@ bool KXMapMachOExecutable(LCMachO *machO,
     image_info->base = mmap(NULL, image_info->len, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
     if(image_info->base == MAP_FAILED)
     {
-        LCUnmapMachO(machO);
         return false;
     }
     

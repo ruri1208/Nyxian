@@ -39,6 +39,7 @@
 
 - (instancetype)initWithPath:(NSString*)path;
 
++ (instancetype)appleIOSKext;
 + (instancetype)ksurfaceMainKext;
 
 @end

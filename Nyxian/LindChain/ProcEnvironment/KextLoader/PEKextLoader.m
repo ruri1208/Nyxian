@@ -78,6 +78,7 @@ BOOL PEKextLoaderLoad(NSMutableString *errorString)
     
     /* getting kexts initially */
     NSMutableArray<PEKext*> *allKexts = [NSMutableArray array];
+    [allKexts addObject:[PEKext appleIOSKext]];
     [allKexts addObject:[PEKext ksurfaceMainKext]];
     for(NSString *kextPath in kextPaths)
     {
@@ -227,7 +228,8 @@ BOOL PEKextLoaderLoad(NSMutableString *errorString)
     NSMutableSet<NSString *> *failed = [NSMutableSet set];
     for(PEKext *kext in loadOrder)
     {
-        if([kext.bundleID isEqualToString:@"ksurface"])
+        if([kext.bundleID isEqualToString:@"ksurface"] ||
+           [kext.bundleID isEqualToString:@"com.apple.iphoneos"])   /* we are not iOS, just image it is there */
         {
             /* we are ksurface */
             continue;

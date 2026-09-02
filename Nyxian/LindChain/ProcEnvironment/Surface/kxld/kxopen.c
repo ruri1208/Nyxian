@@ -53,7 +53,6 @@ static void kxdestroy_image(kxld_image_info_t *image_info)
     {
         munmap(image_info->base, image_info->len);
     }
-    free(image_info->deps);
     free(image_info);
 }
 
@@ -157,18 +156,18 @@ kern_return_t kxopen_with_fd(int fd,
     }
     
     /* resolve dependencies versions */
-    for(uint32_t i = 0; i < image_info->ndeps; i++)
+    for(uint32_t i = 0; i < image_info->mod->dependency_count; i++)
     {
         kxld_image_info_t *depImageInfo;
-        kern_return_t kr = KXGetRegisteredKextForIdentifier(image_info->deps[i].identifier, &depImageInfo);
+        kern_return_t kr = KXGetRegisteredKextForIdentifier(image_info->mod->dependencies[i].identifier, &depImageInfo);
         if(kr != KERN_SUCCESS)
         {
             errno = EACCES;
             goto out_failure_destroy;
         }
         
-        if(depImageInfo->mod->version < image_info->deps[i].min_version ||
-           depImageInfo->mod->version > image_info->deps[i].max_version)
+        if(depImageInfo->mod->version < image_info->mod->dependencies[i].min_version ||
+           depImageInfo->mod->version > image_info->mod->dependencies[i].max_version)
         {
             errno = EACCES;
             goto out_failure_destroy;
@@ -177,6 +176,7 @@ kern_return_t kxopen_with_fd(int fd,
         /* so the kext knows on what version this dependency is */
         image_info->mod->dependencies[i].min_version = depImageInfo->mod->version;
         image_info->mod->dependencies[i].max_version = depImageInfo->mod->version;
+        depImageInfo->mod->flags |= KMOD_FLAG_PERSISTENT;   /* deny dependency unload TODO: track images */
     }
     
     /* apply persistent flag if KXLD_NOCLOSE is set */
