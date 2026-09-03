@@ -24,8 +24,10 @@
  * -------------------------------------------------------------------- */
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <LindChain/ProcEnvironment/Surface/trust/cdhash.h>
+#include <LindChain/ProcEnvironment/Surface/trust/keychain.h>
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#include <sys/stat.h>
 #if __has_include(<OpenSSL/evp.h>)
 #define HAS_OPENSSL 1
 #include <OpenSSL/evp.h>
@@ -37,18 +39,114 @@
 #endif /* __has_include(<OpenSSL/evp.h>) */
 
 #ifndef __NXTOOL
+#ifdef CLIENT_ENV
+#define __NXTOOL CLIENT_ENV
+#else
 #define __NXTOOL 0
+#endif /* CLIENT_ENV */
 #endif /* !__NXTOOL */
-
-/* ----------------------------------------------------------------------
- *  Constants
- * -------------------------------------------------------------------- */
-#define APPEND_TAG_NXTR "NXTR"
-#define APPEND_TAG_NXT2 "NXT2"
 
 /* ----------------------------------------------------------------------
  *  Functions
  * -------------------------------------------------------------------- */
+#if HAS_OPENSSL && __NXTOOL
+
+static EVP_PKEY *trust_nxt2_private_key_from_der_path(const char *path)
+{
+    if(path == NULL)
+    {
+        return NULL;
+    }
+    
+    int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+    if(fd < 0)
+    {
+        return NULL;
+    }
+    
+    struct stat st;
+    if(fstat(fd, &st) != 0)
+    {
+        close(fd);
+        return NULL;
+    }
+    
+    if(!S_ISREG(st.st_mode) || st.st_size <= 0 || st.st_size > (64 * 1024))
+    {
+        close(fd);
+        return NULL;
+    }
+    
+    size_t length = (size_t)st.st_size;
+    uint8_t *der = malloc(length);
+    if(der == NULL)
+    {
+        close(fd);
+        return NULL;
+    }
+    
+    size_t offset = 0;
+    
+    while(offset < length)
+    {
+        ssize_t n = read(fd, der + offset, length - offset);
+        if(n < 0)
+        {
+            if(errno == EINTR)
+            {
+                continue;
+            }
+            
+            OPENSSL_cleanse(der, length);
+            free(der);
+            close(fd);
+            
+            return NULL;
+        }
+        
+        if(n == 0)
+        {
+            OPENSSL_cleanse(der, length);
+            free(der);
+            close(fd);
+            
+            return NULL;
+        }
+        
+        offset += (size_t)n;
+    }
+    
+    close(fd);
+    
+    const unsigned char *p = der;
+    
+    EVP_PKEY *priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)length);
+    if(priv == NULL || p != der + length)
+    {
+        EVP_PKEY_free(priv);
+        
+        OPENSSL_cleanse(der, length);
+        free(der);
+        
+        return NULL;
+    }
+    
+    if(EVP_PKEY_base_id(priv) != EVP_PKEY_EC)
+    {
+        EVP_PKEY_free(priv);
+        OPENSSL_cleanse(der, length);
+        free(der);
+        return NULL;
+    }
+
+    OPENSSL_cleanse(der, length);
+    free(der);
+    
+    return priv;
+}
+
+#endif /* HAS_OPENSSL && __NXTOOL */
+
 static CFDataRef trust_dict_to_plist(CFDictionaryRef dict)
 {
     CFErrorRef err = NULL;
@@ -158,7 +256,8 @@ kern_return_t trust_remove_blob_fd(int fd)
 
 kern_return_t trust_nxt2_sign(const char *path,
                               CFDictionaryRef entitlements,
-                              bool signBlob)
+                              bool signBlob,
+                              const char *priv_der_path)
 {
     int fd = open(path, O_RDWR);
     if(fd < 0)
@@ -166,7 +265,7 @@ kern_return_t trust_nxt2_sign(const char *path,
         return KERN_FAILURE;
     }
     
-    kern_return_t kr = trust_nxt2_sign_fd(fd, entitlements, signBlob);
+    kern_return_t kr = trust_nxt2_sign_fd(fd, entitlements, signBlob, priv_der_path);
     fsync(fd);
     close(fd);
     return kr;
@@ -174,9 +273,9 @@ kern_return_t trust_nxt2_sign(const char *path,
 
 kern_return_t trust_nxt2_sign_fd(int fd,
                                  CFDictionaryRef entitlements,
-                                 bool signBlob)
+                                 bool signBlob,
+                                 const char *priv_der_path)
 {
-#if !__NXTOOL
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
     {
@@ -184,10 +283,6 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     }
     char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
     LCUnmapMachO(machO);
-#else
-    char *cdhash = NULL;    /* free() is null safe */
-    signBlob = false;
-#endif /* !__NXTOOL */
     
     /* cut down to eof */
     trust_remove_blob_fd(fd);
@@ -232,9 +327,22 @@ kern_return_t trust_nxt2_sign_fd(int fd,
         /* generating nonce so it's harder to crack */
         arc4random_buf(&(blob_header->nonce), sizeof(uint64_t));
         
+        EVP_PKEY *priv = NULL;
+        
+#if !__NXTOOL
         /* signing blob */
         const uint8_t *p = ksurface->priv_key;
-        EVP_PKEY *priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
+        priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
+#else
+        if(priv_der_path == NULL)
+        {
+            free(blob_header);
+            return KERN_INVALID_ARGUMENT;
+        }
+        
+        priv = trust_nxt2_private_key_from_der_path(priv_der_path);
+#endif /* !__NXTOOL */
+        
         if(!priv)
         {
             free(blob_header);
@@ -487,7 +595,7 @@ kern_return_t trust_nxt2_read_fd(int fd,
     result->isCdHashValid = false;
 #endif /* !__NXTOOL */
     
-#if HAS_OPENSSL
+#if HAS_OPENSSL && !__NXTOOL
     if(result->isCdHashValid && result->isValid)
     {
         /* cdhash and blob must be valid for signature check, some checks are not performed twice */
@@ -520,15 +628,335 @@ kern_return_t trust_nxt2_read_fd(int fd,
         EVP_MD_CTX_free(mdctx);
         EVP_PKEY_free(pub);
     }
+    
+#if HOST_ENV
+    if(!result->isSigned && ksurface_keychain_match(blob_footer, blob_header) == KERN_SUCCESS)
+    {
+        /* FIXME: check if CS hashes matches the cdhash before trusting the rootca blindly */
+        result->needsResign = true;
+    }
+#endif /* HOST_ENV */
 #else
     /* cannot verify without openssl */
     result->isSigned = false;
 #endif /* HAS_OPENSSL */
     
 signature_invalid:
-    
     free(blob_buf);
-    
     result->entitlements = entitlements;
     return KERN_SUCCESS;
 }
+
+#if HAS_OPENSSL
+
+
+static int write_all(int fd,
+                     const uint8_t *data,
+                     size_t length)
+{
+    while(length > 0)
+    {
+        ssize_t n = write(fd, data, length);
+        if(n < 0)
+        {
+            return -1;
+        }
+        
+        if(n == 0)
+        {
+            return -1;
+        }
+        
+        data += n;
+        length -= (size_t)n;
+    }
+    
+    return 0;
+}
+
+kern_return_t trust_nxt2_generate_rootca_keypair(const char *vendor_name,
+                                                 const char *public_key_path,
+                                                 const char *private_key_path)
+{
+    if(vendor_name == NULL ||
+       public_key_path == NULL ||
+       private_key_path == NULL)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    size_t vendor_name_len = strlen(vendor_name);
+
+    if(vendor_name_len == 0 ||
+       vendor_name_len > NXT2_VENDOR_NAME_MAX)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    kern_return_t kr = KERN_FAILURE;
+    
+    EVP_PKEY_CTX *ctx = NULL;
+    EVP_PKEY *key = NULL;
+    
+    uint8_t *public_der = NULL;
+    uint8_t *private_der = NULL;
+    
+    int public_fd = -1;
+    int private_fd = -1;
+    
+    int private_len = 0;
+    
+    ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+    if(ctx == NULL)
+    {
+        goto done;
+    }
+    
+    if(EVP_PKEY_keygen_init(ctx) <= 0)
+    {
+        goto done;
+    }
+    
+    if(EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, NID_X9_62_prime256v1) <= 0)
+    {
+        goto done;
+    }
+    
+    if(EVP_PKEY_keygen(ctx, &key) <= 0)
+    {
+        goto done;
+    }
+    
+    /* generate public key (so guests can Nyxian builds can validate if it has been signed with a RootCA) */
+    int public_len = i2d_PUBKEY(key, NULL);
+    if(public_len <= 0)
+    {
+        goto done;
+    }
+    
+    public_der = malloc((size_t)public_len);
+    if(public_der == NULL)
+    {
+        kr = KERN_RESOURCE_SHORTAGE;
+        goto done;
+    }
+    
+    unsigned char *public_ptr = public_der;
+    if(i2d_PUBKEY(key, &public_ptr) != public_len)
+    {
+        goto done;
+    }
+    
+    /* generate private key for the host */
+    private_len = i2d_PrivateKey(key, NULL);
+    if(private_len <= 0)
+    {
+        goto done;
+    }
+    
+    private_der = malloc((size_t)private_len);
+    if(private_der == NULL)
+    {
+        kr = KERN_RESOURCE_SHORTAGE;
+        goto done;
+    }
+    
+    unsigned char *private_ptr = private_der;
+    if(i2d_PrivateKey(key, &private_ptr) != private_len)
+    {
+        goto done;
+    }
+    
+    /* public key is not a secret ^^ */
+    public_fd = open(public_key_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if(public_fd < 0)
+    {
+        goto done;
+    }
+    
+    nxt2_pubkey_header_t pub_header = {
+        .magic = NXT2_PUBKEY_MAGIC,
+        .version = NXT2_PUBKEY_VERSION,
+        .name_len = (uint32_t)vendor_name_len,
+        .key_len = (uint32_t)public_len,
+    };
+    
+    if(write_all(public_fd,
+                 (const uint8_t *)&pub_header,
+                 sizeof(pub_header)) != 0)
+    {
+        goto done;
+    }
+    
+    if(write_all(public_fd,
+                 (const uint8_t *)vendor_name,
+                 vendor_name_len) != 0)
+    {
+        goto done;
+    }
+    
+    if(write_all(public_fd,
+                 public_der,
+                 (size_t)public_len) != 0)
+    {
+        goto done;
+    }
+    
+    if(fsync(public_fd) != 0)
+    {
+        goto done;
+    }
+    
+    /* private key MUST be private >:3 (I watch you) */
+    private_fd = open(private_key_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if(private_fd < 0)
+    {
+        goto done;
+    }
+    
+    if(write_all(private_fd, private_der, (size_t)private_len) != 0)
+    {
+        goto done;
+    }
+    
+    if(fsync(private_fd) != 0)
+    {
+        goto done;
+    }
+    
+    kr = KERN_SUCCESS;
+    
+done:
+    if(public_fd >= 0)
+    {
+        close(public_fd);
+    }
+    
+    if(private_fd >= 0)
+    {
+        close(private_fd);
+    }
+    
+    if(private_der != NULL)
+    {
+        /* Otherwise attacker says kread ;3 */
+        OPENSSL_cleanse(private_der, (size_t)(private_len > 0 ? private_len : 0));
+        free(private_der);
+    }
+    free(public_der);
+    
+    EVP_PKEY_free(key);
+    EVP_PKEY_CTX_free(ctx);
+    
+    return kr;
+}
+
+kern_return_t trust_nxt2_public_key_read(const char *path,
+                                         nxt2_vendor_key_t *result)
+{
+    if(path == NULL || result == NULL)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    memset(result, 0, sizeof(*result));
+    
+    int fd = open(path, O_RDONLY);
+    if(fd < 0)
+    {
+        return KERN_FAILURE;
+    }
+    
+    kern_return_t kr = KERN_FAILURE;
+    
+    nxt2_pubkey_header_t hdr;
+    if(read(fd, &hdr, sizeof(hdr)) != sizeof(hdr))
+    {
+        goto done;
+    }
+    
+    if(hdr.magic != NXT2_PUBKEY_MAGIC ||
+       hdr.version != NXT2_PUBKEY_VERSION)
+    {
+        goto done;
+    }
+    
+    if(hdr.name_len == 0 ||
+       hdr.name_len > NXT2_VENDOR_NAME_MAX)
+    {
+        goto done;
+    }
+    
+    if(hdr.key_len == 0 ||
+       hdr.key_len > 4096)
+    {
+        goto done;
+    }
+    
+    char *name = calloc(1, (size_t)hdr.name_len + 1);
+    if(name == NULL)
+    {
+        kr = KERN_RESOURCE_SHORTAGE;
+        goto done;
+    }
+    
+    if(read(fd, name, hdr.name_len) != (ssize_t)hdr.name_len)
+    {
+        free(name);
+        goto done;
+    }
+    
+    uint8_t *key = malloc(hdr.key_len);
+    if(key == NULL)
+    {
+        free(name);
+        kr = KERN_RESOURCE_SHORTAGE;
+        goto done;
+    }
+    
+    if(read(fd, key, hdr.key_len) != (ssize_t)hdr.key_len)
+    {
+        free(key);
+        free(name);
+        goto done;
+    }
+    
+    const unsigned char *p = key;
+    EVP_PKEY *pub = d2i_PUBKEY(NULL, &p, hdr.key_len);
+    if(pub == NULL)
+    {
+        free(key);
+        free(name);
+        goto done;
+    }
+    
+    if(p != key + hdr.key_len)
+    {
+        EVP_PKEY_free(pub);
+        free(key);
+        free(name);
+        goto done;
+    }
+    
+    if(EVP_PKEY_base_id(pub) != EVP_PKEY_EC)
+    {
+        EVP_PKEY_free(pub);
+        free(key);
+        free(name);
+        goto done;
+    }
+    
+    EVP_PKEY_free(pub);
+    
+    result->vendor_name = name;
+    result->public_key = key;
+    result->public_key_len = hdr.key_len;
+    
+    kr = KERN_SUCCESS;
+    
+done:
+    close(fd);
+    return kr;
+}
+
+#endif /* HAS_OPENSSL */

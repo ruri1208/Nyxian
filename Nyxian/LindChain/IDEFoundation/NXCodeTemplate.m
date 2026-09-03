@@ -148,6 +148,7 @@ NSArray<NSString*> *NXCompilerFlagsForCodeTemplateLanguage(NXProjectSchemeKind s
             
             /* relaxing the damn linker */
             @"-Wl,-undefined,dynamic_lookup",
+            @"-Wl,-adhoc_codesign", /* they shall have LC_CODE_SIGNATURE */
         ];
     }
     

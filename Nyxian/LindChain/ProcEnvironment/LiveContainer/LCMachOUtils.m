@@ -27,6 +27,10 @@
 #import <LindChain/ProcEnvironment/litehook/litehook.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 
+#ifndef __NXTOOL
+#define __NXTOOL 0
+#endif /* !__NXTOOL */
+
 static uint32_t rnd32(uint32_t v,
                       uint32_t r)
 {
@@ -465,6 +469,8 @@ void LCPatchAppBundleFixupARM64eSlice(NSBundle *bundle)
     }
 }
 
+#if !__NXTOOL
+
 mach_header_u *LCGetLoadedImageHeader(int i0, const char* name)
 {
     for(uint32_t i = i0; i < _dyld_image_count(); ++i)
@@ -478,6 +484,8 @@ mach_header_u *LCGetLoadedImageHeader(int i0, const char* name)
     }
     return NULL;
 }
+
+#endif /* !__NXTOOL */
 
 struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
 {
@@ -504,6 +512,8 @@ void *getDyldBase(void)
 {
     return (void *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
 }
+
+#if !__NXTOOL
 
 uintptr_t LCFindSymbolOffsetUnsafe(const char *basePath, const char *symbol)
 {
@@ -541,6 +551,8 @@ uintptr_t LCFindSymbolOffset(const char *basePath, const char *symbol)
     NSCAssert(offset != 0, @"Failed to find symbol %s", symbol);
     return offset;
 }
+
+#endif /* !__NXTOOL */
 
 struct linkedit_data_command* findSignatureCommand(struct mach_header_64* header)
 {

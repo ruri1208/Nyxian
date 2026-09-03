@@ -176,7 +176,7 @@ final class NXBuilder: NSObject {
                     guard let self = self else { return }
                     
                     if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                        trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, true)
+                        trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, true, nil)
                     }
                     
                     guard result else {
@@ -201,7 +201,7 @@ final class NXBuilder: NSObject {
             } else if self.project.projectConfig.schemeKind == .utility {
                 LCUtils.signMachO(at: self.project.machoURL)
                 if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                    trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, true)
+                    trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, true, nil)
                 }
                 
                 let path: String? = LDEApplicationWorkspace.shared().fastpathUtility(self.project.machoURL.path)
@@ -217,7 +217,7 @@ final class NXBuilder: NSObject {
                     LCUtils.signMachOWithoutPatch(at: self.project.machoURL)
                     trust_nxt2_sign(self.project.machoURL.path, [
                         "org.emexlabs.nyxian.ksurface.kernelextension.loading" : true
-                    ] as CFDictionary, true)
+                    ] as CFDictionary, true, nil)
                     vnode_refresh_with_path(self.project.machoURL.path)
                     var ret: kern_return_t = ksurface_fs_install_kext_at_path(self.project.bundleURL.path);
                     if ret != 0 {
@@ -231,11 +231,24 @@ final class NXBuilder: NSObject {
                 }
             }
         } else {
-            if self.project.projectConfig.signMachOWithNyxianEntitlements {
-                trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, false)
-            }
-            if self.project.projectConfig.schemeKind == .app {
-                try self.package()
+            if self.project.projectConfig.schemeKind == .kSurfaceKext {
+                if let ptr = LCMapMachO(self.project.machoURL.path, false) {
+                    ptr.pointee.header.pointee.filetype = UInt32(MH_KEXT_BUNDLE)
+                    LCUnmapMachO(ptr)
+                    
+                    trust_nxt2_sign(self.project.machoURL.path, [
+                        "org.emexlabs.nyxian.ksurface.kernelextension.loading" : true
+                    ] as CFDictionary, true, nil)
+                    
+                    zipDirectoryAtPath(project.payloadURL.path, project.packageURL.path, true)
+                }
+            } else {
+                if self.project.projectConfig.signMachOWithNyxianEntitlements {
+                    trust_nxt2_sign(self.project.machoURL.path, project.entitlementsConfig.dictionary as CFDictionary, false, nil)
+                }
+                if self.project.projectConfig.schemeKind == .app {
+                    try self.package()
+                }
             }
         }
     }

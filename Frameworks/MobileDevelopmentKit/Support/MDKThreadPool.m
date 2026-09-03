@@ -32,7 +32,9 @@
 static inline void *pthreadBlockTrampoline(void *ptr)
 {
     void (^block)(void) = (__bridge_transfer void (^)(void))ptr;
-    block();
+    @autoreleasepool {
+        block();
+    }
     return NULL;
 }
 

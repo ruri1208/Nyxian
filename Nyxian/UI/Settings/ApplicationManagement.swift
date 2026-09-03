@@ -119,7 +119,10 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let application = self.applications[indexPath.row]
-        PEProcessManager.shared().spawnProcess(withBundleIdentifier: application.bundleIdentifier, withItems: [:], withKernelSurfaceProcess: nil, doRestartIfRunning: false)
+        let processIdentifier: pid_t = PEProcessManager.shared().spawnProcess(withBundleIdentifier: application.bundleIdentifier, withItems: [:], withKernelSurfaceProcess: nil, doRestartIfRunning: false)
+        if processIdentifier < 0 {
+            NotificationServer.NotifyUser(level: .error, notification: "\"\(application.localizedName ?? "Unknown")\" Is No Longer Available")
+        }
     }
     
     @objc func plusButtonPressed() {
@@ -160,23 +163,30 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                 let contents: [String] = try FileManager.default.contentsOfDirectory(atPath: payloadDir)
                 
                 guard let appBundlePathComponent = contents.first(where: { ($0 as NSString).pathExtension == "app" }) else {
-                    NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: no .app bundle found")
+                    alert.dismiss(animated: true) {
+                        NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: no .app bundle found")
+                    }
                     return
                 }
                 
                 let appBundleFullPath = payloadDir.appending("/\(appBundlePathComponent)")
                 
                 guard let bundle = Bundle(path: appBundleFullPath) else {
-                    NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: invalid bundle path")
+                    alert.dismiss(animated: true) {
+                        NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: invalid bundle path")
+                    }
                     return
                 }
                 
                 guard let executablePath = bundle.executablePath else {
-                    NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: invalid executable path")
+                    alert.dismiss(animated: true) {
+                        NotificationServer.NotifyUser(level: .error, notification: "Failed to install application: invalid executable path")
+                    }
                     return
                 }
                 
                 var final: [String: Any] = [:]
+                var isRootCATrusted: Bool = false;
                 if let executablePath = bundle.executablePath {
                     var ent: [String: Any] = [:]
                     var trust_nxt2 = ksurface_nxt2()
@@ -191,6 +201,12 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                             let nsDict = cfDict as NSDictionary
                             if let swiftDict = nsDict as? [String: Any] {
                                 ent = swiftDict
+                                withUnsafeBytes(of: trust_nxt2.cdhash) { rawBuffer in
+                                    let uint8Pointer = rawBuffer.bindMemory(to: UInt8.self).baseAddress!
+                                    if trust_nxt2.isValid && trust_nxt2.isCdHashValid && CDHashMatchesCodeDirectoryOfPath(executablePath, uint8Pointer) == KERN_SUCCESS {
+                                        isRootCATrusted = trust_nxt2.isSigned || trust_nxt2.needsResign
+                                    }
+                                }
                             }
                         }
                     }
@@ -249,7 +265,7 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                                     if result {
                                         PEProcessManager.shared().closeIfRunning(usingBundleIdentifier: bundle.bundleIdentifier)
                                         
-                                        trust_nxt2_sign((executablePath as NSString).utf8String, final as CFDictionary, true)
+                                        trust_nxt2_sign((executablePath as NSString).utf8String, final as CFDictionary, true, nil)
                                         
                                         if LDEApplicationWorkspace.shared().installApplication(atBundlePath: bundle.bundleURL.path) {
                                             DispatchQueue.main.async {
@@ -278,26 +294,32 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                 // The app indeed wants something bruh
                 DispatchQueue.main.async {
                     alert.dismiss(animated: true) {
-                        let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Unknown"
-                        let alert = UIAlertController(
-                            title: "Install \"\(displayName)\"?",
-                            message: nil,
-                            preferredStyle: .alert
-                        )
-                        
-                        let fullMessage = NSMutableAttributedString()
-                        fullMessage.append(KSurfaceNXT2CreateEntitlementSummary(final))
-                        alert.setValue(fullMessage, forKey: "attributedMessage")
-                        
-                        alert.addAction(UIAlertAction(title: "Install", style: .default) { _ in
+                        if !final.isEmpty, !isRootCATrusted {
+                            let displayName = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Unknown"
+                            let alert = UIAlertController(
+                                title: "Install \"\(displayName)\"?",
+                                message: nil,
+                                preferredStyle: .alert
+                            )
+                            
+                            let fullMessage = NSMutableAttributedString()
+                            fullMessage.append(KSurfaceNXT2CreateEntitlementSummary(final))
+                            alert.setValue(fullMessage, forKey: "attributedMessage")
+                            
+                            alert.addAction(UIAlertAction(title: "Install", style: .default) { _ in
+                                DispatchQueue.global().async {
+                                    _ = proceedWithInstall()
+                                }
+                            })
+                            
+                            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+                            
+                            self.present(alert, animated: true)
+                        } else {
                             DispatchQueue.global().async {
                                 _ = proceedWithInstall()
                             }
-                        })
-                        
-                        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-                        
-                        self.present(alert, animated: true)
+                        }
                     }
                 }
                 

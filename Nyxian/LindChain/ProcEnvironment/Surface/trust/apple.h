@@ -34,7 +34,14 @@
  * -------------------------------------------------------------------- */
 #include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
 
+/* ----------------------------------------------------------------------
+ *  Function Prototypes
+ * -------------------------------------------------------------------- */
 CFDictionaryRef CopyAppleCSEntitlementsForPath(CFStringRef path, OSStatus *outErr);
 CFDictionaryRef ExtractNXT2OutOfAppleCSEntitlements(CFDictionaryRef appleCSEntitlements);
+
+kern_return_t CDHashMatchesCodeDirectory(const uint8_t *base, size_t size, const uint8_t expected_cdhash[USER_FSIGNATURES_CDHASH_LEN]);
+kern_return_t CDHashMatchesCodeDirectoryFD(int fd, const uint8_t expected_cdhash[USER_FSIGNATURES_CDHASH_LEN]);
+kern_return_t CDHashMatchesCodeDirectoryOfPath(const char *path, const uint8_t expected_cdhash[USER_FSIGNATURES_CDHASH_LEN]);
 
 #endif /* TRUST_APPLE_H */

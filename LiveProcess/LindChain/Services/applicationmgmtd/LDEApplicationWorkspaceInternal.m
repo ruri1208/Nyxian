@@ -194,20 +194,6 @@
         return NO;
     }
     
-    /* code signature check */
-    LCMachO *machO = LCMapMachO([bundle.executablePath UTF8String], true);
-    if(machO == nil)
-    {
-        return NO;
-    }
-    
-    bool cs_valid = LCCheckCodeSignature(machO);
-    LCUnmapMachO(machO);
-    if(!cs_valid)
-    {
-        return NO;
-    }
-    
     /* bundle identifier validation */
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z][a-zA-Z0-9-]*(\\.[a-zA-Z0-9-]+)*$" options:0 error:nil];
     if(regex == nil)

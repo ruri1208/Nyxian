@@ -142,7 +142,7 @@ out_dealloc:
     /* receiving pseudo exception caused by guest */
     request.v.Head.msgh_local_port = exceptionPort;
     request.v.Head.msgh_size = (mach_msg_size_t)sizeof(request);
-    mach_msg_return_t mr = mach_msg(&(request.v.Head), MACH_RCV_MSG | MACH_RCV_LARGE | MACH_RCV_TIMEOUT, 0, sizeof(request), exceptionPort, 1000, MACH_PORT_NULL);
+    mach_msg_return_t mr = mach_msg(&(request.v.Head), MACH_RCV_MSG | MACH_RCV_TIMEOUT, 0, sizeof(request), exceptionPort, 1000, MACH_PORT_NULL);
     if(mr != MACH_MSG_SUCCESS)
     {
         klog_log("ktfp", "failed to receive task port right: %s", mach_error_string(mr));

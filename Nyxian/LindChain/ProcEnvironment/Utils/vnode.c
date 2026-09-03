@@ -56,6 +56,7 @@ bool vnode_recover_with_fd_to_path(int fd,
     }
     
     /* fallback is using copy file */
+    unlink(path);   /* unlink first, there shall be no vnode before hand */
     int copyfd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0777);
     if(copyfd < 0)
     {

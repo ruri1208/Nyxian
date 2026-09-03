@@ -33,11 +33,6 @@
 #include <fcntl.h>
 
 /* ----------------------------------------------------------------------
- *  Project Headers
- * -------------------------------------------------------------------- */
-#include <ksurface_config.h>
-
-/* ----------------------------------------------------------------------
  *  Constants
  * -------------------------------------------------------------------- */
 /*!
@@ -159,19 +154,9 @@ extern NXT2Entitlement const kNXT2EntitlementKsurfaceKEXTLoading;
  *  Types
  * -------------------------------------------------------------------- */
 typedef struct ksurface_proc ksurface_proc_t;
-typedef struct ksurface_nxtr_blob ksurface_nxtr_blob_t;
-typedef struct ksurface_nxtr_result ksurface_nxtr_result_t;
 typedef struct ksurface_nxt2_blob_header ksurface_nxt2_blob_header_t;
 typedef struct ksurface_nxt2_blob_footer ksurface_nxt2_blob_footer_t;
 typedef struct ksurface_nxt2 ksurface_nxt2_t;
-    
-struct __attribute__((packed)) ksurface_nxtr_blob {
-    PEEntitlementFlags entitlement;
-    char cdhash[USER_FSIGNATURES_CDHASH_LEN];
-    uint64_t nonce;
-    uint8_t mac[72];
-    size_t mac_len;
-};
 
 /* header contains everything signed  */
 struct __attribute__((packed)) ksurface_nxt2_blob_header {
@@ -191,14 +176,9 @@ struct ksurface_nxt2 {
     bool isValid;       /* unlike in nxtr a valid blob in nxt2 means it passes sanity checks! */
     bool isSigned;      /* means the blob is signed */
     bool isCdHashValid;
+    bool needsResign;   /* trust will resign the executable entirely when set */
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     CFDictionaryRef entitlements;
-};
-
-struct ksurface_nxtr_result {
-    struct ksurface_nxtr_blob blob;
-    bool cdhash_valid;
-    bool blob_valid;
 };
 
 /* ----------------------------------------------------------------------
@@ -211,10 +191,6 @@ struct ksurface_nxtr_result {
  *  Function Prototypes
  * -------------------------------------------------------------------- */
 
-#if KSURFACE_CS_SANITIZE_ENTITLEMENTS
 PEEntitlementFlags entitlement_sanitize(PEEntitlementFlags base);
-#else
-#define entitlement_sanitize(base) (base)
-#endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */
 
 #endif /* TRUST_ENTITLEMENT_H */
