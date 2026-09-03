@@ -98,44 +98,11 @@ BOOL PEExtensionHasGetTaskAllowed(void)
     return hasGetTaskAllowed;
 }
 
-void PESpawnTimeout(void)
-{
-    static mach_timebase_info_data_t timebase;
-    static uint64_t lastSpawnTick = 0;
-
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        mach_timebase_info(&timebase);
-    });
-
-    uint64_t timeoutTicks = (SPAWN_TIMEOUT * timebase.denom) / timebase.numer;
-
-    uint64_t now = mach_absolute_time();
-    uint64_t elapsed = now - lastSpawnTick;
-
-    if(lastSpawnTick != 0 && elapsed < timeoutTicks)
-    {
-        uint64_t waitTicks = timeoutTicks - elapsed;
-        uint64_t nsToWait = waitTicks * timebase.numer / timebase.denom;
-
-        struct timespec ts = {
-            .tv_sec  = (time_t)(nsToWait / 1000000000ull),
-            .tv_nsec = (long)  (nsToWait % 1000000000ull),
-        };
-        nanosleep(&ts, NULL);
-    }
-
-    lastSpawnTick = mach_absolute_time();
-}
-
 FBProcess *PESpawnFBProcess(NSDictionary *items,
                             pid_t *processIdentifier,
                             int *processIdentifierVersion)
 {
     assert(items != nil);
-    
-    /* enforce timeout */
-    PESpawnTimeout();
     
     NSExtension *extension = PEGetNSExtension();
     

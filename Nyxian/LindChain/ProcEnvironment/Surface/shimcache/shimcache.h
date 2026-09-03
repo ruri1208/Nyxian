@@ -19,19 +19,17 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KXLD_KXOPEN_H
-#define KXLD_KXOPEN_H
+#ifndef SHIMCACHE_H
+#define SHIMCACHE_H
 
-#include <LindChain/ProcEnvironment/Surface/kxld/image.h>
-#include <stdio.h>
+#include <mach/mach.h>
+#include <CoreCompiler/CoreCompiler.h>
 
-#define KXLD_DEFAULT    0
-#define KXLD_NOCLOSE    (1ull << 1)
+typedef struct {
+    CCFileType fileType;
+    char *code;
+} shimcache_segment_t;
 
-kern_return_t kxopen(const char *path, int mode, kxld_image_info_t **image_info);
-kern_return_t kxopen_with_fd(int fd, int mode, kxld_image_info_t **image_info);
-kern_return_t kxclose(kxld_image_info_t *image_info);
+kern_return_t ksurface_shimcache_append_code(CCFileType fileType, const char *code);
 
-kern_return_t kxld_seal(void);
-
-#endif /* KXLD_KXOPEN_H */
+#endif /* SHIMCACHE_H */

@@ -57,12 +57,11 @@ DEFINE_SYSCALL_HANDLER(procpath)
     char path[PATH_MAX];
     _Static_assert(sizeof(target->nyx.identity->path) <= sizeof(path), "process path exceeds temporary buffer");
     kvo_rdlock(target);
-    strlcpy(path, target->nyx.identity->path, sizeof(path));
+    size_t size = strlcpy(path, target->nyx.identity->path, sizeof(path)) + 1;
     kvo_unlock(target);
     kvo_release(target);
     
     /* does the process path buffer fit into the userspace buffer */
-    size_t size = strnlen(path, sizeof(path) - 1) + 1;
     if(u_size < size)
     {
         if(!syscall_copy_out(sys_task_, sizeof(size_t), &size, u_size_ptr))

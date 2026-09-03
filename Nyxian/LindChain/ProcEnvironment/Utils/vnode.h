@@ -28,4 +28,15 @@
 bool vnode_refresh_with_path(const char* path);
 bool vnode_recover_with_fd_to_path(int fd, const char *path);
 
+/*
+ * stuff to help the trust API with
+ * atomatically inode tagged file
+ * descriptors that when closed via
+ * this API will efficiently update
+ * the guest accessible path.
+ */
+int vnode_inaccessible_open(const char *path, int flg);
+int vnode_inaccessible_close(int fd, bool refresh);
+int vnode_inaccessible_reopen(int *fd);
+
 #endif /* __VNODE_H */

@@ -46,4 +46,6 @@ Boolean CFSwap(CFTypeRef ref1, CFTypeRef ref2);
 void CFBundleSetBinaryType(CFBundleRef bundle, __CFPBinaryType type);
 __CFPBinaryType CFBundleGetBinaryType(CFBundleRef bundle);
 
+void CFReleaseTry(CFTypeRef ref);
+
 #endif /* CFTOOLS_H */

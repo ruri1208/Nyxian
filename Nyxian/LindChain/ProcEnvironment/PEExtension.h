@@ -25,13 +25,6 @@
 #import <LindChain/Private/FoundationPrivate.h>
 #import <LindChain/Private/UIKitPrivate.h>
 
-/*
- * anti fork bomb timeout, I think
- * it would be a lot better to implement
- * RCU ASAP cuz that would fix most of this issue.
- */
-#define SPAWN_TIMEOUT 30000000ull
-
 @interface FBProcess (ProcEnvironment)
 
 @property (nonatomic, strong) NSExtension *nsExtension;

@@ -45,6 +45,7 @@
 #include <os/lock.h>
 #include <pthread.h>
 
+static bool g_kxld_sealed = false;
 static os_unfair_lock g_kxld_lock = OS_UNFAIR_LOCK_INIT;
 
 static void kxdestroy_image(kxld_image_info_t *image_info)
@@ -106,11 +107,16 @@ kern_return_t kxopen_with_fd(int fd,
 {
     if(fd < 0)
     {
-        errno = EINVAL;
         return KERN_INVALID_ARGUMENT;
     }
     
     os_unfair_lock_lock(&g_kxld_lock);
+    if(g_kxld_sealed)
+    {
+        os_unfair_lock_unlock(&g_kxld_lock);
+        return KERN_DENIED;
+    }
+    
     /* map machO */
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO == NULL)
@@ -346,6 +352,19 @@ kern_return_t kxclose(kxld_image_info_t *claimed_image_info)
     
     
     klog_log("kextloader", "successfully unloaded kext '%s'", image_info->mod->identifier);
+    os_unfair_lock_unlock(&g_kxld_lock);
+    return KERN_SUCCESS;
+}
+
+kern_return_t kxld_seal(void)
+{
+    os_unfair_lock_lock(&g_kxld_lock);
+    if(g_kxld_sealed)
+    {
+        os_unfair_lock_unlock(&g_kxld_lock);
+        return KERN_ALREADY_IN_SET;
+    }
+    g_kxld_sealed = true;
     os_unfair_lock_unlock(&g_kxld_lock);
     return KERN_SUCCESS;
 }

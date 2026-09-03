@@ -39,6 +39,7 @@
 #import <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
 #import <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <LindChain/Utils/CFTools.h>
 #import <ksurface_config.h>
 
 /* ----------------------------------------------------------------------
@@ -370,17 +371,66 @@ ksurface_trust_identity_t *trust_identity_get_kernel(void)
     return identity;
 }
 
+static bool trust_resign_with_fd(int *fd,
+                                 ksurface_nxt2_t *result_nxt2)
+{
+    char path[MAXPATHLEN];
+    if(fcntl(*fd, F_GETPATH, path) != 0)
+    {
+        return false;
+    }
+    
+    static os_unfair_lock resign_lock = OS_UNFAIR_LOCK_INIT;
+    
+    if(result_nxt2->isValid &&
+       result_nxt2->isCdHashValid &&
+       result_nxt2->needsResign)
+    {
+        os_unfair_lock_lock(&resign_lock);
+        if(![LCUtils signMachOAtURL:[NSURL fileURLWithPath:[NSString stringWithCString:path encoding:NSUTF8StringEncoding]]])
+        {
+            os_unfair_lock_unlock(&resign_lock);
+            return false;
+        }
+        
+        if(vnode_inaccessible_reopen(fd) != 0)
+        {
+            os_unfair_lock_unlock(&resign_lock);
+            return false;
+        }
+        
+        if(trust_nxt2_sign_fd(*fd, result_nxt2->entitlements, true, NULL) != KERN_SUCCESS)
+        {
+            os_unfair_lock_unlock(&resign_lock);
+            return false;
+        }
+        
+        ksurface_nxt2_t new_result_nxt2;
+        if(trust_nxt2_read_fd(*fd, &new_result_nxt2) != KERN_SUCCESS)
+        {
+            os_unfair_lock_unlock(&resign_lock);
+            return false;
+        }
+        
+        if(new_result_nxt2.entitlements == NULL)
+        {
+            os_unfair_lock_unlock(&resign_lock);
+            return false;
+        }
+        
+        CFRelease(result_nxt2->entitlements);
+        memcpy(result_nxt2, &new_result_nxt2, sizeof(*result_nxt2));
+    }
+    
+    os_unfair_lock_unlock(&resign_lock);
+    return true;
+}
+
 ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
 {
     if(path == NULL)
     {
         errno = EINVAL;
-        return NULL;
-    }
-    
-    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
-    if(executableString == NULL)
-    {
         return NULL;
     }
     
@@ -391,6 +441,12 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
             .entitlementPreset = kPEEntitlementsNXT2PresetsDaemonBootstrap,
         }
     };
+    
+    CFStringRef executableString = CFStringCreateWithCString(kCFAllocatorDefault, path, kCFStringEncodingUTF8);
+    if(executableString == NULL)
+    {
+        return NULL;
+    }
     
     for(int index = 0; index < sizeof(trustDaemonPath) / sizeof(trustDaemonEntry); index++)
     {
@@ -427,6 +483,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     /* check if path is readable and apple signed (required for trust levels lower than kPETrustLevelTrusted, because paths are attacker controlled) */
     if(access(path, R_OK) != 0)
     {
+        errno = EACCES;
         CFRelease(executableString);
         return NULL;
     }
@@ -434,122 +491,59 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     /* signature validation */
 #if KSURFACE_CS_ALLOW_NXT2
     {
-        ksurface_nxt2_t result_nxt2;
-        if(trust_nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
+        bool refresh = false;
+        int fd = vnode_inaccessible_open(path, O_RDWR);
+        if(fd < 0)
         {
-            if(result_nxt2.isValid &&
-               result_nxt2.isCdHashValid &&
-               result_nxt2.needsResign)
+            CFRelease(executableString);
+            return NULL;
+        }
+        
+        ksurface_nxt2_t result_nxt2;
+        if(trust_nxt2_read_fd(fd, &result_nxt2) == KERN_SUCCESS)
+        {
+            if(result_nxt2.entitlements == NULL)
             {
-                int fd = open(path, O_RDONLY);  /* TODO: fd shall be used end to end >:3 (technically a vuln) */
-                if(fd < 0)
-                {
-                    /* failed resign */
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                NSString *resignPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"/Library/ResignFast."] stringByAppendingString:[[NSUUID UUID] UUIDString]];
-                bool success_vn_recover = vnode_recover_with_fd_to_path(fd, [resignPath UTF8String]);
                 close(fd);
-                if(!success_vn_recover)
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            if(result_nxt2.needsResign)
+            {
+                if(!trust_resign_with_fd(&fd, &result_nxt2))
                 {
-                    /* failed resign */
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
+                    goto out_failure_release_nxt2;
                 }
-                
-                if(CDHashMatchesCodeDirectoryOfPath(resignPath.UTF8String, (uint8_t*)result_nxt2.cdhash) != KERN_SUCCESS)
+                else
                 {
-                    /* failed resign */
-                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                if(![LCUtils signMachOAtURL:[NSURL fileURLWithPath:resignPath]])
-                {
-                    /* failed resign */
-                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                if(trust_nxt2_sign(resignPath.UTF8String, result_nxt2.entitlements, true, NULL) != KERN_SUCCESS)
-                {
-                    /* failed resign */
-                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                int rfd = open(resignPath.UTF8String, O_RDONLY);
-                if(rfd < 0)
-                {
-                    /* failed resign */
-                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                success_vn_recover = vnode_recover_with_fd_to_path(rfd, path);
-                close(rfd);
-                [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
-                if(!success_vn_recover)
-                {
-                    /* failed resign */
-                    CFRelease(result_nxt2.entitlements);
-                    CFRelease(executableString);
-                    return NULL;
-                }
-                
-                CFRelease(result_nxt2.entitlements);
-                if(trust_nxt2_read(path, &result_nxt2) != KERN_SUCCESS)
-                {
-                    /* huh??? */
-                    if(result_nxt2.entitlements != NULL)
-                    {
-                        CFRelease(result_nxt2.entitlements);
-                    }
-                    CFRelease(executableString);
-                    return NULL;
+                    refresh = true;
                 }
             }
             
-            LCMachO *machO = LCMapMachO(path, false);
+            LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
             if(machO == NULL)
             {
-                CFRelease(executableString);
-                return NULL;
+                goto out_failure_release_nxt2;
             }
             
             bool isAppleSigned = LCCheckCodeSignature(machO);
             LCUnmapMachO(machO);
             if(!isAppleSigned)
             {
-                return NULL;
+                goto out_failure_release_nxt2;
             }
             
             /* check if blob was signed */
             if(!result_nxt2.isSigned || !result_nxt2.isValid || !result_nxt2.isCdHashValid)
             {
-                CFRelease(result_nxt2.entitlements);
-                CFRelease(executableString);
-                return NULL;
+                goto out_failure_release_nxt2;
             }
             
             ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
             if(identity == NULL)
             {
-                CFRelease(result_nxt2.entitlements);
-                CFRelease(executableString);
-                return NULL;
+                goto out_failure_release_nxt2;
             }
             
             strlcpy(identity->path, path, MAXPATHLEN);
@@ -560,13 +554,22 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
             CFRelease(result_nxt2.entitlements);
             if(identity->entitlements == NULL)
             {
+                vnode_inaccessible_close(fd, refresh);
                 CFRelease(executableString);
                 free(identity);
                 return NULL;
             }
             identity->filePermissions = trust_identity_give_file_permissions(executableString, identity->entitlements);
+            vnode_inaccessible_close(fd, refresh);
             return identity;
+            
+        out_failure_release_nxt2:
+            vnode_inaccessible_close(fd, refresh);
+            CFRelease(result_nxt2.entitlements);
+            CFRelease(executableString);
+            return NULL;
         }
+        vnode_inaccessible_close(fd, refresh);
     }
 #endif /* KSURFACE_CS_ALLOW_NXT2 */
     
