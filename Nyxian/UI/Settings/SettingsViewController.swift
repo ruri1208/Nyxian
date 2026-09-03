@@ -36,41 +36,32 @@ class SettingsViewController: UIThemedTableViewController {
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return NXApplicationState.extensionLessMode ? 3 : 5
+        return NXApplicationState.extensionLessMode ? 3 : 4
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
         cell.accessoryType = .disclosureIndicator
 
+        var indexPath: IndexPath = indexPath
+        if NXApplicationState.extensionLessMode && indexPath.row > 0 {
+            indexPath.row += 1
+        }
+        
         switch indexPath.row {
         case 0:
             cell.imageView?.image = UIImage(systemName: "wrench.adjustable.fill")
             cell.textLabel?.text = "Toolchain"
             break
         case 1:
-            if NXApplicationState.extensionLessMode {
-                cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
-                cell.textLabel?.text = "Customization"
-            } else {
-                cell.imageView?.image = UIImage(systemName: "bolt.shield.fill")
-                cell.textLabel?.text = "Management"
-            }
+            cell.imageView?.image = UIImage(systemName: "bolt.shield.fill")
+            cell.textLabel?.text = "Management"
             break
         case 2:
-            if NXApplicationState.extensionLessMode {
-                cell.imageView?.image = UIImage(systemName: "person.3.fill")
-                cell.textLabel?.text = "Credits"
-            } else {
-                cell.imageView?.image = UIImage(systemName: "app.badge.fill")
-                cell.textLabel?.text = "Applications"
-            }
-            break
-        case 3:
             cell.imageView?.image = UIImage(systemName: "paintbrush.fill")
             cell.textLabel?.text = "Customization"
             break
-        case 4:
+        case 3:
             cell.imageView?.image = UIImage(systemName: "person.3.fill")
             cell.textLabel?.text = "Credits"
             break
@@ -83,6 +74,12 @@ class SettingsViewController: UIThemedTableViewController {
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        
+        var indexPath: IndexPath = indexPath
+        if NXApplicationState.extensionLessMode && indexPath.row > 0 {
+            indexPath.row += 1
+        }
+        
         navigateToController(for: indexPath.row, animated: true)
     }
 
@@ -92,20 +89,10 @@ class SettingsViewController: UIThemedTableViewController {
             case 0:
                 return ToolChainViewController(style: .insetGrouped)
             case 1:
-                if NXApplicationState.extensionLessMode {
-                    return CustomizationViewController(style: .insetGrouped)
-                } else {
-                    return ManagementViewController(style: .insetGrouped)
-                }
+                return ManagementViewController(style: .insetGrouped)
             case 2:
-                if NXApplicationState.extensionLessMode {
-                    return CreditsViewController(style: .insetGrouped)
-                } else {
-                    return ApplicationManagementViewController(style: .insetGrouped)
-                }
-            case 3:
                 return CustomizationViewController(style: .insetGrouped)
-            case 4:
+            case 3:
                 return CreditsViewController(style: .insetGrouped)
             default:
                 return nil

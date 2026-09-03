@@ -256,11 +256,31 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
 
 /* temporary end */
 
-@implementation PEKext
+@implementation PEKext {
+    BOOL _enabled;
+}
 
 - (kern_return_t)load
 {
     return kxopen(self.executablePath.UTF8String, 0, NULL);
+}
+
+- (void)setIsEnabled:(BOOL)isEnabled
+{
+    _enabled = isEnabled;
+    NSMutableDictionary *dictionary = [[NSDictionary dictionaryWithContentsOfURL:[[NSURL fileURLWithPath:self.bundlePath] URLByAppendingPathComponent:@"Info.plist"]] mutableCopy];
+    if(dictionary != nil)
+    {
+        dictionary[@"PEDisabled"] = [NSNumber numberWithBool:!isEnabled];
+        NSError *error = nil;
+        [dictionary writeToURL:[[NSURL fileURLWithPath:self.bundlePath] URLByAppendingPathComponent:@"Info.plist"] error:&error];
+        NSLog(@"%@", error);
+    }
+}
+
+- (BOOL)isEnabled
+{
+    return _enabled;
 }
 
 - (instancetype)initWithPath:(NSString*)path
@@ -364,6 +384,17 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
         _bundleID = [NSString stringWithCString:info.identifier encoding:NSUTF8StringEncoding];
         _version = [NSString stringWithFormat:@"%u.%u.%u", KMOD_VERSION_MAJOR(info.version), KMOD_VERSION_MINOR(info.version), KMOD_VERSION_PATCH(info.version)];
         _bundlePath = kextBundle.bundlePath;
+        
+        NSDictionary *infoDictionary = [NSDictionary dictionaryWithContentsOfURL:[[NSURL fileURLWithPath:self.bundlePath] URLByAppendingPathComponent:@"Info.plist"]];
+        NSNumber *number = infoDictionary[@"PEDisabled"];
+        if([number isKindOfClass:[NSNumber class]])
+        {
+            _enabled = ![number boolValue];
+        }
+        else
+        {
+            _enabled = YES;
+        }
         
         /* final check */
         if(_bundleID == nil || _version == nil || _executablePath == nil || _dependencies == nil || _bundlePath == nil)

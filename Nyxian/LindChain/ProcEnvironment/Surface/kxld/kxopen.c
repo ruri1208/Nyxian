@@ -162,14 +162,12 @@ kern_return_t kxopen_with_fd(int fd,
         kern_return_t kr = KXGetRegisteredKextForIdentifier(image_info->mod->dependencies[i].identifier, &depImageInfo);
         if(kr != KERN_SUCCESS)
         {
-            errno = EACCES;
             goto out_failure_destroy;
         }
         
         if(depImageInfo->mod->version < image_info->mod->dependencies[i].min_version ||
            depImageInfo->mod->version > image_info->mod->dependencies[i].max_version)
         {
-            errno = EACCES;
             goto out_failure_destroy;
         }
         
@@ -192,9 +190,12 @@ kern_return_t kxopen_with_fd(int fd,
     }
     
     /* still very unmappable */
-    if(KXRegisterKext(image_info) != KERN_SUCCESS)
+    kern_return_t kr = KXRegisterKext(image_info);
+    if(kr != KERN_SUCCESS)
     {
-        goto out_failure_destroy;
+        kxdestroy_image(image_info);
+        os_unfair_lock_unlock(&g_kxld_lock);
+        return kr;
     }
     
     /* now the spicy port with the symbol exports */

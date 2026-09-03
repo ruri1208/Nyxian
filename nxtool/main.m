@@ -37,7 +37,7 @@
 
 static void printUsage(const char *prog)
 {
-    fprintf(stderr, "Usage: %s <input ipa> <output nipa> <entitlements plist>\n", prog);
+    fprintf(stderr, "Usage: %s <input ipa> <output nipa> <entitlements plist> <private_der_path>\n", prog);
 }
 
 int main(int argc, const char * argv[])
@@ -46,7 +46,7 @@ int main(int argc, const char * argv[])
      * this tool will be to sign apps with nyxian entitlements (will be .nipa)
      * MARK: this is WIP
      */
-    if(argc < 4)
+    if(argc < 5)
     {
         printUsage(argv[0]);
         return 1;
@@ -70,6 +70,13 @@ int main(int argc, const char * argv[])
     if(plistPath == nil)
     {
         fprintf(stderr, "error: failed to get plist path\n");
+        return 1;
+    }
+    
+    NSString *privDerPath = [NSString stringWithCString:argv[4] encoding:NSUTF8StringEncoding];
+    if(privDerPath == nil)
+    {
+        fprintf(stderr, "error: failed to get priv der path\n");
         return 1;
     }
     
@@ -102,12 +109,19 @@ int main(int argc, const char * argv[])
         return 1;
     }
     
+    BOOL isKext = NO;
     NSBundle *bundle;
     for(NSString *item in items)
     {
         if([item.pathExtension isEqualToString:@"app"])
         {
             bundle = [NSBundle bundleWithPath:[payloadPath stringByAppendingPathComponent:item]];
+            break;
+        }
+        else if([item.pathExtension isEqualToString:@"kext"])
+        {
+            bundle = [NSBundle bundleWithPath:[payloadPath stringByAppendingPathComponent:item]];
+            isKext = YES;
             break;
         }
     }
@@ -119,9 +133,17 @@ int main(int argc, const char * argv[])
         return 1;
     }
     
+    /* forcing the code directory to be valid */
+    if(!isKext && system([[NSString stringWithFormat:@"codesign --force -s - %@", bundle.bundlePath] UTF8String]) != 0)
+    {
+        fprintf(stderr, "error: failed to force adhoc sign bundle\n");
+        [[NSFileManager defaultManager] removeItemAtPath:tmpSpace error:nil];
+        return 1;
+    }
+    
     /* now we'll poc sign */
     NSDictionary *entitlements = [NSDictionary dictionaryWithContentsOfFile:plistPath]?: @{};
-    if(trust_nxt2_sign([bundle.executablePath UTF8String], (__bridge CFDictionaryRef)entitlements, true) != KERN_SUCCESS)
+    if(trust_nxt2_sign([bundle.executablePath UTF8String], (__bridge CFDictionaryRef)entitlements, true, privDerPath.UTF8String) != KERN_SUCCESS)
     {
         fprintf(stderr, "error: failed to sign app with adhoc NXT2 blob\n");
         [[NSFileManager defaultManager] removeItemAtPath:tmpSpace error:nil];

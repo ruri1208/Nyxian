@@ -350,6 +350,29 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
                 
                 self.version = 27;
             }
+            
+            if(self.version < 28)
+            {
+                NSLog(@"bootstrapping rootca folder");
+                
+                [[NSFileManager defaultManager] createDirectoryAtURL:[self.rootURL URLByAppendingPathComponent:@"RootCAs"] withIntermediateDirectories:true attributes:nil error:nil];
+                
+                if(!fdownload(@"https://nyxian.app/bootstrap/org.emexlabs.rootca.v1.pub.nxt2c", @"org.emexlabs.rootca.v1.pub.nxt2c"))
+                {
+                    error = [NSError errorWithDomain:@"" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"downloading \"https://nyxian.app/bootstrap/org.emexlabs.rootca.v1.pub.nxt2c\" failed" }];
+                    goto report_error;
+                }
+                
+                if(![[NSFileManager defaultManager] moveItemAtPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"org.emexlabs.rootca.v1.pub.nxt2c"] toPath:[[self.rootURL URLByAppendingPathComponent:@"RootCAs/org.emexlabs.rootca.v1.pub.nxt2c"] path] error:nil])
+                {
+                    error = [NSError errorWithDomain:@"" code:0 userInfo:@{ NSLocalizedDescriptionKey: @"failed to move emexlabs public rootca key" }];
+                    goto report_error;
+                }
+                
+                ksurface_keychain_update();
+                
+                self.version = 28;
+            }
         }
         
         NSLog(@"done");
@@ -377,7 +400,10 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
     
     for(NSURL *entry in entries)
     {
-        if(!(url == self.rootURL && [entry.lastPathComponent isEqualToString:@"Projects"]))
+        if(!(url == self.rootURL && ([entry.lastPathComponent isEqualToString:@"Projects"] ||
+                                     [entry.lastPathComponent isEqualToString:@"rootfs"] ||
+                                     [entry.lastPathComponent isEqualToString:@"mntfs"] ||
+                                     [entry.lastPathComponent isEqualToString:@"klog.txt"])))
         {
             [[NSFileManager defaultManager] removeItemAtURL:entry error:nil];
         }

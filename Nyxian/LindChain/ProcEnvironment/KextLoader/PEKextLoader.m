@@ -96,6 +96,10 @@ BOOL PEKextLoaderLoad(NSMutableString *errorString)
             }
             continue;
         }
+        if(!kext.isEnabled)
+        {
+            continue;
+        }
         [allKexts addObject:kext];
     }
     

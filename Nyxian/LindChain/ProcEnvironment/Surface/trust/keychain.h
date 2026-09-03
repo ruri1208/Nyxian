@@ -19,30 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PEKEXT_H
-#define PEKEXT_H
+#ifndef TRUST_KEYCHAIN_H
+#define TRUST_KEYCHAIN_H
 
-#import <Foundation/Foundation.h>
-#import <LindChain/ProcEnvironment/KextLoader/PEDependency.h>
+/* I love shiney keysss >~< */
+#include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 
-@interface PEKext : NSObject
+kern_return_t ksurface_keychain_update(void);
 
-@property (nonatomic,copy) NSString *executablePath;
-@property (nonatomic,copy) NSString *bundlePath;
-@property (nonatomic,copy) NSString *bundleID;
-@property (nonatomic,copy) NSString *version;
-@property (nonatomic,strong) NSArray<PEDependency*> *dependencies;
-@property (nonatomic) uint64_t flags;
-@property (nonatomic) uint32_t abi_version;
-@property (atomic) BOOL isEnabled;
+kern_return_t ksurface_keychain_match(ksurface_nxt2_blob_footer_t *footer, ksurface_nxt2_blob_header_t *header);
 
-- (int)load;
-
-- (instancetype)initWithPath:(NSString*)path;
-
-+ (instancetype)appleIOSKext;
-+ (instancetype)ksurfaceMainKext;
-
-@end
-
-#endif /* PEKEXT_H */
+#endif /* TRUST_KEYCHAIN_H */

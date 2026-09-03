@@ -483,7 +483,7 @@
 - (NSURL*)bundleURL {
     if(self.projectConfig.schemeKind == NXProjectSchemeKindKSurfaceKext)
     {
-        return [self.cacheURL  URLByAppendingPathComponent:[self.projectConfig.bundleid stringByAppendingPathExtension:@"kext"]];
+        return [self.payloadURL  URLByAppendingPathComponent:[self.projectConfig.bundleid stringByAppendingPathExtension:@"kext"]];
     }
     return [self.payloadURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"app"]];
 }
@@ -511,7 +511,13 @@
         return [NSURL fileURLWithPath:outputPath];
     }
 }
-- (NSURL*)packageURL { return self.projectConfig.schemeKind == NXProjectSchemeKindApp ? [self.cacheURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"ipa"]] : self.machoURL; }
+- (NSURL*)packageURL {
+    if(self.projectConfig.schemeKind == NXProjectSchemeKindKSurfaceKext)
+    {
+        return [self.cacheURL URLByAppendingPathComponent:[self.projectConfig.bundleid stringByAppendingPathExtension:@"kext.nipa"]];
+    }
+    return self.projectConfig.schemeKind == NXProjectSchemeKindApp ? [self.cacheURL URLByAppendingPathComponent:[self.projectConfig.executable stringByAppendingPathExtension:@"ipa"]] : self.machoURL;
+}
 
 - (BOOL)reload
 {

@@ -86,9 +86,9 @@ NXT2Entitlement const kNXT2EntitlementKsurfaceKEXTLoading = CFSTR("org.emexlabs.
  *  Functions
  * -------------------------------------------------------------------- */
 
-#if KSURFACE_CS_SANITIZE_ENTITLEMENTS
 PEEntitlementFlags entitlement_sanitize(PEEntitlementFlags base)
 {
+#if KSURFACE_CS_SANITIZE_ENTITLEMENTS
     base &= kPEEntitlementFlagAll;  /* making sure no unused bit fields are enabled */
     
     /* can it see a other process ever? */
@@ -114,7 +114,6 @@ PEEntitlementFlags entitlement_sanitize(PEEntitlementFlags base)
         /* you cannot be platformized as root user if you're not platform */
         entitlement_strip(base, kPEEntitlementFlagPlatformRoot);
     }
+#endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */
     return base;
 }
-
-#endif /* KSURFACE_CS_SANITIZE_ENTITLEMENTS */

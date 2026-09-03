@@ -28,6 +28,7 @@
 #import <LindChain/ProcEnvironment/LiveContainer/utils.h>
 #import <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#import <LindChain/ProcEnvironment/Surface/trust/keychain.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
 
@@ -318,11 +319,19 @@ void ksurface_kinit(void)
     ksurface_kinit_kinfo();
     ksurface_kinit_kserver();
     ksurface_kinit_kproc();
+    
+    /* initialize other subsytems */
     if(ksurface_fs_init() != KERN_SUCCESS)
     {
         environment_panic("fs didn't initialize");
     }
     
+    if(ksurface_keychain_update() != KERN_SUCCESS)
+    {
+        environment_panic("keychain didn't initialize");
+    }
+    
+    /* put logs where they actually belong to */
     NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
     NSString *entry_path = [NSString stringWithFormat:@"%@/Documents/klog.txt", NSHomeDirectory()];
     

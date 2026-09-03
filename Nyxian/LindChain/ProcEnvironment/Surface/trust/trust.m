@@ -33,9 +33,11 @@
  * -------------------------------------------------------------------- */
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/fs/sandbox.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <ksurface_config.h>
 
@@ -429,26 +431,111 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
         return NULL;
     }
     
-    LCMachO *machO = LCMapMachO(path, false);
-    if(machO == NULL)
-    {
-        CFRelease(executableString);
-        return NULL;
-    }
-    
-    bool isAppleSigned = LCCheckCodeSignature(machO);
-    LCUnmapMachO(machO);
-    if(!isAppleSigned)
-    {
-        return NULL;
-    }
-    
     /* signature validation */
 #if KSURFACE_CS_ALLOW_NXT2
     {
         ksurface_nxt2_t result_nxt2;
         if(trust_nxt2_read(path, &result_nxt2) == KERN_SUCCESS)
         {
+            if(result_nxt2.isValid &&
+               result_nxt2.isCdHashValid &&
+               result_nxt2.needsResign)
+            {
+                int fd = open(path, O_RDONLY);  /* TODO: fd shall be used end to end >:3 (technically a vuln) */
+                if(fd < 0)
+                {
+                    /* failed resign */
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                NSString *resignPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"/Library/ResignFast."] stringByAppendingString:[[NSUUID UUID] UUIDString]];
+                bool success_vn_recover = vnode_recover_with_fd_to_path(fd, [resignPath UTF8String]);
+                close(fd);
+                if(!success_vn_recover)
+                {
+                    /* failed resign */
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                if(CDHashMatchesCodeDirectoryOfPath(resignPath.UTF8String, (uint8_t*)result_nxt2.cdhash) != KERN_SUCCESS)
+                {
+                    /* failed resign */
+                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                if(![LCUtils signMachOAtURL:[NSURL fileURLWithPath:resignPath]])
+                {
+                    /* failed resign */
+                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                if(trust_nxt2_sign(resignPath.UTF8String, result_nxt2.entitlements, true, NULL) != KERN_SUCCESS)
+                {
+                    /* failed resign */
+                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                int rfd = open(resignPath.UTF8String, O_RDONLY);
+                if(rfd < 0)
+                {
+                    /* failed resign */
+                    [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                success_vn_recover = vnode_recover_with_fd_to_path(rfd, path);
+                close(rfd);
+                [[NSFileManager defaultManager] removeItemAtPath:resignPath error:nil];
+                if(!success_vn_recover)
+                {
+                    /* failed resign */
+                    CFRelease(result_nxt2.entitlements);
+                    CFRelease(executableString);
+                    return NULL;
+                }
+                
+                CFRelease(result_nxt2.entitlements);
+                if(trust_nxt2_read(path, &result_nxt2) != KERN_SUCCESS)
+                {
+                    /* huh??? */
+                    if(result_nxt2.entitlements != NULL)
+                    {
+                        CFRelease(result_nxt2.entitlements);
+                    }
+                    CFRelease(executableString);
+                    return NULL;
+                }
+            }
+            
+            LCMachO *machO = LCMapMachO(path, false);
+            if(machO == NULL)
+            {
+                CFRelease(executableString);
+                return NULL;
+            }
+            
+            bool isAppleSigned = LCCheckCodeSignature(machO);
+            LCUnmapMachO(machO);
+            if(!isAppleSigned)
+            {
+                return NULL;
+            }
+            
             /* check if blob was signed */
             if(!result_nxt2.isSigned || !result_nxt2.isValid || !result_nxt2.isCdHashValid)
             {
@@ -484,6 +571,20 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
 #endif /* KSURFACE_CS_ALLOW_NXT2 */
     
     /* fallback */
+    LCMachO *machO = LCMapMachO(path, false);
+    if(machO == NULL)
+    {
+        CFRelease(executableString);
+        return NULL;
+    }
+    
+    bool isAppleSigned = LCCheckCodeSignature(machO);
+    LCUnmapMachO(machO);
+    if(!isAppleSigned)
+    {
+        return NULL;
+    }
+    
     CFMutableDictionaryRef entitlements = CFDictionaryCreateMutable(kCFAllocatorDefault, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     if(entitlements == NULL)
     {
