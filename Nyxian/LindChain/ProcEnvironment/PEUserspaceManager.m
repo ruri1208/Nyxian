@@ -30,6 +30,7 @@
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <LindChain/ProcEnvironment/KextLoader/PEKextLoader.h>
+#import <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -138,6 +139,11 @@
         }
     }
     klog_log(domain, "%@ [ok]", [self class]);
+    
+    if(ksurface_shimcache_build() != KERN_SUCCESS)
+    {
+        ksurface_panic("shimcache build failed");
+    }
     
     /* spinning up the launch services */
     [[PELaunchServiceManager shared] reloadAllEntries];

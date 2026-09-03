@@ -20,9 +20,134 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
+#include <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#include <LindChain/ProcEnvironment/Surface/fs/mount.h>
+#include <stdio.h>
+#include <os/lock.h>
+#import <Foundation/Foundation.h>
+#import <MobileDevelopmentKit/MobileDevelopmentKit.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <LindChain/IDEFoundation/NXProject.h>
+#import <LindChain/ProcEnvironment/Utils/klog.h>
+#import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
+
+static os_unfair_lock g_shimcache_lock = OS_UNFAIR_LOCK_INIT;
+
+static shimcache_segment_t *g_shimcache_seg;
+static int g_shimcache_seg_cnt = 0;
 
 kern_return_t ksurface_shimcache_append_code(CCFileType fileType,
                                              const char *code)
 {
-    return KERN_NOT_SUPPORTED;
+    os_unfair_lock_lock(&g_shimcache_lock);
+    
+    /* we need a slot */
+    int index = g_shimcache_seg_cnt++;
+    void *newptr = realloc(g_shimcache_seg, sizeof(shimcache_segment_t) * g_shimcache_seg_cnt);
+    if(newptr)
+    {
+        g_shimcache_seg = newptr;
+    }
+    else
+    {
+        g_shimcache_seg_cnt--;
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_FAILURE;
+    }
+    
+    /* now we fill the slot */
+    g_shimcache_seg[index].code = strdup(code);
+    if(g_shimcache_seg[index].code == NULL)
+    {
+        g_shimcache_seg_cnt--;
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_FAILURE;
+    }
+    g_shimcache_seg[index].fileType = fileType;
+    
+    os_unfair_lock_unlock(&g_shimcache_lock);
+    return KERN_SUCCESS;
+}
+
+kern_return_t ksurface_shimcache_build(void)
+{
+    os_unfair_lock_lock(&g_shimcache_lock);
+    NSURL *shimcacheBuildURL = [[NSURL fileURLWithPath:NSHomeDirectory()] URLByAppendingPathComponent:@"/Library/Shimcache.builder"];
+    [[NSFileManager defaultManager] removeItemAtURL:shimcacheBuildURL error:nil];
+    if(![[NSFileManager defaultManager] createDirectoryAtURL:shimcacheBuildURL withIntermediateDirectories:YES attributes:@{} error:nil])
+    {
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_FAILURE;
+    }
+    
+    /* write out code files */
+    NSMutableArray<NSString*> *codeFiles = [NSMutableArray array];
+    for(int index = 0; index < g_shimcache_seg_cnt; index++)
+    {
+        NSURL *codeFileURL = [shimcacheBuildURL URLByAppendingPathComponent:[[[NSUUID UUID] UUIDString] stringByAppendingPathExtension:@"c"]];
+        NSString *codeString = @(g_shimcache_seg[index].code);
+        if(codeFileURL && codeString)
+        {
+            [codeString writeToURL:codeFileURL atomically:YES encoding:NSUTF8StringEncoding error:nil];
+            [codeFiles addObject:codeFileURL.path];
+        }
+    }
+    
+    if([codeFiles count] <= 0)
+    {
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_SUCCESS;
+    }
+    
+    /* now we need to compile them together to one shimcache */
+    NSString *shimCacheDylib = [[shimcacheBuildURL URLByAppendingPathComponent:@"shimcache.dylib"] path];
+    
+    NSMutableArray<NSString*> *driverFlags = [NSMutableArray array];
+    [driverFlags addObjectsFromArray:[NXProjectConfig sdkCompilerFlags]];
+    [driverFlags addObject:@"-target"];
+    [driverFlags addObject:@"apple-arm64-ios18.4"];
+    [driverFlags addObjectsFromArray:codeFiles];
+    [driverFlags addObject:@"-o"];
+    [driverFlags addObject:shimCacheDylib];
+    [driverFlags addObject:@"-shared"];
+    
+    MDKDriver *driver = [MDKDriver driverWithArguments:driverFlags withType:kCCDriverTypeClang];
+    if(driver == NULL)
+    {
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_FAILURE;
+    }
+    
+    NSArray<MDKJob*> *jobs = [driver generateJobs];
+    for(MDKJob *job in jobs)
+    {
+        NSArray<MDKDiagnostic*> *outDiagnostic = nil;
+        NSString *mainSourceFile = nil;
+        if(![job executeJobWithOutDiagnostics:&outDiagnostic withOutMainSource:&mainSourceFile])
+        {
+            klog_log("shimcache:build", "error occured while building shim cache");
+            for(MDKDiagnostic *diagnostic in outDiagnostic)
+            {
+                klog_log("shimcache:build", "%@:", mainSourceFile);
+                klog_log("shimcache:build", "    %@", diagnostic.message);
+            }
+            os_unfair_lock_unlock(&g_shimcache_lock);
+            return KERN_FAILURE;
+        }
+    }
+    
+    /* sign it */
+    if(![LCUtils signMachOWithoutPatchAtURL:[NSURL fileURLWithPath:shimCacheDylib]])
+    {
+        klog_log("shimcache:build", "couldn't sign shimcache");
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_SUCCESS;
+    }
+    
+    /* mount shim to correct place FIXME: supposed to add the mount */
+    ksurface_fs_mount2(kFSMountAttrRead, "/dev/nounlink", [shimCacheDylib UTF8String]);
+    ksurface_fs_mount2(kFSMountAttrRead, [shimCacheDylib UTF8String], [[[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/shimcache.dylib"] path] UTF8String]);
+    
+    os_unfair_lock_unlock(&g_shimcache_lock);
+    return KERN_SUCCESS;
 }

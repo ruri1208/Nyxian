@@ -32,7 +32,7 @@
 {
     return @[
         @"-target",
-        @"apple-arm64-ios26.4",
+        @"apple-arm64-ios26.5",
         @"-isysroot",
         NXBootstrap.shared.sdkURL.path,
         @"-resource-dir",
