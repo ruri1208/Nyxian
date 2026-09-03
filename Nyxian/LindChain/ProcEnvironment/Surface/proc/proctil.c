@@ -21,7 +21,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/proc/proctil.h>
 #include <LindChain/ProcEnvironment/Surface/surface.h>
-#include <LindChain/ProcEnvironment/Shims/panic.h>
+#include <LindChain/ProcEnvironment/Utils/kpanic.h>
 #include <stdatomic.h>
 #include <os/lock.h>
 
@@ -52,7 +52,7 @@ kern_return_t proctil(ProctilAction action)
             {
                 if(cur == 0)
                 {
-                    environment_panic("process count did underflow");
+                    ksurface_panic("process count did underflow");
                 }
             }
             while(!atomic_compare_exchange_weak_explicit(&counter, &cur, cur - 1, memory_order_release, memory_order_relaxed));

@@ -33,7 +33,7 @@
 #include <LindChain/ProcEnvironment/Surface/kxld/resolve.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
-#include <LindChain/ProcEnvironment/Shims/panic.h>
+#import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -70,7 +70,7 @@ void *ksurface_kext_thread(void *ii)
             kern_return_t kr = image_info->mod->deinit();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+                ksurface_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
             }
         }
         
@@ -223,7 +223,7 @@ kern_return_t kxopen_with_fd(int fd,
     /* now lets initialize the kext it self */
     if(image_info->mod->init)
     {
-        kern_return_t kr = image_info->mod->init();
+        kr = image_info->mod->init();
         if(kr != KERN_SUCCESS)
         {
             klog_log("kextloader", "kext '%s', had a failure initializing: %s", image_info->mod->identifier, mach_error_string(kr));
@@ -239,10 +239,10 @@ kern_return_t kxopen_with_fd(int fd,
         {
             if(image_info->mod->deinit)
             {
-                kern_return_t kr = image_info->mod->deinit();
+                kr = image_info->mod->deinit();
                 if(kr != KERN_SUCCESS)
                 {
-                    environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+                    ksurface_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
                 }
             }
             klog_log("kextloader", "failed start thread for kext '%s'", image_info->mod->identifier);
@@ -255,11 +255,15 @@ kern_return_t kxopen_with_fd(int fd,
         /* did its modifications, but KMOD_FLAG_PERSISTENT is disabled */
         if(image_info->mod->deinit)
         {
-            kern_return_t kr = image_info->mod->deinit();
+            kr = image_info->mod->deinit();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+                ksurface_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
             }
+        }
+        if(KXUnregisterKext(image_info) == KERN_SUCCESS)
+        {
+            kxdestroy_image(image_info);
         }
         os_unfair_lock_unlock(&g_kxld_lock);
         return KERN_SUCCESS;
@@ -311,7 +315,7 @@ kern_return_t kxclose(kxld_image_info_t *claimed_image_info)
             kr = image_info->mod->stop();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext '%s' failed to stop: %s", image_info->mod->identifier, mach_error_string(kr));
+                ksurface_panic("kext '%s' failed to stop: %s", image_info->mod->identifier, mach_error_string(kr));
             }
             else
             {
@@ -325,7 +329,7 @@ kern_return_t kxclose(kxld_image_info_t *claimed_image_info)
             kr = image_info->mod->deinit();
             if(kr != KERN_SUCCESS)
             {
-                environment_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
+                ksurface_panic("kext '%s' failed to deinitialize: %s", image_info->mod->identifier, mach_error_string(kr));
             }
         }
         if(KXUnregisterKext(image_info) == KERN_SUCCESS)

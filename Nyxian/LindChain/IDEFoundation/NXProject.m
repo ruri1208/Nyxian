@@ -281,25 +281,19 @@
                     @"CFBundleIdentifier": @"$(NXBundleIdentifier)",
                     @"CFBundleVersion": @"$(NXBundleVersion)",
                     @"CFBundleShortVersionString": @"$(NXBundleShortVersion)",
-                    @"PEDependencies": @[
-                        @"ksurface<min:0.11.4,max:0.11.4>",
-                        /*
-                         * you define the next dependency kexts your self by their bundleid,
-                         * in the future that will alter the kext load chain
-                         */
-                    ],
                 },
                 @"NXBundleVersion": @"1.0",
                 @"NXBundleShortVersion": @"1.0",
-                @"NXOutputPath": @"$(CACHEROOT)/$(NXBundleIdentifier).kext/$(NXExecutable)"
+                @"NXOutputPath": @"$(CACHEROOT)/Payload/$(NXBundleIdentifier).kext/$(NXExecutable)"
             }];
+            [projConfigPlist removeObjectForKey:@"NXSignMachOWithNyxianEntitlements"];
             break;
         default:
             [defaultFileManager removeItemAtURL:projectURL error:nil];
             return nil;
     }
     
-    NSDictionary *plistList = @{
+    NSMutableDictionary *plistList = [@{
         @"/Config/Project.plist": projConfigPlist,
         @"/Config/Entitlements.plist": @{
             /* foundational */
@@ -337,7 +331,12 @@
             (__bridge NSString*)kNXT2EntitlementSandboxFileReadWrite: @[],
             (__bridge NSString*)kNXT2EntitlementSandboxNoContainer: @(NO),
         }
-    };
+    } mutableCopy];
+    
+    if(schemeKind == NXProjectSchemeKindKSurfaceKext)
+    {
+        [plistList removeObjectForKey:@"/Config/Entitlements.plist"];
+    }
     
     for(NSString *key in plistList)
     {

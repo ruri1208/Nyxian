@@ -21,7 +21,7 @@
 
 #import <LindChain/ProcEnvironment/Surface/obj/reference.h>
 #import <LindChain/ProcEnvironment/Surface/obj/event.h>
-#import <LindChain/ProcEnvironment/Shims/panic.h>
+#import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <dlfcn.h>
@@ -89,7 +89,7 @@ void kvobject_release(kvobject_t *kvo)
                 }
                 break;
             default:
-                environment_panic("unknown object %d type got deinitilized", kvo->base_type);
+                ksurface_panic("unknown object %d type got deinitilized", kvo->base_type);
                 break;
         }
         
@@ -105,9 +105,9 @@ void kvobject_release(kvobject_t *kvo)
          * happens on reference underflow, by design a
          * panic cuz this never happens legitimately
          */
-        environment_panic("reference underflow on kvobject @ %p with main event handler @ %p (%s)", kvo, info.dli_fbase, info.dli_fname);
+        ksurface_panic("reference underflow on kvobject @ %p with main event handler @ %p (%s)", kvo, info.dli_fbase, info.dli_fname);
 #else
-        environment_panic("reference underflow on kvobject @ %p", kvo);
+        ksurface_panic("reference underflow on kvobject @ %p", kvo);
 #endif /* DEBUG */
     }
 }

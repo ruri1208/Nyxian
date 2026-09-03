@@ -36,6 +36,7 @@ typedef enum: UInt8 {
 
 kern_return_t ksurface_fs_sandbox_init(void);
 kern_return_t ksurface_fs_sandbox_registry_add(FSMountPermissionFlags permission, FSNodeType type, const char *mount_dir, const char *bind_dir);
+kern_return_t ksurface_fs_sandbox_registry_remove(const char *path);
 CFArrayRef ksurface_fs_sandbox_copy_sandbox_extensions(const char *guest_path, FSMountPermissionFlags wanted);
 
 #endif /* KSURFACE_FS_SANDBOX_H */

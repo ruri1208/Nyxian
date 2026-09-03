@@ -22,7 +22,7 @@
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
-#import <LindChain/ProcEnvironment/Shims/panic.h>
+#import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #import <Nyxian-Swift.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <os/lock.h>
