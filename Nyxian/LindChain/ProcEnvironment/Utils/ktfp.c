@@ -77,20 +77,22 @@ kern_return_t ktfp(mach_port_t exceptionPort, task_t *task)
         .flags =  MPO_PORT | MPO_INSERT_SEND_RIGHT
     };
     
+    thread_t thread = mach_thread_self();
     mach_msg_type_number_t old_count = 0;
     exception_mask_t old_masks[EXC_TYPES_COUNT];
     mach_port_t old_ports[EXC_TYPES_COUNT];
     exception_behavior_t old_behaviors[EXC_TYPES_COUNT];
     thread_state_flavor_t old_flavors[EXC_TYPES_COUNT];
-    task_get_exception_ports(mach_task_self(), EXC_MASK_BREAKPOINT, old_masks, &old_count, old_ports, old_behaviors, old_flavors);
+    thread_get_exception_ports(thread, EXC_MASK_BREAKPOINT, old_masks, &old_count, old_ports, old_behaviors, old_flavors);
     
     kr = mach_port_construct(mach_task_self(), &opt, 0, &exceptionPort);
     if(kr != KERN_SUCCESS)
     {
+        mach_port_deallocate(mach_task_self(), thread);
         return KERN_FAILURE;
     }
     
-    kr = task_set_exception_ports(mach_task_self(), EXC_MASK_BREAKPOINT, exceptionPort, EXCEPTION_DEFAULT, ARM_THREAD_STATE64);
+    kr = thread_set_exception_ports(thread, EXC_MASK_BREAKPOINT, exceptionPort, EXCEPTION_DEFAULT, ARM_THREAD_STATE64);
     if(kr != KERN_SUCCESS)
     {
         goto out_dealloc;
@@ -120,13 +122,14 @@ out_dealloc:
      */
     if(old_count > 0)
     {
-        task_set_exception_ports(mach_task_self(), old_masks[0], old_ports[0], old_behaviors[0], old_flavors[0]);
+        thread_set_exception_ports(thread, old_masks[0], old_ports[0], old_behaviors[0], old_flavors[0]);
     }
     else
     {
-        task_set_exception_ports(mach_task_self(), EXC_MASK_BREAKPOINT, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
+        thread_set_exception_ports(thread, EXC_MASK_BREAKPOINT, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
     }
     
+    mach_port_deallocate(mach_task_self(), thread);
     mach_port_deallocate(mach_task_self(), exceptionPort);
     return success ? KERN_SUCCESS : KERN_FAILURE;
     

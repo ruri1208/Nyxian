@@ -126,3 +126,11 @@ __CFPBinaryType CFBundleGetBinaryType(CFBundleRef bundle)
     
     return (__CFPBinaryType)((UInt8*)bundle)[offset];
 }
+
+void CFReleaseTry(CFTypeRef ref)
+{
+    if(ref != NULL)
+    {
+        CFRelease(ref);
+    }
+}

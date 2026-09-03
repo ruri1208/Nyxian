@@ -470,19 +470,12 @@ kern_return_t trust_nxt2_read(const char *path,
 kern_return_t trust_nxt2_read_fd(int fd,
                                  ksurface_nxt2_t *result)
 {
-    if(fd < 0)
+    if(fd < 0 || result == NULL)
     {
         return KERN_INVALID_ARGUMENT;
     }
     
-    if(result == NULL)
-    {
-        return KERN_INVALID_ADDRESS;
-    }
-    
-    result->isValid = false;
-    result->isCdHashValid = false;
-    result->isSigned = false;
+    bzero(result, sizeof(*result));
     
     /* read nxt2 tag */
     char tag[4];

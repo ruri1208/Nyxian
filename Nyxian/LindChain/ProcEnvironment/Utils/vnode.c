@@ -20,10 +20,16 @@
 */
 
 #include <LindChain/ProcEnvironment/Utils/vnode.h>
+#include <LindChain/ProcEnvironment/Surface/radix/radix.h>
 #include <sys/clonefile.h>
 #include <copyfile.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <os/lock.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 bool vnode_refresh_with_path(const char* path)
 {
@@ -49,6 +55,7 @@ bool vnode_recover_with_fd_to_path(int fd,
                                    const char *path)
 {
     /* creates new node at zero cost */
+    unlink(path);   /* unlink first, there shall be no vnode before hand */
     if(fclonefileat(fd, AT_FDCWD, path, 0) == 0)
     {
         /* yayyy =3 */
@@ -56,7 +63,6 @@ bool vnode_recover_with_fd_to_path(int fd,
     }
     
     /* fallback is using copy file */
-    unlink(path);   /* unlink first, there shall be no vnode before hand */
     int copyfd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0777);
     if(copyfd < 0)
     {
@@ -65,13 +71,208 @@ bool vnode_recover_with_fd_to_path(int fd,
     }
     
     /* more expensive, but more efficient than nothing */
-    if(fcopyfile(fd, copyfd, NULL, COPYFILE_DATA) == 0)
+    off_t offset = lseek(fd, 0, SEEK_CUR);
+    lseek(fd, 0, SEEK_SET);
+    bool copyfile_succeeded = fcopyfile(fd, copyfd, NULL, COPYFILE_DATA) == 0;
+    lseek(fd, offset, SEEK_SET);
+    close(copyfd);
+    return copyfile_succeeded;
+}
+
+#if !CLIENT_ENV
+
+static radix_tree_t g_vnode_inaccessible_inode_tree = { 0 };
+static os_unfair_lock g_vnode_inaccessible_inode_lock = OS_UNFAIR_LOCK_INIT;
+
+static void random_string(char *out,
+                          size_t len)
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        srand((unsigned)time(NULL));
+    });
+    const char chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for(size_t i = 0; i < len; i++)
     {
-        /* atleast this worked :3 */
-        close(copyfd);
-        return true;
+        out[i] = chars[rand() % (sizeof(chars) - 1)];
+    }
+    out[len] = '\0';
+}
+
+int vnode_inaccessible_open(const char *path,
+                            int flg)
+{
+    char *copyPath = strndup(path, PATH_MAX);
+    if(copyPath == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
     }
     
-    close(copyfd);
-    return false;
+    os_unfair_lock_lock(&g_vnode_inaccessible_inode_lock);
+    
+    /* open the accessible file */
+    int fd = open(copyPath, O_RDONLY);
+    if(fd < 0)
+    {
+        close(fd);
+        free(copyPath);
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* create a clone of that same file */
+    char name[9];
+    random_string(name, 8);
+    char inaccessible_path[PATH_MAX];
+    snprintf(inaccessible_path, PATH_MAX, "%s/Library/%s", getenv("HOME"), name);
+    
+    /* efficiently clone to the inaccessible path */
+    if(!vnode_recover_with_fd_to_path(fd, inaccessible_path))
+    {
+        close(fd);
+        free(copyPath);
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* now open the inaccessible fd */
+    int inaccessible_fd = open(inaccessible_path, flg);
+    close(fd);
+    if(inaccessible_fd < 0)
+    {
+        unlink(inaccessible_path);
+        free(copyPath);
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* now we can capture its inode and link it to the path from before */
+    struct stat vnstat;
+    if(fstat(inaccessible_fd, &vnstat) != 0)
+    {
+        close(inaccessible_fd);
+        unlink(inaccessible_path);
+        free(copyPath);
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* store the thing into the radix tree */
+    if(radix_insert(&g_vnode_inaccessible_inode_tree, vnstat.st_ino, copyPath) != 0)
+    {
+        close(inaccessible_fd);
+        unlink(inaccessible_path);
+        free(copyPath);
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+    return inaccessible_fd;
 }
+
+int vnode_inaccessible_close(int fd,
+                             bool refresh)
+{
+    os_unfair_lock_lock(&g_vnode_inaccessible_inode_lock);
+    
+    /* recapture inode */
+    struct stat vnstat;
+    if(fstat(fd, &vnstat) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    char *accessiblePath = radix_remove(&g_vnode_inaccessible_inode_tree, vnstat.st_ino);
+    if(accessiblePath == NULL)
+    {
+        errno = ENOENT;
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    if(refresh && !vnode_recover_with_fd_to_path(fd, accessiblePath))
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    free(accessiblePath);
+    
+    char path[PATH_MAX];
+    if(fcntl(fd, F_GETPATH, path) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    unlink(path);
+    
+    os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+    return 0;
+}
+
+int vnode_inaccessible_reopen(int *fd)
+{
+    os_unfair_lock_lock(&g_vnode_inaccessible_inode_lock);
+    
+    /* need path for vn refresh */
+    char path[PATH_MAX];
+    if(fcntl(*fd, F_GETPATH, path) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    int flags = fcntl(*fd, F_GETFL);
+    if(flags == -1)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    int acc = (flags & O_ACCMODE);
+    
+    /* recapture inode */
+    struct stat vnstat;
+    if(fstat(*fd, &vnstat) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    close(*fd);
+    *fd = open(path, acc);
+    if(*fd < 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* removing entry */
+    char *accessiblePath = radix_remove(&g_vnode_inaccessible_inode_tree, vnstat.st_ino);
+    if(accessiblePath == NULL)
+    {
+        errno = ENOENT;
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    if(fstat(*fd, &vnstat) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    /* store the thing into the radix tree */
+    if(radix_insert(&g_vnode_inaccessible_inode_tree, vnstat.st_ino, accessiblePath) != 0)
+    {
+        os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+        return -1;
+    }
+    
+    os_unfair_lock_unlock(&g_vnode_inaccessible_inode_lock);
+    return 0;
+}
+
+#endif /* !CLIENT_ENV */
