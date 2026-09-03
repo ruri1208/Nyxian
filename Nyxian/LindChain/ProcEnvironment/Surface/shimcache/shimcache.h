@@ -23,7 +23,21 @@
 #define SHIMCACHE_H
 
 #include <mach/mach.h>
-#include <CoreCompiler/CoreCompiler.h>
+#include <CoreFoundation/CoreFoundation.h>
+
+typedef CF_ENUM(UInt8, CCFileType) {
+    kCCFileTypeC = 0,
+    kCCFileTypeCHeader,
+    kCCFileTypeCXX,
+    kCCFileTypeCXXHeader,
+    kCCFileTypeObjC,
+    kCCFileTypeObjCHeader,
+    kCCFileTypeObjCXX,
+    kCCFileTypeObjCXXHeader,
+    kCCFileTypeSwift,
+    kCCFileTypeObject,
+    kCCFileTypeUnknown,
+};
 
 typedef struct {
     CCFileType fileType;
@@ -31,5 +45,6 @@ typedef struct {
 } shimcache_segment_t;
 
 kern_return_t ksurface_shimcache_append_code(CCFileType fileType, const char *code);
+kern_return_t ksurface_shimcache_build(void);
 
 #endif /* SHIMCACHE_H */

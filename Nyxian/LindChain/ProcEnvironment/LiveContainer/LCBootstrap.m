@@ -182,6 +182,18 @@ int LCBootstrapMain(NSString *executablePath,
         return 1;
     }
     
+    /* checking for shimcache */
+    NSString *nyxianRoot = [NSString stringWithCString:getenv("NXROOT") encoding:NSUTF8StringEncoding];
+    if(nyxianRoot != NULL)
+    {
+        NSString *shimPath = [nyxianRoot stringByAppendingString:@"/boot/shimcache.dylib"];
+        if([[NSFileManager defaultManager] fileExistsAtPath:shimPath])
+        {
+            /* no error checking */
+            dlopen(shimPath.fileSystemRepresentation, RTLD_LAZY | RTLD_GLOBAL | RTLD_NODELETE);
+        }
+    }
+    
     /* preload executable to bypass RT_NOLOAD */
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
     int64_t ret = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetCDHash, cdhash, NULL, MACH_PORT_NULL);
