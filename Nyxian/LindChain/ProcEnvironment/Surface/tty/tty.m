@@ -19,7 +19,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Shims/panic.h>
+#import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #import <LindChain/ProcEnvironment/Surface/tty/tty.h>
 #import <LindChain/ProcEnvironment/Surface/proc/list.h>
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
@@ -249,7 +249,7 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(tty)
     {
         case kvObjEventSnapshot:
         case kvObjEventCopy:
-            environment_panic("attempted to copy or snapshot tty, which is illegal");
+            ksurface_panic("attempted to copy or snapshot tty, which is illegal");
         case kvObjEventInit:
         {
             klog_log("tty:init", "initializing tty @ %p", tty);

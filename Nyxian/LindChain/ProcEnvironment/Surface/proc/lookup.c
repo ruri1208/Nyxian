@@ -21,7 +21,6 @@
 
 #include <LindChain/ProcEnvironment/Surface/proc/lookup.h>
 #include <LindChain/ProcEnvironment/Surface/proc/def.h>
-#include <LindChain/ProcEnvironment/Shims/panic.h>
 #include <assert.h>
 
 kern_return_t proc_for_pid(pid_t pid,
@@ -105,6 +104,7 @@ kern_return_t proc_task_for_proc(ksurface_proc_t *proc,
     }
     
     /* temporary task port to not leak port value on failure */
+    kvo_rdlock(proc);
     task_t tmp_task = proc->task;
     
     /*
@@ -120,6 +120,7 @@ kern_return_t proc_task_for_proc(ksurface_proc_t *proc,
          * failed to lookup mach ipc port type
          * cannot validate type.
          */
+        kvo_unlock(proc);
         return KERN_INVALID_NAME;
     }
     
@@ -169,6 +170,7 @@ kern_return_t proc_task_for_proc(ksurface_proc_t *proc,
             kr = KERN_INVALID_RIGHT;
             break;
     }
+    kvo_unlock(proc);
     
     /* what happened ?? :3 */
     if(kr != KERN_SUCCESS)

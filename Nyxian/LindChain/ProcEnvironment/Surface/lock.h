@@ -22,7 +22,7 @@
 #ifndef PROCENVIRONMENT_LOCK_H
 #define PROCENVIRONMENT_LOCK_H
 
-#include <LindChain/ProcEnvironment/Shims/panic.h>
+#import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #include <string.h>
 #include <errno.h>
 
@@ -37,12 +37,12 @@
         } \
         else if(_e) \
         { \
-            environment_panic("lock @ %p failed to rdlock with: %s", ptr, strerror(_e)); \
+            ksurface_panic("lock @ %p failed to rdlock with: %s", ptr, strerror(_e)); \
         } \
     } while (_e == EAGAIN); \
 } while(0)
-#define PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(ptr) ({ int _e = pthread_rwlock_wrlock(ptr); if (_e) environment_panic("lock @ %p failed to wrlock with: %s", ptr, strerror(_e)); })
-#define PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(ptr) ({ int _e = pthread_rwlock_unlock(ptr); if (_e) environment_panic("lock @ %p failed to unlock with: %s", ptr, strerror(_e)); })
+#define PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(ptr) ({ int _e = pthread_rwlock_wrlock(ptr); if (_e) ksurface_panic("lock @ %p failed to wrlock with: %s", ptr, strerror(_e)); })
+#define PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(ptr) ({ int _e = pthread_rwlock_unlock(ptr); if (_e) ksurface_panic("lock @ %p failed to unlock with: %s", ptr, strerror(_e)); })
 #else
 #define PTHREAD_RWLOCK_DEBUG_IMP_RDLOCK(ptr) do { \
     int _e; \

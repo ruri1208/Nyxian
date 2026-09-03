@@ -199,6 +199,74 @@ kern_return_t ksurface_fs_sandbox_registry_add(FSMountPermissionFlags permission
     return KERN_SUCCESS;
 }
 
+static void fs_seal_record(FSMountRecord *r,
+                           ssize_t self,
+                           bool warn)
+{
+    fs_resolve(r->decl, self, r->site, PATH_MAX, NULL);
+    if(r->type == kFSNodeTypeSymbolicLink)
+    {
+        fs_resolve(r->bind, self, r->phys, PATH_MAX, NULL);
+    }
+    else
+    {
+        strlcpy(r->phys, r->site, PATH_MAX);
+    }
+    
+    char canon[PATH_MAX];
+    if(realpath(r->phys, canon) != NULL)
+    {
+        strlcpy(r->phys, canon, PATH_MAX);
+    }
+    else if(warn)
+    {
+        klog_log("ksurface:fs:sandbox", "unmaterialized mount: %s (%s)", r->phys, strerror(errno));
+    }
+}
+
+kern_return_t ksurface_fs_sandbox_registry_remove(const char *path)
+{
+    if(path == NULL)
+    {
+        return KERN_INVALID_ARGUMENT;
+    }
+    
+    os_unfair_lock_lock(&g_lock);
+    
+    if(g_record_count == 0)
+    {
+        os_unfair_lock_unlock(&g_lock);
+        return KERN_INVALID_NAME;
+    }
+    
+    ssize_t victim = -1;
+    for(size_t i = g_record_count; i > 0; i--)
+    {
+        if(strcmp(g_records[i - 1].decl, path) == 0)
+        {
+            victim = (ssize_t)(i - 1);
+            break;
+        }
+    }
+    
+    if(victim < 0)
+    {
+        os_unfair_lock_unlock(&g_lock);
+        return KERN_INVALID_NAME;
+    }
+    
+    memmove(&g_records[victim], &g_records[victim + 1], (g_record_count - (size_t)victim - 1) * sizeof(FSMountRecord));
+    g_record_count--;
+    memset(&g_records[g_record_count], 0, sizeof(FSMountRecord));
+    for(size_t i = 0; i < g_record_count; i++)
+    {
+        fs_seal_record(&g_records[i], (ssize_t)i, false);
+    }
+    
+    os_unfair_lock_unlock(&g_lock);
+    return KERN_SUCCESS;
+}
+
 static void fs_env_init(void)
 {
     static dispatch_once_t once;

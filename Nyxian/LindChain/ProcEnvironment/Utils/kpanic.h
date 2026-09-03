@@ -19,12 +19,26 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROCENVIRONMENT_PANIC_H
-#define PROCENVIRONMENT_PANIC_H
+#ifndef KPANIC_H
+#define KPANIC_H
 
-#define environment_panic(reason, ...) \
-    environment_panic_internal((reason), __FILE__, __LINE__,  ##__VA_ARGS__)
+#include <stdint.h>
 
-void environment_panic_internal(const char *reason, const char *file, int line, ...);
+#define KPANIC_BUF_SIZE (16 * 1024)
 
-#endif /* PROCENVIRONMENT_PANIC_H */
+struct ksurface_panic_header {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t len;
+    uint32_t _pad;
+    char body[KPANIC_BUF_SIZE];
+};
+
+void ksurface_panic_log_append(const char *fmt, ...) __printflike(1, 2);
+
+__attribute__((noreturn))
+void ksurface_panic(const char *fmt, ...) __printflike(1, 2);
+
+const struct ksurface_panic_header *ksurface_panic_log_get(void);
+
+#endif /* KPANIC_H */

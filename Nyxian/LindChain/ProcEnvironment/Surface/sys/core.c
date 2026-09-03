@@ -40,7 +40,7 @@ int syscall_server_start(syscall_server_t *server)
     
     if(atomic_flag_test_and_set(&server->init_once))
     {
-        environment_panic("syscall server was already initialized");
+        ksurface_panic("syscall server was already initialized");
     }
     
     /*
@@ -68,7 +68,7 @@ int syscall_server_start(syscall_server_t *server)
     server->threads_cnt = (int)CCGetMaximumPerformanceCores();
     if(server->threads_cnt == 0)
     {
-        environment_panic("got 0 return from CCGetMaximumPerformanceCores()");
+        ksurface_panic("got 0 return from CCGetMaximumPerformanceCores()");
     }
     server->threads = calloc(server->threads_cnt, sizeof(pthread_t));
     

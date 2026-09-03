@@ -364,7 +364,7 @@ ksurface_trust_identity_t *trust_identity_get_kernel(void)
         if(_NSGetExecutablePath(identity->path, &bufsize) > 0)
         {
             /* shall never happen */
-            environment_panic("failed to aquire executable path from dyld");
+            ksurface_panic("failed to aquire executable path from dyld");
         }
     });
     return identity;
