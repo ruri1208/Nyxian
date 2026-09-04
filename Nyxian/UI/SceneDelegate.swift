@@ -52,7 +52,29 @@ struct NXApplicationState {
         return !extensionExists || !extensionCorrectlyEntitled;
     }()
     
-    static var fileListRequiresToSendRequests: Bool = false;
+    private static var actualLoadKernelExtensions: Bool = false
+    static var loadKernelExtensions: Bool {
+        get {
+            if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
+                UserDefaults.standard.removeObject(forKey: "LDEDisableKernelExtensionsForce")
+                return false
+            }
+            return self.actualLoadKernelExtensions;
+        }
+        set {
+            if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
+                return
+            }
+            actualLoadKernelExtensions = newValue
+        }
+    }
+    
+    static var fileListRequiresToSendRequests: Bool = false
+    
+    static func restartAppWithoutKEXTLoadingEnabled() {
+        UserDefaults.standard.set(true, forKey: "LDEDisableKernelExtensionsForce")
+        PERestartSelf()
+    }
 }
 
 func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {
@@ -146,51 +168,28 @@ struct UIOnboardingHelper {
     
     static func setUpSecondTitleLine() -> NSMutableAttributedString {
         .init(string: Bundle.main.displayName ?? "Nyxian", attributes: [
-            .foregroundColor: UIColor { trait in
-                trait.userInterfaceStyle == .dark
-                ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0)
-                : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0)
-            }
+            .foregroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) }
         ])
     }
     
     static func setUpFeatures() -> Array<UIOnboardingFeature> {
         return .init([
-            // I was lazy so I just wrapped them in like that
             .init(icon: UIImage(systemName: "hammer.fill")!,
-                  iconTint: UIColor { trait in trait.userInterfaceStyle == .dark
-                      ? UIColor(red: 0.55, green: 0.78, blue: 0.98, alpha: 1.0)
-                      : UIColor(red: 0.30, green: 0.58, blue: 0.88, alpha: 1.0)
-                  },
-                  title: "Development",
-                  description: "A full development environment supporting Swift, C, C++, Objective-C and Objective-C++ that runs on any iOS 18.4+ iPhone or iPad."),
-            
-                .init(icon: UIImage(systemName: "wrench.and.screwdriver.fill")!,
-                      iconTint: UIColor { trait in
-                          trait.userInterfaceStyle == .dark
-                          ? UIColor(red: 0.78, green: 0.71, blue: 0.95, alpha: 1.0)
-                          : UIColor(red: 0.55, green: 0.45, blue: 0.85, alpha: 1.0)
-                      },
-                      title: "MobileDevelopmentKit",
-                      description: "A completely FOSS LLVM, Swift, Clang, and LLD toolchain running natively on iOS, powering compilation and linkage completely on-device without any overpriced cloud services or subscriptions."),
-            
-                .init(icon: UIImage(systemName: "cpu.fill")!,
-                      iconTint: UIColor { trait in
-                          trait.userInterfaceStyle == .dark
-                          ? UIColor(red: 0.60, green: 0.88, blue: 0.80, alpha: 1.0)
-                          : UIColor(red: 0.30, green: 0.68, blue: 0.58, alpha: 1.0)
-                      },
-                      title: "Native Performance",
-                      description: "A custom micro kernel called ksurface providing real process management, Mach IPC(task ports for example) and POSIX semantics directly on-device for your projects."),
-            
-                .init(icon: UIImage(systemName: "exclamationmark.triangle.fill")!,
-                      iconTint: UIColor { trait in
-                                trait.userInterfaceStyle == .dark
-                                ? UIColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0)
-                                : UIColor(red: 0.85, green: 0.60, blue: 0.12, alpha: 1.0)
-                        },
-                      title: "Warning",
-                      description: "This is a beta version of Nyxian, so don't expect a product without bugs, please be kind and respectful, it is very hard to develop this kind of software. Please report any kinds of issues and ask any question over at our github we have a lot of time and passion answering your questions and making Nyxian better."),
+                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.55, green: 0.78, blue: 0.98, alpha: 1.0) : UIColor(red: 0.30, green: 0.58, blue: 0.88, alpha: 1.0) },
+                title: "Development",
+                description: "A full development environment supporting Swift, C, C++, Objective-C and Objective-C++ that runs on any iOS 18.4+ iPhone or iPad."),
+            .init(icon: UIImage(systemName: "wrench.and.screwdriver.fill")!,
+                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.78, green: 0.71, blue: 0.95, alpha: 1.0) : UIColor(red: 0.55, green: 0.45, blue: 0.85, alpha: 1.0) },
+                title: "MobileDevelopmentKit",
+                description: "A completely FOSS LLVM, Swift, Clang, and LLD toolchain running natively on iOS, powering compilation and linkage completely on-device without any overpriced cloud services or subscriptions."),
+            .init(icon: UIImage(systemName: "cpu.fill")!,
+                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.60, green: 0.88, blue: 0.80, alpha: 1.0) : UIColor(red: 0.30, green: 0.68, blue: 0.58, alpha: 1.0) },
+                title: "Native Performance",
+                description: "A custom micro kernel called ksurface providing real process management, mach IPC,(task ports for example), POSIX semantics, custom kernel extensions so you can extend ksurface your self and even a shimcache so you can add more rebinds in the userspace to syscalls you or someone else fixed and that directly on your restricted iOS device for your projects."),
+            .init(icon: UIImage(systemName: "exclamationmark.triangle.fill")!,
+                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0) : UIColor(red: 0.85, green: 0.60, blue: 0.12, alpha: 1.0) },
+                title: "Warning",
+                description: "This is a beta version of Nyxian, so don't expect a product without bugs, please be kind and respectful, it is very hard to develop this kind of software. Please report any kinds of issues and ask any question over at our github we have a lot of time and passion answering your questions and making Nyxian better."),
         ])
     }
     
@@ -199,21 +198,13 @@ struct UIOnboardingHelper {
                      text: "Contributions, feedback, and stars keep the project alive.",
                      linkTitle: "Contribute on GitHub",
                      link: "https://github.com/emexlab/Nyxian",
-                     linkColor: UIColor { trait in
-                         trait.userInterfaceStyle == .dark
-                             ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0)
-                             : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0)
-                     })
+                     linkColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
     
     static func setUpButton() -> UIOnboardingButtonConfiguration {
         let lightBackground = currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
         
-        return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in
-            trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0)
-            : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0)
-        })
+        return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
 }
 
@@ -221,12 +212,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
     var window: NXWindowServer?
     weak var themedTabViewController: UIThemedTabViewController?
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        if let item = connectionOptions.shortcutItem,
-           item.type == "org.emexlabs.nyxian.noload" {
-            PEUserspaceManager.shared().boot(withKextLoadingEnabled: false)
-        } else {
-            PEUserspaceManager.shared().boot(withKextLoadingEnabled: true)
-        }
+        NXApplicationState.loadKernelExtensions = (connectionOptions.shortcutItem?.type != "org.emexlabs.nyxian.noload")
+        PEUserspaceManager.shared().boot(withKextLoadingEnabled: NXApplicationState.loadKernelExtensions)
         
         guard let windowScene = scene as? UIWindowScene else { return }
         
@@ -322,8 +309,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         completionHandler: @escaping (Bool) -> Void
     ) {
         completionHandler(true)
-        if shortcutItem.type == "org.emexlabs.nyxian.noload" {
-            NotificationServer.NotifyUser(level: .note, notification: "You have to close Nyxian first before you can start it without Ksurface Kernel Extensions.")
+        if NXApplicationState.loadKernelExtensions, shortcutItem.type == "org.emexlabs.nyxian.noload" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: {
+                NXApplicationState.restartAppWithoutKEXTLoadingEnabled()
+            });
         }
     }
 }
