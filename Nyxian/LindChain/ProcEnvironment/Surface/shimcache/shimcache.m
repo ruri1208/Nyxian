@@ -29,6 +29,7 @@
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/IDEFoundation/NXProject.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 
 static os_unfair_lock g_shimcache_lock = OS_UNFAIR_LOCK_INIT;
@@ -126,7 +127,7 @@ kern_return_t ksurface_shimcache_build(void)
     }
     
     /* now we need to compile them together to one shimcache */
-    NSString *shimCacheDylib = [[shimcacheBuildURL URLByAppendingPathComponent:@"shimcache.dylib"] path];
+    NSString *shimCacheDylib = [[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/shimcache.dylib"] path];
     
     NSMutableArray<NSString*> *driverFlags = [NSMutableArray array];
     [driverFlags addObjectsFromArray:[NXProjectConfig sdkCompilerFlags]];
@@ -163,6 +164,7 @@ kern_return_t ksurface_shimcache_build(void)
             return KERN_FAILURE;
         }
     }
+    [[NSFileManager defaultManager] removeItemAtURL:shimcacheBuildURL error:nil];
     
     /* sign it */
     if(![LCUtils signMachOWithoutPatchAtURL:[NSURL fileURLWithPath:shimCacheDylib]])
@@ -172,9 +174,17 @@ kern_return_t ksurface_shimcache_build(void)
         return KERN_SUCCESS;
     }
     
+    if(!vnode_refresh_with_path(shimCacheDylib.UTF8String))
+    {
+        klog_log("shimcache:build", "couldn't refresh vnode of shimcache");
+        os_unfair_lock_unlock(&g_shimcache_lock);
+        return KERN_SUCCESS;
+    }
+    
+    /* moving*/
+    
     /* mount shim to correct place */
-    ksurface_fs_mount2(kFSMountAttrRead, "/dev/nounlink", [shimCacheDylib UTF8String]);
-    ksurface_fs_mount2(kFSMountAttrRead, [shimCacheDylib UTF8String], [[[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/shimcache.dylib"] path] UTF8String]);
+    ksurface_fs_mount2(kFSMountAttrRead, "/dev/nounlink", [shimCacheDylib UTF8String]); /* bootfs is already read-only vmount'ed */
     
     os_unfair_lock_unlock(&g_shimcache_lock);
     return KERN_SUCCESS;

@@ -32,6 +32,7 @@
 #import <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
+#import <LindChain/ProcEnvironment/Surface/shimcache/ptrcache.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -159,6 +160,12 @@
             ksurface_panic("shimcache build failed");
         }
         klog_log(domain, "shimcache [ok]");
+        
+        if(ksurface_ptrcache_emit() != KERN_SUCCESS)
+        {
+            ksurface_panic("ptrcache emission failed");
+        }
+        klog_log(domain, "ptrcache [ok]");
         
         /* spinning up the launch services */
         [[PELaunchServiceManager shared] reloadAllEntries];

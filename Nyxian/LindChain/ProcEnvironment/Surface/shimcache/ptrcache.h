@@ -19,16 +19,26 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LIVESHIM_H
-#define LIVESHIM_H
+#ifndef PTRCACHE_H
+#define PTRCACHE_H
 
-#include <CoreFoundation/CoreFoundation.h>
+#include <stdint.h>
+#include <mach/kern_return.h>
 
-CF_EXPORT double LiveShimVersionNumber;
-CF_EXPORT const unsigned char LiveShimVersionString[];
+enum {
+    /* for the RO file system sandbox mmap bypass */
+    kDyldPtrOpen = 0,
+    kDyldPtrFcntl,
+    kDyldPtrFstat64,
+    kDyldPtrStat64,
+    kDyldPtrOpenat,
+    
+    /* for the dlopen with the lock bypasses */
+    kDyldLockUnlockFunc,
+    
+    kDyldPtrCount,
+};
 
-#include <LiveShim/LiveShimSyscall.h>
-#include <LiveShim/dyld.h>
-#include <LiveShim/ptrcache.h>
+kern_return_t ksurface_ptrcache_emit(void);
 
-#endif /* LIVESHIM_H */
+#endif /* PTRCACHE_H */
