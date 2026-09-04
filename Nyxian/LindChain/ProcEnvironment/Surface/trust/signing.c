@@ -316,7 +316,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     ksurface_nxt2_blob_footer_t *blob_footer = NULL;
     size_t footer_size;
     
-#if HAS_OPENSSL
+#if HAS_OPENSSL && !CLIENT_ENV
     /* signing blob if applicable */
     if(signBlob && cdhash != NULL)
     {
@@ -391,7 +391,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     }
     else
     {
-#endif /* HAS_OPENSSL */
+#endif /* HAS_OPENSSL && !CLIENT_ENV */
         if(cdhash != NULL)
         {
             free(cdhash);
@@ -409,9 +409,9 @@ kern_return_t trust_nxt2_sign_fd(int fd,
         
         blob_footer->mac_len = 0;
         bzero(blob_footer->mac, sizeof(blob_footer->mac));
-#if HAS_OPENSSL
+#if HAS_OPENSSL && !CLIENT_ENV
     }
-#endif /* HAS_OPENSSL */
+#endif /* HAS_OPENSSL && !CLIENT_ENV */
     
     /* write blob */
     if(write(fd, blob_header, header_size) != (ssize_t)header_size)
@@ -588,7 +588,7 @@ kern_return_t trust_nxt2_read_fd(int fd,
     result->isCdHashValid = false;
 #endif /* !__NXTOOL */
     
-#if HAS_OPENSSL && !__NXTOOL
+#if HAS_OPENSSL && !__NXTOOL && !CLIENT_ENV
     if(result->isCdHashValid && result->isValid)
     {
         /* cdhash and blob must be valid for signature check, some checks are not performed twice */
@@ -632,7 +632,7 @@ kern_return_t trust_nxt2_read_fd(int fd,
 #else
     /* cannot verify without openssl */
     result->isSigned = false;
-#endif /* HAS_OPENSSL */
+#endif /* HAS_OPENSSL && !__NXTOOL && !CLIENT_ENV*/
     
 signature_invalid:
     free(blob_buf);
@@ -666,6 +666,8 @@ static int write_all(int fd,
     
     return 0;
 }
+
+#if HAS_OPENSSL && HOST_ENV
 
 kern_return_t trust_nxt2_generate_rootca_keypair(const char *vendor_name,
                                                  const char *public_key_path,
@@ -951,5 +953,7 @@ done:
     close(fd);
     return kr;
 }
+
+#endif /* HAS_OPENSSL && HOST_ENV */
 
 #endif /* HAS_OPENSSL */

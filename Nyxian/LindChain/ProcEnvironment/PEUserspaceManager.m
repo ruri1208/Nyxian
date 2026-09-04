@@ -143,16 +143,15 @@
         }
         else
         {
-            ksurface_panic("%@ [failed]", class);
+            ksurface_panic("%s [failed]", [NSStringFromClass(class) UTF8String]);
         }
     }
     klog_log(domain, "%@ [ok]", [self class]);
     os_unfair_lock_unlock(&self->_lock);
     
     /* shimcache needs to exist before the Userspace can truly spin up */
-    dispatch_queue_t backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0);
-    dispatch_async(backgroundQueue, ^{
-        [[NXBootstrap shared] waitTillDone];
+    dispatch_async(dispatch_queue_create("org.emexlabs.nyxian.noblock.userspacemanager", DISPATCH_QUEUE_SERIAL), ^{
+        [[NXBootstrap shared] waitTillDoneNoButton];
         
         os_unfair_lock_lock(&self->_lock);
         if(ksurface_shimcache_build() != KERN_SUCCESS)
