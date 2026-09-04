@@ -376,6 +376,8 @@
 				LiveShim/shims/dyld.h,
 				LiveShim/shims/ioctl.c,
 				LiveShim/shims/mount.c,
+				LiveShim/shims/ptrcache.c,
+				LiveShim/shims/ptrcache.h,
 				LiveShim/shims/SecItem.m,
 				LiveShim/shims/shim.h,
 				LiveShim/shims/sysctl.c,
@@ -392,6 +394,7 @@
 				LiveShim/LiveShim.h,
 				LiveShim/LiveShimSyscall.h,
 				LiveShim/shims/dyld.h,
+				LiveShim/shims/ptrcache.h,
 			);
 			target = 8FB3BADA302FFBAA00DB3ABC /* LiveShim */;
 		};

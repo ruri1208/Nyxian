@@ -34,6 +34,7 @@
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/Tweaks.h>
 #import <LindChain/Utils/CFTools.h>
 #import <LiveShim/LiveShimSyscall.h>
+#import <LiveShim/ptrcache.h>
 #import <LiveShim/dyld.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
@@ -452,26 +453,12 @@ void *dlopenBypassingLockWithTrust(const char *path,
                                    int mode,
                                    const char *expectedCdhash)
 {
-    /* this shit made by Duy Tran costs 20~30 ms, making this faster would save those */
-    const char *libdyldPath = "/usr/lib/system/libdyld.dylib";
-    mach_header_u *libdyldHeader = LCGetLoadedImageHeader(0, libdyldPath);
-    assert(libdyldHeader != NULL);
-    void **lockUnlockPtr = NULL;
-    void **vtableLibSystemHelpers = litehook_find_dsc_symbol(libdyldPath, "__ZTVN5dyld416LibSystemHelpersE");
-    void *lockFunc = litehook_find_dsc_symbol(libdyldPath, "__ZNK5dyld416LibSystemHelpers42os_unfair_recursive_lock_lock_with_optionsEP26os_unfair_recursive_lock_s24os_unfair_lock_options_t");
-    #if DEBUG
-    void *unlockFunc = litehook_find_dsc_symbol(libdyldPath, "__ZNK5dyld416LibSystemHelpers31os_unfair_recursive_lock_unlockEP26os_unfair_recursive_lock_s");
-    #endif /* DEBUG */
-    while(!lockUnlockPtr)
+    if(!load_ptrcache())
     {
-        if(vtableLibSystemHelpers[0] == lockFunc)
-        {
-            lockUnlockPtr = vtableLibSystemHelpers;
-            NSCAssert(vtableLibSystemHelpers[1] == unlockFunc, @"dyld has changed: lock and unlock functions are not next to each other");
-            break;
-        }
-        vtableLibSystemHelpers++;
+        return NULL;
     }
+    
+    void **lockUnlockPtr = (void**)ptrcache[kDyldLockUnlockFunc];
     kern_return_t ret;
     ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(uintptr_t[2]), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
     assert(ret == KERN_SUCCESS);

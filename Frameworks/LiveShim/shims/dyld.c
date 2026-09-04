@@ -30,6 +30,8 @@
 #include <sys/clonefile.h>
 #include <copyfile.h>
 #include <time.h>
+#include <os/lock.h>
+#include <LiveShim/ptrcache.h>
 
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
@@ -57,54 +59,11 @@ static inline void _dyld_hook_log_timestamp(void)
 #define dyld_hook_log(fmt, ...) ((void)0)
 #endif /* KSURFACE_DYLD_HOOK_LOGGING_ENABLED */
 
-static const char openSig[] = {0xB0, 0x00, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char fcntlSig[] = {0x90, 0x0B, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char fstat64Sig[] = {0x70, 0x2A, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char stat64Sig[] = {0x50, 0x2A, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-static const char openatSig[] = {0xF0, 0x39, 0x80, 0xD2, 0x01, 0x10, 0x00, 0xD4};
-
 static int (*orig_dyld_open)(const char *path, int flags, mode_t mode);
 static int (*orig_dyld_fcntl)(int fildes, int cmd, void *param);
 static int (*orig_dyld_fstat64)(int fildes, struct stat *buf);
 static int (*orig_dyld_stat64)(const char *path, struct stat *buf);
 static int (*orig_dyld_openat)(int fd, const char *path, int flags, mode_t mode);
-
-static struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
-{
-    static struct dyld_all_image_infos *result;
-    if(result)
-    {
-        return result;
-    }
-    struct task_dyld_info dyld_info;
-    mach_vm_address_t image_infos;
-    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
-    kern_return_t ret;
-    ret = task_info(mach_task_self(), TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
-    if(ret != KERN_SUCCESS)
-    {
-        return NULL;
-    }
-    image_infos = dyld_info.all_image_info_addr;
-    result = (struct dyld_all_image_infos *)image_infos;
-    return result;
-}
-
-static char *searchDyldFunction(char *base,
-                                char *signature,
-                                int length)
-{
-    char *patchAddr = NULL;
-    for(int i=0; i < 0x80000; i+=4)
-    {
-        if(base[i] == signature[0] && memcmp(base+i, signature, length) == 0)
-        {
-            patchAddr = base + i;
-            break;
-        }
-    }
-    return patchAddr;
-}
 
 static int hook_fcntl(int fildes,
                       int cmd,
@@ -400,15 +359,19 @@ static int hook_stat64(const char *path,
 
 static HWHookThreadContextRef HWHookDlopenThreadContext(void)
 {
+    if(!load_ptrcache())
+    {
+        return NULL;
+    }
+    
     static HWHookThreadContextRef context = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        char *dyldBase = (char *)_alt_dyld_get_all_image_infos()->dyldImageLoadAddress;
-        orig_dyld_fcntl = (void *)searchDyldFunction(dyldBase, (char*)fcntlSig, sizeof(fcntlSig));
-        orig_dyld_open = (void *)searchDyldFunction(dyldBase, (char*)openSig, sizeof(openSig));
-        orig_dyld_fstat64 = (void *)searchDyldFunction(dyldBase, (char*)fstat64Sig, sizeof(fstat64Sig));
-        orig_dyld_stat64 = (void *)searchDyldFunction(dyldBase, (char*)stat64Sig, sizeof(stat64Sig));
-        orig_dyld_openat = (void *)searchDyldFunction(dyldBase, (char*)openatSig, sizeof(openatSig));
+        orig_dyld_fcntl = (void*)ptrcache[kDyldPtrFcntl];
+        orig_dyld_open = (void*)ptrcache[kDyldPtrOpen];
+        orig_dyld_fstat64 = (void*)ptrcache[kDyldPtrFstat64];
+        orig_dyld_stat64 = (void*)ptrcache[kDyldPtrStat64];
+        orig_dyld_openat = (void*)ptrcache[kDyldPtrOpenat];
         if(orig_dyld_fcntl == NULL || orig_dyld_open == NULL || orig_dyld_fstat64 == NULL || orig_dyld_stat64 == NULL || orig_dyld_openat == NULL)
         {
             return;
