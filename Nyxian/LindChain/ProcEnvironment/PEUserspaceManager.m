@@ -28,9 +28,10 @@
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
-#import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <LindChain/ProcEnvironment/KextLoader/PEKextLoader.h>
 #import <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
+#import <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#import <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -107,16 +108,22 @@
     /* now we can spin up that baby (micro kernel) =3 */
     ksurface_kinit();
     
-    if(enabled && strcmp(getenv("FORCE_DISABLE_KEXT_LOADING") ?: "0", "1") != 0)
+    if(enabled)
     {
         klog_log(domain, "loading kexts into address space");
         NSMutableString *string = [[NSMutableString alloc] init];
-        klog_log(domain, "kext loader %s", PEKextLoaderLoad(string) ? "[ok]" : "[fail]");
+        klog_log(domain, "kextloader %s", PEKextLoaderLoad(string) ? "[ok]" : "[fail]");
         NSString *message = [string copy];
         if(message.length > 0)
         {
             [NotificationServer NotifyUserWithLevel:NotifLevelError notification:message delay:1.0];
         }
+    }
+    else
+    {
+        klog_log(domain, "kextloader [disabled]");
+        /* seal so nobody can load them anyways */
+        kxld_seal();
     }
     
     /* now the actual userspace */
@@ -139,20 +146,28 @@
         }
     }
     klog_log(domain, "%@ [ok]", [self class]);
+    os_unfair_lock_unlock(&self->_lock);
     
-    if(ksurface_shimcache_build() != KERN_SUCCESS)
-    {
-        ksurface_panic("shimcache build failed");
-    }
-    
-    /* spinning up the launch services */
-    [[PELaunchServiceManager shared] reloadAllEntries];
-    
-    /* mark current boot as successful */
-    atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
-    atomic_store_explicit(&_bootSuccessful, true, memory_order_release);
-    
-    os_unfair_lock_unlock(&_lock);
+    /* shimcache needs to exist before the Userspace can truly spin up */
+    dispatch_queue_t backgroundQueue = dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0);
+    dispatch_async(backgroundQueue, ^{
+        [[NXBootstrap shared] waitTillDone];
+        
+        os_unfair_lock_lock(&self->_lock);
+        if(ksurface_shimcache_build() != KERN_SUCCESS)
+        {
+            ksurface_panic("shimcache build failed");
+        }
+        klog_log(domain, "shimcache [ok]");
+        
+        /* spinning up the launch services */
+        [[PELaunchServiceManager shared] reloadAllEntries];
+        
+        /* mark current boot as successful */
+        atomic_store_explicit(&self->_launchServiceManagerStable, true, memory_order_release);
+        atomic_store_explicit(&self->_bootSuccessful, true, memory_order_release);
+        os_unfair_lock_unlock(&self->_lock);
+    });
 }
 
 - (void)boot

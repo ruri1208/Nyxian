@@ -76,6 +76,7 @@ kern_return_t ksurface_shimcache_build(void)
     [[NSFileManager defaultManager] removeItemAtURL:shimcacheBuildURL error:nil];
     if(![[NSFileManager defaultManager] createDirectoryAtURL:shimcacheBuildURL withIntermediateDirectories:YES attributes:@{} error:nil])
     {
+        klog_log("shimcache:build", "couldn't create build directory");
         os_unfair_lock_unlock(&g_shimcache_lock);
         return KERN_FAILURE;
     }
@@ -84,13 +85,38 @@ kern_return_t ksurface_shimcache_build(void)
     NSMutableArray<NSString*> *codeFiles = [NSMutableArray array];
     for(int index = 0; index < g_shimcache_seg_cnt; index++)
     {
-        NSURL *codeFileURL = [shimcacheBuildURL URLByAppendingPathComponent:[[[NSUUID UUID] UUIDString] stringByAppendingPathExtension:@"c"]];
-        NSString *codeString = @(g_shimcache_seg[index].code);
-        if(codeFileURL && codeString)
+        NSString *fileExtension;
+        switch(g_shimcache_seg[index].fileType)
         {
-            [codeString writeToURL:codeFileURL atomically:YES encoding:NSUTF8StringEncoding error:nil];
-            [codeFiles addObject:codeFileURL.path];
+            case kCCFileTypeC:
+                fileExtension = @"c";
+                break;
+            case kCCFileTypeCXX:
+                fileExtension = @"cpp";
+                break;
+            case kCCFileTypeObjC:
+                fileExtension = @"m";
+                break;
+            case kCCFileTypeObjCXX:
+                fileExtension = @"mm";
+                break;
+            default:
+                klog_log("shimcache:build", "file type %d is not supported yet", g_shimcache_seg[index].fileType);
+                goto just_continue;
         }
+        
+        {
+            NSURL *codeFileURL = [shimcacheBuildURL URLByAppendingPathComponent:[[[NSUUID UUID] UUIDString] stringByAppendingPathExtension:fileExtension]];
+            NSString *codeString = @(g_shimcache_seg[index].code);
+            if(codeFileURL && codeString)
+            {
+                [codeString writeToURL:codeFileURL atomically:YES encoding:NSUTF8StringEncoding error:nil];
+                [codeFiles addObject:codeFileURL.path];
+            }
+        }
+        
+    just_continue:
+        continue;
     }
     
     if([codeFiles count] <= 0)
@@ -110,6 +136,9 @@ kern_return_t ksurface_shimcache_build(void)
     [driverFlags addObject:@"-o"];
     [driverFlags addObject:shimCacheDylib];
     [driverFlags addObject:@"-shared"];
+    [driverFlags addObject:@"-ObjC"];
+    [driverFlags addObject:@"-fobjc"];
+    [driverFlags addObject:@"-Wl,-undefined,dynamic_lookup"];
     
     MDKDriver *driver = [MDKDriver driverWithArguments:driverFlags withType:kCCDriverTypeClang];
     if(driver == NULL)
@@ -125,11 +154,10 @@ kern_return_t ksurface_shimcache_build(void)
         NSString *mainSourceFile = nil;
         if(![job executeJobWithOutDiagnostics:&outDiagnostic withOutMainSource:&mainSourceFile])
         {
-            klog_log("shimcache:build", "error occured while building shim cache");
+            klog_log("shimcache:build:error", "%@:", mainSourceFile);
             for(MDKDiagnostic *diagnostic in outDiagnostic)
             {
-                klog_log("shimcache:build", "%@:", mainSourceFile);
-                klog_log("shimcache:build", "    %@", diagnostic.message);
+                klog_log("shimcache:build:error", "    %@", diagnostic.message);
             }
             os_unfair_lock_unlock(&g_shimcache_lock);
             return KERN_FAILURE;
@@ -144,7 +172,7 @@ kern_return_t ksurface_shimcache_build(void)
         return KERN_SUCCESS;
     }
     
-    /* mount shim to correct place FIXME: supposed to add the mount */
+    /* mount shim to correct place */
     ksurface_fs_mount2(kFSMountAttrRead, "/dev/nounlink", [shimCacheDylib UTF8String]);
     ksurface_fs_mount2(kFSMountAttrRead, [shimCacheDylib UTF8String], [[[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/shimcache.dylib"] path] UTF8String]);
     
