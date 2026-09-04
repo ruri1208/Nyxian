@@ -51,6 +51,7 @@
 - (void)clearURL:(NSURL * _Nonnull)url;
 
 - (void)waitTillDone;
+- (void)waitTillDoneNoButton;
 - (BOOL)isNewest;
 
 @end

@@ -39,6 +39,28 @@
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
 
+static const char *gHostImageNeedles[] = {
+    "/Nyxian.app/PlugIns/LiveProcess.appex/LiveProcess",
+    "/Nyxian.app/PlugIns/LiveProcess.appex/Frameworks/LiveShim.framework/LiveShim",
+    "/mntfs/bootfs/shimcache.dylib"
+};
+
+static bool isHostImagePath(const char *path)
+{
+    if(!path)
+    {
+        return false;
+    }
+    for(size_t i = 0; i < sizeof(gHostImageNeedles)/sizeof(*gHostImageNeedles); i++)
+    {
+        if(strstr(path, gHostImageNeedles[i]))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 typedef struct {
     uint32_t platform;
     uint32_t version;
@@ -51,20 +73,54 @@ uint32_t guestAppSdkVersionSet = 0;
 
 void* appExecutableHandle = 0;
 void overwriteAppExecutableFileType(void);
+static inline bool isHiddenReal(uint32_t r);
 
-static inline int translateImageIndex(int origin)
+DEFINE_HOOK(_dyld_image_count, uint32_t, (void)) {
+    if(appMainImageIndex == 0)
+    {
+        return ORIG_FUNC(_dyld_image_count)();
+    }
+    uint32_t real = ORIG_FUNC(_dyld_image_count)(), hidden = 0;
+    for(uint32_t r = 0; r < real; r++)
+    {
+        if(isHiddenReal(r))
+        {
+            hidden++;
+        }
+    }
+    return real - hidden;
+}
+
+static uint32_t translateImageIndex(uint32_t guestIndex)
 {
-    if(origin == lcImageIndex)
+    if(appMainImageIndex == 0)
+    {
+        return guestIndex;
+    }
+    if(guestIndex == 0)
     {
         overwriteAppExecutableFileType();
         return appMainImageIndex;
     }
-    return origin;
-}
-
-DEFINE_HOOK(_dyld_image_count, uint32_t, (void))
-{
-    return ORIG_FUNC(_dyld_image_count)() - 1;
+    
+    uint32_t real = ORIG_FUNC(_dyld_image_count)();
+    uint32_t seen = 0;
+    for(uint32_t r = 0; r < real; r++)
+    {
+        if(r == appMainImageIndex)
+        {
+            continue;
+        }
+        if(isHiddenReal(r))
+        {
+            continue;
+        }
+        if(++seen == guestIndex)
+        {
+            return r;
+        }
+    }
+    return real ? real - 1 : 0;
 }
 
 DEFINE_HOOK(_dyld_get_image_header, const struct mach_header*, (uint32_t image_index))
@@ -113,6 +169,15 @@ DEFINE_HOOK(_dyld_get_image_vmaddr_slide, intptr_t, (uint32_t image_index))
 DEFINE_HOOK(_dyld_get_image_name, const char*, (uint32_t image_index))
 {
     __attribute__((musttail)) return ORIG_FUNC(_dyld_get_image_name)(translateImageIndex(image_index));
+}
+
+static inline bool isHiddenReal(uint32_t r)
+{
+    if(r == appMainImageIndex)
+    {
+        return false;
+    }
+    return isHostImagePath(ORIG_FUNC(_dyld_get_image_name)(r));
 }
 
 DEFINE_HOOK(dlopen, void *, (const char * __path,
@@ -387,27 +452,23 @@ void DyldHooksInit(void)
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        PEEntitlementFlags ownEntitlements = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetEntitlements, NULL, NULL, MACH_PORT_NULL);
-        if(entitlement_got_entitlement(ownEntitlements, kPEEntitlementFlagDyldHideLiveProcess))
+        int imageCount = _dyld_image_count();
+        for(int i = 0; i < imageCount; ++i)
         {
-            int imageCount = _dyld_image_count();
-            for(int i = 0; i < imageCount; ++i)
+            const struct mach_header* currentImageHeader = _dyld_get_image_header(i);
+            if(currentImageHeader->filetype == MH_EXECUTE)
             {
-                const struct mach_header* currentImageHeader = _dyld_get_image_header(i);
-                if(currentImageHeader->filetype == MH_EXECUTE)
-                {
-                    lcImageIndex = i;
-                    break;
-                }
+                lcImageIndex = i;
+                break;
             }
-            
-            DO_HOOK_GLOBAL(dlsym);
-            DO_HOOK_GLOBAL(_dyld_image_count);
-            DO_HOOK_GLOBAL(_dyld_get_image_header);
-            DO_HOOK_GLOBAL(_dyld_get_image_vmaddr_slide);
-            DO_HOOK_GLOBAL(_dyld_get_image_name);
-            DO_HOOK_GLOBAL(dlopen);
         }
+        
+        DO_HOOK_GLOBAL(dlsym);
+        DO_HOOK_GLOBAL(_dyld_image_count);
+        DO_HOOK_GLOBAL(_dyld_get_image_header);
+        DO_HOOK_GLOBAL(_dyld_get_image_vmaddr_slide);
+        DO_HOOK_GLOBAL(_dyld_get_image_name);
+        DO_HOOK_GLOBAL(dlopen);
         
         guestAppSdkVersion = getDyldImageBuildVersion(getGuestAppHeader()).version;
         if(!initGuestSDKVersionInfo() ||

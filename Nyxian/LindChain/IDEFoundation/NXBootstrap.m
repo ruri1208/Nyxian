@@ -428,6 +428,24 @@ BOOL PEURLIsContainedIn(NSURL *candidate,
     [XCButton switchImageWithSystemName:@"hammer.fill" animated:YES];
 }
 
+- (void)waitTillDoneNoButton
+{
+    if(self.version == NXBOOTSTRAP_NEWEST_VERSION)
+    {
+        return;
+    }
+    
+    [XCButton switchImageWithSystemName:@"archivebox.fill" animated:YES];
+    [XCButton updateProgressWithValue:0.1];
+    
+    while(self.version != NXBOOTSTRAP_NEWEST_VERSION)
+    {
+        relax();
+    }
+    
+    [XCButton switchImageWithSystemName:@"hammer.fill" animated:YES];
+}
+
 - (BOOL)isNewest
 {
     return self.version == NXBOOTSTRAP_NEWEST_VERSION;

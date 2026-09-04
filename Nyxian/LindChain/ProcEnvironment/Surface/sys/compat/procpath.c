@@ -54,10 +54,9 @@ DEFINE_SYSCALL_HANDLER(procpath)
     }
     
     /* getting buffer of target (we shouldn't hold it for long) */
-    char path[PATH_MAX];
-    _Static_assert(sizeof(target->nyx.identity->path) <= sizeof(path), "process path exceeds temporary buffer");
+    char path[sizeof(target->nyx.identity->path)];
     kvo_rdlock(target);
-    size_t size = strlcpy(path, target->nyx.identity->path, sizeof(path)) + 1;
+    size_t size = strlcpy(path, target->nyx.identity->path, sizeof(target->nyx.identity->path)) + 1;
     kvo_unlock(target);
     kvo_release(target);
     
