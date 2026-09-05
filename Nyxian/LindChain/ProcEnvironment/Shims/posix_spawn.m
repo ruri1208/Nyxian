@@ -27,11 +27,11 @@
 #import <LindChain/ProcEnvironment/litehook/litehook.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
-#import <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
 #import <LiveShim/LiveShimSyscall.h>
 #import <fcntl.h>
 #import <ksurface_config.h>
 #include <ksurface_abi.h>
+#include <sys/stat.h>
 
 #if KSURFACE_SYS_PROC_ENABLED
 

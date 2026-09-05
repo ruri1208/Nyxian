@@ -45,7 +45,7 @@
 #define SYS_gethostname 752     /* MARK: deprecated, use SYS_sysctl instead */
 #define SYS_sethostname 753     /* MARK: deprecated, use SYS_sysctl instead */
 #define SYS_gettask     754     /* gets task port */
-#define SYS_procpath    755     /* gets process path of a pid */
+#define SYS_procpath    755     /* MARK: deprecated, use SYS_proc_info instead */
 #define SYS_procbsd     756     /* MARK: deprecated, use SYS_sysctl instead */
 #define SYS_handoffep   757     /* handoff exception port to kvirt */
 #define SYS_setent      758     /* MARK: deprecated, use SYS_pectl instead */
