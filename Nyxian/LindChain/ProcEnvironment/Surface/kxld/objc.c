@@ -37,6 +37,7 @@ static bool KXImageHasObjC(kxld_image_info_t *image_info)
             {
                 if(strncmp(sects[s].sectname, "__objc_", 7) == 0)
                 {
+                    image_info->safeToUnmap = false;
                     return true;
                 }
             }

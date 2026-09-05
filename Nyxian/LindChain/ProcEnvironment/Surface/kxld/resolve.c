@@ -20,6 +20,7 @@
 */
 
 #include <LindChain/ProcEnvironment/Surface/kxld/resolve.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/pseudo.h>
 #include <LindChain/ProcEnvironment/Surface/radix/radix.h>
 #include <sys/sysctl.h>
 #include <dlfcn.h>
@@ -175,42 +176,26 @@ static uint32_t platform_query_version(void)
     return KMOD_VERSION(maj, min, pat);
 }
 
-static kinfo_mod_t g_ksurface_kmod = {
-    .magic = KSURFACE_KMOD_MAGIC,
-    .abi_version = KSURFACE_KMOD_ABI_VERSION,
-    .identifier = "ksurface",
-    .version = KMOD_VERSION(0, 11, 4),
-    .flags = KMOD_FLAG_PERSISTENT,
-    .dependency_count = 1,
-    .dependencies = {
-        {
-            .identifier = "com.apple.iphoneos",
-            .min_version = KMOD_VERSION(18, 4, 0),      /* bottom */
-            .max_version = KMOD_VERSION(99, 99, 99),    /* ceiling is unclear, dependant on apples mood swings >~< */
-        }
-    },
-};
-
-static kinfo_mod_t g_ios_kmod = {
-    .magic = KSURFACE_KMOD_MAGIC,
-    .abi_version = KSURFACE_KMOD_ABI_VERSION,
-    .identifier = "com.apple.iphoneos",
-    .version = 0,
-    .flags = KMOD_FLAG_PERSISTENT,
-    .dependency_count = 0,
-};
-
 __attribute__((constructor))
 static void register_nximage(void)
 {
-    /* pre-register ksurface */
-    kxld_image_info_t *image_ksurface_info = calloc(1, sizeof(kxld_image_info_t));
-    image_ksurface_info->mod = &g_ksurface_kmod;
-    KXRegisterKext(image_ksurface_info);
+    /* pre-register ios and ksurface */
+    kxld_image_info_t *ios_image_info = NULL;
+    kern_return_t kr = kxopen_pseudo("com.apple.iphoneos", platform_query_version(), KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED, &ios_image_info);
+    if(kr != KERN_SUCCESS)
+    {
+        ksurface_panic("failed to create pseudo kext for 'com.apple.ios'.");
+    }
     
-    /* pre-register com.apple.iphoneos */
-    g_ios_kmod.version = platform_query_version();
-    kxld_image_info_t *image_ios_info = calloc(1, sizeof(kxld_image_info_t));
-    image_ios_info->mod = &g_ios_kmod;
-    KXRegisterKext(image_ios_info);
+    kxld_image_info_t *ksurface_image_info = NULL;
+    kr = kxopen_pseudo("ksurface", KMOD_VERSION(0, 11, 4), KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED, &ksurface_image_info);
+    if(kr != KERN_SUCCESS)
+    {
+        ksurface_panic("failed to create pseudo kext for 'ksurface'.");
+    }
+    
+    if(KXRegisterKext(ios_image_info) != KERN_SUCCESS || KXRegisterKext(ksurface_image_info) != KERN_SUCCESS)
+    {
+        ksurface_panic("failed to register pseudo kext's.");
+    }
 }

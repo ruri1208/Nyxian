@@ -22,6 +22,7 @@
 #ifndef KXLD_IMAGE_H
 #define KXLD_IMAGE_H
 
+#include <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <stdio.h>
@@ -92,6 +93,8 @@ typedef struct kinfo_mod {
 } kinfo_mod_t;
 
 typedef struct {
+    kvobject_t kvo_header;
+    
     char path[MAXPATHLEN];
     intptr_t slide;
     off_t sliceOffset;
@@ -99,6 +102,13 @@ typedef struct {
     uint64_t len;
     struct mach_header_64 *header;
     kinfo_mod_t *mod;
+    
+    bool isInitialized;
+    bool isStarted;
+    bool safeToUnmap;
+    bool dependenciesResolved;
 } kxld_image_info_t;
+
+DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(kxld_image);
 
 #endif /* KXLD_IMAGE_H */

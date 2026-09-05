@@ -19,12 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_PROC_INFO_H
-#define SURFACE_SYS_PROC_INFO_H
+#ifndef KXLD_PSEUDO_H
+#define KXLD_PSEUDO_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
-#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
+#include <LindChain/ProcEnvironment/Surface/kxld/image.h>
 
-DEFINE_SYSCALL_HANDLER(proc_info);
+kern_return_t kxopen_pseudo(const char *identifier, uint32_t version, uint64_t flag, kxld_image_info_t **out_image_info);
 
-#endif /* SURFACE_SYS_PROC_INFO_H */
+#endif /* KXLD_PSEUDO_H */

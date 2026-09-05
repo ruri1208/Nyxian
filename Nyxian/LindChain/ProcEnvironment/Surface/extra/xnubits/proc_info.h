@@ -45,9 +45,7 @@
 #include <mach/machine.h>
 #include <uuid/uuid.h>
 
-#ifdef PRIVATE
-#include <mach/coalition.h> /* COALITION_NUM_TYPES */
-#endif
+#define PRIVATE 1
 
 __BEGIN_DECLS
 
@@ -126,7 +124,7 @@ struct proc_archinfo {
 };
 
 struct proc_pidcoalitioninfo {
-    uint64_t coalition_id[COALITION_NUM_TYPES];
+    //uint64_t coalition_id[COALITION_NUM_TYPES];
     uint64_t reserved1;
     uint64_t reserved2;
     uint64_t reserved3;
@@ -687,7 +685,7 @@ struct kqueue_dyninfo {
 
 #ifdef PRIVATE
 struct kevent_extinfo {
-    struct kevent_qos_s kqext_kev;
+    //struct kevent_qos_s kqext_kev;
     uint64_t kqext_sdata;
     int kqext_status;
     int kqext_sfflags;

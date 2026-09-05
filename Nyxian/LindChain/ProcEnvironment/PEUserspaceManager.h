@@ -46,7 +46,6 @@ typedef enum: UInt8 {
 + (instancetype)shared;
 
 - (void)bootWithKextLoadingEnabled:(BOOL)enabled;
-- (void)boot;
 - (BOOL)rebootUserspaceWithType:(PEUserspaceRebootType)type;
 - (BOOL)rebootUserspace;
 - (BOOL)restore;
