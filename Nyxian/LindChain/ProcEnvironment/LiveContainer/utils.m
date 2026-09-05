@@ -46,8 +46,17 @@ uint64_t aarch64_emulate_adrp_ldr(uint32_t instruction,
                                   uint32_t ldrInstruction,
                                   uint64_t pc)
 {
+    uint32_t bad = ((instruction    & 0x9F000000u) ^ 0x90000000u)   /* is ADRP          */
+                 | ((ldrInstruction & 0xFFC00000u) ^ 0xF9400000u)   /* is LDR 64        */
+                 | ((instruction ^ (ldrInstruction >> 5)) & 0x1Fu); /* Rd == Rn         */
+    if(bad)
+    {
+        return 0;
+    }
+    
     int64_t imm = ((int64_t)((uint64_t)instruction << 40) >> 31) & ~(int64_t)0x3FFF;
     imm |= (instruction >> 17) & 0x3000;
     uint64_t page = (pc & ~(uint64_t)0xFFF) + (uint64_t)imm;
-    return page + ((uint64_t)((ldrInstruction >> 10) & 0xFFF) << (ldrInstruction >> 30));
+    
+    return page ? page + ((uint64_t)((ldrInstruction >> 10) & 0xFFFu) << 3) : 0;
 }
