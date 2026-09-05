@@ -44,7 +44,6 @@
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/wait4.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/proc_info.h>
-#include <ksurface_config.h>
 
 typedef struct {
     const char *name;
