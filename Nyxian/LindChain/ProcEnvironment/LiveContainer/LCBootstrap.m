@@ -89,7 +89,6 @@ void LCOverwriteExecutablePath(NSString *executablePath)
     CFBundleRef currentMainCFBundle = CFBundleGetMainBundle();
     assert(currentMainCFBundle != NULL);
     CFAllocatorRef allocator = CFGetAllocator(currentMainCFBundle); /* doesnt matter if zero */
-    assert(allocator != NULL);
     CFURLRef urlRef = CFURLCreateWithFileSystemPath(allocator, (__bridge CFStringRef)[executablePath stringByDeletingLastPathComponent], kCFURLPOSIXPathStyle, true);
     assert(urlRef != NULL);
     CFBundleRef guestMainCFBundle = CFBundleCreate(allocator, urlRef);
