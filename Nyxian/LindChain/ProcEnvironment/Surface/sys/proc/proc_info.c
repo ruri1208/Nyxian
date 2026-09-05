@@ -75,7 +75,7 @@ DEFINE_SYSCALL_HANDLER(proc_info_pidinfo)
             kern_return_t ret = proc_for_pid(u_pid, &target);
             if(ret != KERN_SUCCESS)
             {
-                sys_return_failure_with_errno(EINVAL);
+                sys_return_failure_with_errno(ESRCH);
             }
             
             /* checking if caller can see target process */
