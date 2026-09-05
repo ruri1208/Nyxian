@@ -518,61 +518,11 @@ void klog_log_internal(const char *system, const char *format, ...)
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
             NSString *entry_path = [NSString stringWithFormat:@"%@/Documents/klog.txt", NSHomeDirectory()];
-            
-#if DEBUG
-            NSString *kfd_path = [NSString stringWithFormat:@"%@/Documents/mntfs/devfs/klog", NSHomeDirectory()];
-            int rfd = open([kfd_path UTF8String], O_RDONLY);
-            
-            /* we need the tail in-case of a panic when debugging */
-            NSString *tail = @"";
-            if(rfd != -1)
-            {
-                off_t size = lseek(rfd, 0, SEEK_END);
-                if(size > 0)
-                {
-                    char *buf = malloc(size + 1);
-                    if(buf)
-                    {
-                        lseek(rfd, 0, SEEK_SET);
-                        ssize_t n = read(rfd, buf, size);
-                        if(n > 0)
-                        {
-                            buf[n] = '\0';
-                            NSString *prev = [[NSString alloc] initWithUTF8String:buf];
-                            NSArray<NSString *> *lines = [prev componentsSeparatedByString:@"\n"];
-                            
-                            NSUInteger count = lines.count;
-                            if(count > 0 && [lines.lastObject isEqualToString:@""])
-                            {
-                                count--;
-                            }
-                            
-                            NSUInteger take = MIN(count, 20);
-                            NSRange range = NSMakeRange(count - take, take);
-                            NSArray *last20 = [lines subarrayWithRange:range];
-                            tail = [[last20 componentsJoinedByString:@"\n"] stringByAppendingString:@"\n"];
-                        }
-                        free(buf);
-                    }
-                }
-                close(rfd);
-            }
-#endif /* DEBUG */
-            
             kfd = open([entry_path UTF8String], O_RDWR | O_CREAT | O_TRUNC, 0644);
             if(kfd == -1)
             {
                 return;
             }
-            
-#if DEBUG
-            if(tail.length > 0)
-            {
-                dprintf(kfd, "(last 20 lines from previous debugging session)\n");
-                dprintf(kfd, "%s", [tail UTF8String]);
-                dprintf(kfd, "\n(new debugging session)\n");
-            }
-#endif /* DEBUG */
         });
         
         /* checking kfd */
@@ -607,6 +557,20 @@ void klog_log_internal(const char *system, const char *format, ...)
         
         /* writing */
         ssize_t written = write(kfd, utf8, len);
+#if DEBUG
+        static bool isLaunchdParent = false;
+        static dispatch_once_t onceTokenSecond;
+        dispatch_once(&onceTokenSecond, ^{
+            if(getppid() == 1)
+            {
+                isLaunchdParent = true;
+            }
+        });
+        if(!isLaunchdParent)
+        {
+            write(STDERR_FILENO, utf8, len);
+        }
+#endif /* DEBUG */
         
         /* truncation if applicable */
         if(written == len)

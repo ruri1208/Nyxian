@@ -181,11 +181,6 @@ kern_return_t ksurface_shimcache_build(void)
         return KERN_SUCCESS;
     }
     
-    /* moving*/
-    
-    /* mount shim to correct place */
-    ksurface_fs_mount2(kFSMountAttrRead, "/dev/nounlink", [shimCacheDylib UTF8String]); /* bootfs is already read-only vmount'ed */
-    
     os_unfair_lock_unlock(&g_shimcache_lock);
     return KERN_SUCCESS;
 }

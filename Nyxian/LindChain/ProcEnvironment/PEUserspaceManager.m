@@ -31,6 +31,7 @@
 #import <LindChain/ProcEnvironment/KextLoader/PEKextLoader.h>
 #import <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
+#import <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 #import <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
 #import <LindChain/ProcEnvironment/Surface/shimcache/ptrcache.h>
 #import <Nyxian-Swift.h>
@@ -174,61 +175,6 @@
         atomic_store_explicit(&self->_bootSuccessful, true, memory_order_release);
         os_unfair_lock_unlock(&self->_lock);
     });
-}
-
-- (void)boot
-{
-    const char *domain = "PEUserspaceManager:boot";
-    
-    /* boot shall only happen once */
-    if(atomic_flag_test_and_set(&_bootOnceFlag))
-    {
-        ksurface_panic("boot called twice");
-    }
-    
-    os_unfair_lock_lock(&_lock);
-    
-    /* extension must be available */
-    if(PEGetLiveProcessBundle() == NULL ||
-       !PEExtensionHasGetTaskAllowed())
-    {
-        klog_log(domain, "Cannot spin up anything, extension is malformed");
-        os_unfair_lock_unlock(&_lock);
-        return;
-    }
-    
-    /* now we can spin up that baby (micro kernel) =3 */
-    ksurface_kinit();
-    
-    /* now the actual userspace */
-    Class UserspaceBootChain[] = {
-        [PEProcessManager class],
-        [PEBootstrapRegistry class],
-        [PELaunchServiceManager class],
-    };
-    
-    for(size_t index = 0; index < sizeof(UserspaceBootChain) / sizeof(Class); index++)
-    {
-        Class class = UserspaceBootChain[index];
-        if([class shared] != nil)
-        {
-            klog_log(domain, "%@ [ok]", class);
-        }
-        else
-        {
-            ksurface_panic("%@ [failed]", class);
-        }
-    }
-    klog_log(domain, "%@ [ok]", [self class]);
-    
-    /* spinning up the launch services */
-    [[PELaunchServiceManager shared] reloadAllEntries];
-    
-    /* mark current boot as successful */
-    atomic_store_explicit(&_launchServiceManagerStable, true, memory_order_release);
-    atomic_store_explicit(&_bootSuccessful, true, memory_order_release);
-    
-    os_unfair_lock_unlock(&_lock);
 }
 
 - (BOOL)rebootUserspaceWithType_nolock:(PEUserspaceRebootType)type
