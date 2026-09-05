@@ -45,7 +45,6 @@ syscall_list_item_t sys_list[] = {
 #if KSURFACE_SYS_SYSCTL_ENABLED
     { .name = "SYS_sysctl",         .sysnum = SYS_sysctl,       .hndl = GET_SYSCALL_HANDLER(sysctl)         },
     { .name = "SYS_sysctlbyname",   .sysnum = SYS_sysctlbyname, .hndl = GET_SYSCALL_HANDLER(sysctlbyname)   },
-    { .name = "SYS_procpath",       .sysnum = SYS_procpath,     .hndl = GET_SYSCALL_HANDLER(procpath)       },
 #endif /* KSURFACE_SYS_SYSCTL_ENABLED */
     
 #if KSURFACE_SYS_TASK_ENABLED

@@ -29,7 +29,6 @@
 #include <LindChain/ProcEnvironment/Surface/sys/host/ioctl.h>
 #include <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/gettask.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/procpath.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/waittask.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/pectl.h>
@@ -44,7 +43,6 @@
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/wait4.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/proc_info.h>
-#include <ksurface_config.h>
 
 typedef struct {
     const char *name;

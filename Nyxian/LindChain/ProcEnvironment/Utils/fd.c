@@ -20,7 +20,7 @@
 */
 
 #include <LindChain/ProcEnvironment/Utils/fd.h>
-#include <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
+#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
 #include <LindChain/Private/sys/guarded.h>
 #include <stdlib.h>
 #include <unistd.h>

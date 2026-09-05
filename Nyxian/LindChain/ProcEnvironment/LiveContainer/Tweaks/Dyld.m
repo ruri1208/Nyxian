@@ -229,7 +229,10 @@ uint32_t hook_dyld_get_program_sdk_version(void* dyldApiInstancePtr)
     return guestAppSdkVersion;
 }
 
-bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** origFunction, void* hookFunction)
+bool performHookDyldApi(const char* functionName,
+                        uint32_t adrpOffset,
+                        void** origFunction,
+                        void* hookFunction)
 {
     
     uint32_t* baseAddr = dlsym(RTLD_DEFAULT, functionName);
@@ -521,17 +524,17 @@ void *dlopenBypassingLockWithTrust(const char *path,
     
     void **lockUnlockPtr = (void**)ptrcache[kDyldLockUnlockFunc];
     kern_return_t ret;
-    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(uintptr_t[2]), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
+    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(void*[2]), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
     assert(ret == KERN_SUCCESS);
     void *origLockPtr = lockUnlockPtr[0], *origUnlockPtr = lockUnlockPtr[1];
     lockUnlockPtr[0] = hook_libdyld_os_unfair_recursive_lock_lock_with_options;
     lockUnlockPtr[1] = hook_libdyld_os_unfair_recursive_lock_unlock;
     void *result = expectedCdhash == NULL ? dlopen(path, mode) : dlopen_cdhash_verified(path, mode, expectedCdhash, dyld_verifier_failed_callback);
-    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(uintptr_t[2]), false, PROT_READ | PROT_WRITE);
+    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(void*[2]), false, PROT_READ | PROT_WRITE);
     assert(ret == KERN_SUCCESS);
     lockUnlockPtr[0] = origLockPtr;
     lockUnlockPtr[1] = origUnlockPtr;
-    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(uintptr_t[2]), false, PROT_READ);
+    ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(void*[2]), false, PROT_READ);
     assert(ret == KERN_SUCCESS);
     return result;
 }

@@ -23,6 +23,7 @@
 #import <LindChain/Utils/Swizzle.h>
 #import <LindChain/Private/UIKitPrivate.h>
 #import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/applicationmgmtd/ISIcon.h>
 
 /* WIP TO A HUGE EXTEND! */
 
@@ -33,7 +34,7 @@
 @property (readonly, nullable, nonatomic) NSNumber *sharedUsage;
 @end
 
-@interface LSApplicationSpoofProxy : NSObject
+@interface LDEApplicationProxy : NSObject
 
 @property (nonatomic, readonly) LDEApplicationObject *applicationObject;
 @property (nonatomic, readonly) NSNumber *ODRDiskUsage;
@@ -260,12 +261,12 @@
 
 @end
 
-@implementation LSApplicationSpoofProxy
+@implementation LDEApplicationProxy
 
 /* inits */
 + (id)applicationProxyForLDEObject:(LDEApplicationObject*)object
 {
-    LSApplicationSpoofProxy *applicationProxy = [[LSApplicationSpoofProxy alloc] init];
+    LDEApplicationProxy *applicationProxy = [[LDEApplicationProxy alloc] init];
     if(self)
     {
         applicationProxy->_applicationObject = object;
@@ -720,6 +721,49 @@
     return PrivClass(LSApplicationProxy);
 }
 
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel
+{
+    NSMethodSignature *sig = [super methodSignatureForSelector:sel];
+    if(sig)
+    {
+        return sig;
+    }
+    return [PrivClass(LSApplicationProxy) instanceMethodSignatureForSelector:sel];
+}
+
+- (void)forwardInvocation:(NSInvocation *)inv
+{
+    SEL sel = inv.selector;
+    static NSMutableSet *seen;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ seen = [NSMutableSet set]; });
+    NSString *name = NSStringFromSelector(sel);
+    @synchronized(seen)
+    {
+        if(![seen containsObject:name])
+        {
+            [seen addObject:name];
+        }
+    }
+
+    NSUInteger len = inv.methodSignature.methodReturnLength;
+    if(len)
+    {
+        void *buf = calloc(1, len);
+        [inv setReturnValue:buf];
+        free(buf);
+    }
+}
+
+- (BOOL)respondsToSelector:(SEL)sel
+{
+    if([super respondsToSelector:sel])
+    {
+        return YES;
+    }
+    return [PrivClass(LSApplicationProxy) instancesRespondToSelector:sel];
+}
+
 @end
 
 @interface LSApplicationWorkspaceHooks: NSObject
@@ -741,7 +785,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         SwizzleObjCMethod(@selector(allApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
-        SwizzleObjCMethod(@selector(allInstalledApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
+        SwizzleObjCMethod(@selector(allInstalledApplications), PrivClass(LSApplicationWorkspace), @selector(hook_allInstalledApplications), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(uninstallApplication:withOptions:error:usingBlock:), PrivClass(LSApplicationWorkspace), @selector(hook_uninstallApplication:withOptions:error:usingBlock:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(openApplicationWithBundleID:), PrivClass(LSApplicationWorkspace), @selector(hook_openApplicationWithBundleID:), [LSApplicationWorkspaceHooks class], kSwizzleMethodTypeInstance);
         SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
@@ -749,25 +793,30 @@
     return [self hook_defaultWorkspace];
 }
 
-- (NSArray<LSApplicationSpoofProxy*>*)hook_allApplications
++ (NSArray<LDEApplicationProxy*>*)giveAllApps
 {
     LDEApplicationWorkspace *workspace = [LDEApplicationWorkspace shared];
     [workspace ping];
     
     NSArray<LDEApplicationObject*> *allApplicationObjects = [workspace allApplicationObjects];
-    NSMutableArray<LSApplicationSpoofProxy*> *apps = [NSMutableArray array];
+    NSMutableArray<LDEApplicationProxy*> *apps = [NSMutableArray array];
     for(LDEApplicationObject *object in allApplicationObjects)
     {
-        LSApplicationSpoofProxy *proxy = [LSApplicationSpoofProxy applicationProxyForLDEObject:object];
+        LDEApplicationProxy *proxy = [LDEApplicationProxy applicationProxyForLDEObject:object];
         [apps addObject:proxy];
     }
     
     return apps;
 }
 
-- (BOOL)openApplicationWithBundleID:(NSString*)bundleIdentifier
+- (NSArray<LDEApplicationProxy*>*)hook_allApplications
 {
-    return NO;  /* no call path to do that externally yet */
+    return [LSApplicationWorkspaceHooks giveAllApps];
+}
+
+- (NSArray<LDEApplicationProxy*>*)hook_allInstalledApplications
+{
+    return [LSApplicationWorkspaceHooks giveAllApps];
 }
 
 - (BOOL)hook_uninstallApplication:(NSString *)bundleID
@@ -785,31 +834,120 @@
 
 @end
 
-@implementation UIImage (PrivateHook)
-
-+ (void)lazyLoad
+static UIImage *Gib26Icon(UIImage *rawIcon,
+                          CGSize size,
+                          CGFloat scale)
 {
-    SwizzleObjCMethod(@selector(_applicationIconImageForBundleIdentifier:format:scale:), [UIImage class], @selector(hook_iconForBundleID:format:scale:), [UIImage class], kSwizzleMethodTypeClass);
+    if(!rawIcon.CGImage)
+    {
+        return nil;
+    }
+    
+    Class IFImageClass = NSClassFromString(@"IFImage");
+    Class ISIconClass = NSClassFromString(@"ISIcon");
+    Class ISImageDescriptorClass = NSClassFromString(@"ISImageDescriptor");
+    if(!IFImageClass || !ISIconClass || !ISImageDescriptorClass)
+    {
+        return nil;
+    }
+    
+    IFImage *source = [[IFImageClass alloc] initWithCGImage:rawIcon.CGImage scale:rawIcon.scale];
+    if(!source)
+    {
+        return nil;
+    }
+    
+    ISIcon *icon = [[ISIconClass alloc] initWithImages:@[source]];
+    if(!icon)
+    {
+        return nil;
+    }
+    
+    /* more research is needed on how apple applies the format :c */
+    ISImageDescriptor *descriptor = [[ISImageDescriptorClass alloc] initWithSize:size scale:scale];
+    descriptor.shape = 1;
+    descriptor.appearance = 0;
+    descriptor.appearanceVariant = 0;
+    descriptor.shouldApplyMask = YES;
+    descriptor.drawBorder = YES;
+    
+    /* apperently what apple uses */
+    IFImage *rendered = [icon prepareImageForDescriptor:descriptor];
+    if(!rendered || !rendered.CGImage)
+    {
+        return nil;
+    }
+    
+    return [UIImage imageWithCGImage:rendered.CGImage scale:scale orientation:UIImageOrientationUp];
 }
+
+@implementation UIImage (PrivateHook)
 
 + (UIImage *)hook_iconForBundleID:(NSString *)bundleIdentifier
                            format:(int)format
                             scale:(CGFloat)scale
 {
     LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
-    if(obj)
+    if(obj && obj.icon)
     {
         UIImage *rawIcon = obj.icon;
-        CGRect r = (CGRect){ .size = rawIcon.size };
-        UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:rawIcon.size.width * 0.2237];
-        UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
-        fmt.scale = scale;
-        UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:rawIcon.size format:fmt];
-        UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
-            [mask addClip];
-            [rawIcon drawInRect:r];
-        }];
-        return curvedImage;
+        
+        CGSize targetSize;
+        {
+            static NSMutableDictionary<NSString *, NSValue *> *sizeCache;
+            static dispatch_once_t once;
+            dispatch_once(&once, ^{
+                sizeCache = [NSMutableDictionary new];
+            });
+            
+            NSString *key = [NSString stringWithFormat:@"%d@%.1f", format, scale];
+            @synchronized(sizeCache)
+            {
+                NSValue *found = sizeCache[key];
+                if(found)
+                {
+                    targetSize = found.CGSizeValue;
+                    goto got_size;
+                }
+            }
+            
+            /* dw apple tells us what their size and scale is dw ^^ */
+            UIImage *probe = [self hook_iconForBundleID:@"com.apple.Preferences" format:format scale:scale];
+            targetSize = probe ? probe.size : CGSizeMake(60, 60);
+            
+            @synchronized(sizeCache)
+            {
+                sizeCache[key] = [NSValue valueWithCGSize:targetSize];
+            }
+        }
+    got_size:
+        {
+            if(@available(iOS 26.0, *))
+            {
+                /* the asking apple way */
+                UIImage *image = Gib26Icon(rawIcon, targetSize, scale);
+                if(image == nil)
+                {
+                    goto manual_way;
+                }
+                return image;
+            }
+            
+        manual_way:
+            {
+                /* the doing it my self way */
+                CGRect r = (CGRect){ .origin = CGPointZero, .size = targetSize };
+                UIBezierPath *mask = [UIBezierPath bezierPathWithRoundedRect:r cornerRadius:targetSize.width * 0.2237];
+                UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat defaultFormat];
+                fmt.scale = scale;
+                UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:targetSize format:fmt];
+                UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
+                    [mask addClip];
+                    [rawIcon drawInRect:r];
+                }];
+                return curvedImage;
+            }
+        }
     }
     return [self hook_iconForBundleID:bundleIdentifier format:format scale:scale];
 }

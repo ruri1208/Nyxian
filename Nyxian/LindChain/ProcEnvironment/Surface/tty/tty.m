@@ -22,7 +22,7 @@
 #import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #import <LindChain/ProcEnvironment/Surface/tty/tty.h>
 #import <LindChain/ProcEnvironment/Surface/proc/list.h>
-#import <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
+#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>

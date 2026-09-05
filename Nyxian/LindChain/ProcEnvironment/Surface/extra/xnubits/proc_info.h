@@ -1015,4 +1015,17 @@ extern uint32_t workqueue_get_pwq_state_kdp(void *proc);
 
 __END_DECLS
 
+/* libproc bits xD */
+extern int proc_listpids(uint32_t type, uint32_t typeinfo, void *buffer, int buffersize);
+extern int proc_listallpids(void * buffer, int buffersize);
+extern int proc_listpidspath(uint32_t    type, uint32_t    typeinfo, const char    *path, uint32_t    pathflags, void        *buffer, int        buffersize);
+extern int proc_pidinfo(int pid, int flavor, uint64_t arg,  void *buffer, int buffersize);
+extern int proc_pidfdinfo(int pid, int fd, int flavor, void * buffer, int buffersize);
+extern int proc_name(int pid, void * buffer, uint32_t buffersize);
+extern int proc_regionfilename(int pid, uint64_t address, void * buffer, uint32_t buffersize);
+extern int proc_kmsgbuf(void * buffer, uint32_t buffersize);
+extern int proc_pidpath(int pid, void * buffer, uint32_t  buffersize);
+extern int proc_libversion(int *major, int * minor);
+extern int proc_pid_rusage(int pid, int flavor, struct rusage_info_v2 *rusage);
+
 #endif /*_SYS_PROC_INFO_H */

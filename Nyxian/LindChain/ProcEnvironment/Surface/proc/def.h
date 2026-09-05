@@ -24,9 +24,8 @@
 
 #import <LindChain/ProcEnvironment/Surface/limits.h>
 #import <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
-#include <sys/sysctl.h>
-#include <ksurface_config.h>
 #include <LindChain/ProcEnvironment/Surface/trust/trust.h>
+#include <sys/sysctl.h>
 
 /// Helper macros
 #define proc_getpid(proc) ((proc)->bsd.kp_proc.p_pid)

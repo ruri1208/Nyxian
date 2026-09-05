@@ -25,9 +25,10 @@
 #import <LindChain/ProcEnvironment/Shims/proxy.h>
 #import <LindChain/ProcEnvironment/Shims/libproc.h>
 #import <LindChain/ProcEnvironment/litehook/litehook.h>
-#import <LindChain/ProcEnvironment/LiveContainer/Tweaks/libproc.h>
+#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proc.h>
+#import <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
 
@@ -112,7 +113,7 @@ DEFINE_HOOK(proc_pidpath, int, (pid_t pid,
     }
     
     /* syscall with SYS_PROCPATH */
-    int64_t retval = liveshim_syscall(SYS_procpath, pid, buffer, &buffersize);
+    int64_t retval = liveshim_syscall(SYS_proc_info, PROC_INFO_CALL_PIDINFO, pid, PROC_PIDPATHINFO, 0, buffer, buffersize);
     if(retval != 0)
     {
         return 0;
