@@ -23,10 +23,9 @@
 #include <sys/xattr.h>
 #include "utils.h"
 #include <unistd.h>
-#include "./libproc.h"
+#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
-#include "./proc_info.h"
 #include <fcntl.h>
 #include <spawn.h>
 #include <dlfcn.h>

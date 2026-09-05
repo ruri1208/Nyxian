@@ -1,6 +1,61 @@
+/*
+ SPDX-License-Identifier: AGPL-3.0-or-later
+
+ Copyright (C) 2025 - 2026 emexlab
+
+ This file is part of Nyxian.
+
+ Nyxian is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Nyxian is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#ifndef ISICON_H
+#define ISICON_H
+
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+
+@interface IFImage : NSObject
+
+@property (readonly) struct CGImage *CGImage;
+
+- (bool)largest;
+
+- (instancetype)initWithCGImage:(CGImageRef)image scale:(CGFloat)scale;
+
+@end
+
+@interface ISImageDescriptor : NSObject
+
+- (instancetype)initWithSize:(CGSize)size scale:(CGFloat)scale;
+
+@property(nonatomic) NSUInteger shape;
+@property(nonatomic) BOOL shouldApplyMask;
+@property(nonatomic) BOOL drawBorder;
+
+@property(nonatomic) NSInteger appearance;
+@property(nonatomic) NSInteger appearanceVariant;
+
+@end
+
 @interface ISIcon : NSObject
 
+- (instancetype)initWithImages:(NSArray<IFImage *> *)images;
+
+
 - (id)imageForSize:(CGSize)arg1 scale:(double)arg2;
+
+- (IFImage *)prepareImageForDescriptor:(ISImageDescriptor *)descriptor;
 
 @end
 
@@ -54,14 +109,6 @@
 - (void)setSelectedVariant:(bool)arg1;
 - (void)setTemplateVariant:(bool)arg1;
 - (bool)templateVariant;
-
-@end
-
-@interface IFImage : NSObject
-
-@property (readonly) struct CGImage *CGImage;
-
-- (bool)largest;
 
 @end
 
@@ -253,3 +300,5 @@
 + (id)defaultAppIconAssetsBag;
 
 @end
+
+#endif /* ISICON_H */

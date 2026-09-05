@@ -36,7 +36,94 @@ DEFINE_SYSCALL_HANDLER(proc_info_listpids)
 
 DEFINE_SYSCALL_HANDLER(proc_info_pidinfo)
 {
-    sys_return_failure_with_errno(ENOSYS);
+    uint32_t u_flavour = (uint32_t)args[2];
+    
+    switch(u_flavour)
+    {
+        case PROC_PIDLISTFDS:
+        case PROC_PIDTASKALLINFO:
+        case PROC_PIDTBSDINFO:
+        case PROC_PIDTASKINFO:
+        case PROC_PIDTHREADINFO:
+        case PROC_PIDLISTTHREADS:
+        case PROC_PIDREGIONINFO:
+        case PROC_PIDREGIONPATHINFO:
+        case PROC_PIDVNODEPATHINFO:
+        case PROC_PIDTHREADPATHINFO:
+            sys_return_failure_with_errno(ENOSYS);
+        case PROC_PIDPATHINFO:
+        {
+            /* prepare arguments */
+            pid_t u_pid = (pid_t)args[1];
+            userspace_pointer_t u_buffer_ptr = (userspace_pointer_t)args[4];
+            int32_t u_size = (int32_t)args[5];
+            
+            if(u_size < PROC_PIDPATHINFO_SIZE)
+            {
+                /* XNU semantic */
+                sys_return_failure_with_errno(ENOMEM);
+            }
+            
+            if(u_size > PROC_PIDPATHINFO_MAXSIZE)
+            {
+                /* XNU semantic */
+                sys_return_failure_with_errno(EOVERFLOW);
+            }
+            
+            /* getting target process */
+            ksurface_proc_t *target;
+            kern_return_t ret = proc_for_pid(u_pid, &target);
+            if(ret != KERN_SUCCESS)
+            {
+                sys_return_failure_with_errno(ESRCH);
+            }
+            
+            /* checking if caller can see target process */
+            proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
+            if(!proc_can_see_proc(sys_proc_snapshot_, target, vis))
+            {
+                kvo_release(target);
+                sys_return_failure_with_errno(ESRCH);
+            }
+            
+            /* getting buffer of target (we shouldn't hold it for long) */
+            char path[sizeof(target->nyx.identity->path)];
+            kvo_rdlock(target);
+            size_t size = strlcpy(path, target->nyx.identity->path, sizeof(target->nyx.identity->path)) + 1;
+            kvo_unlock(target);
+            kvo_release(target);
+            
+            /* final copy out */
+            if(!syscall_copy_out(sys_task_, size, path, u_buffer_ptr))
+            {
+                sys_return_failure_with_errno(EFAULT);
+            }
+            sys_return;
+        }
+        case PROC_PIDWORKQUEUEINFO:
+        case PROC_PIDT_SHORTBSDINFO:
+        case PROC_PIDLISTFILEPORTS:
+        case PROC_PIDTHREADID64INFO:
+        case PROC_PIDUNIQIDENTIFIERINFO:
+        case PROC_PIDT_BSDINFOWITHUNIQID:
+        case PROC_PIDARCHINFO:
+        case PROC_PIDCOALITIONINFO:
+        case PROC_PIDNOTEEXIT:
+        case PROC_PIDREGIONPATHINFO2:
+        case PROC_PIDREGIONPATHINFO3:
+        case PROC_PIDEXITREASONINFO:
+        case PROC_PIDEXITREASONBASICINFO:
+        case PROC_PIDLISTUPTRS:
+        case PROC_PIDLISTDYNKQUEUES:
+        case PROC_PIDLISTTHREADIDS:
+        case PROC_PIDVMRTFAULTINFO:
+        case PROC_PIDPLATFORMINFO:
+        case PROC_PIDREGIONPATH:
+        case PROC_PIDIPCTABLEINFO:
+        default:
+            sys_return_failure_with_errno(ENOSYS);
+    }
+    sys_return_failure_with_errno(EINVAL);
 }
 
 DEFINE_SYSCALL_HANDLER(proc_info_pidfdinfo)
@@ -213,8 +300,7 @@ DEFINE_SYSCALL_HANDLER(proc_info)
         case PROC_INFO_CALL_UDATA_INFO:
             return SYSCALL_HANDLER_REDIRECT_TO_HANDLER(proc_info_udata_info);
         default:
-            sys_return_failure_with_errno(EINVAL);
+            break;
     }
-    
-    sys_return;
+    sys_return_failure_with_errno(ENOSYS);
 }
