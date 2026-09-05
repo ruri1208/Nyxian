@@ -42,14 +42,6 @@ void __assert_rtn(const char* func,
     __builtin_unreachable();
 }
 
-uint64_t aarch64_emulate_adrp(uint32_t instruction,
-                              uint64_t pc)
-{
-    int64_t imm = ((int64_t)((uint64_t)instruction << 40) >> 31) & ~(int64_t)0x3FFF;
-    imm |= (instruction >> 17) & 0x3000;
-    return (pc & ~(uint64_t)0xFFF) + (uint64_t)imm;
-}
-
 uint64_t aarch64_emulate_adrp_ldr(uint32_t instruction,
                                   uint32_t ldrInstruction,
                                   uint64_t pc)
