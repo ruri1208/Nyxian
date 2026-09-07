@@ -25,8 +25,9 @@
 #include <LindChain/ProcEnvironment/Surface/kxld/image.h>
 #include <stdio.h>
 
-#define KXLD_DEFAULT    0
-#define KXLD_NOCLOSE    (1ull << 1)
+#define KXLD_DEFAULT        0
+#define KXLD_NOCLOSE        (1ull << 1)
+#define KXLD_MAP_PRIVATE    (1ull << 2) /* maps the kext entirely as a private executable */
 
 kern_return_t kxopen(const char *path, int mode, kxld_image_info_t **image_info);
 kern_return_t kxopen_with_fd(int fd, int mode, kxld_image_info_t **image_info);

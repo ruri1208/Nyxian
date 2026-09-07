@@ -24,7 +24,7 @@
 
 #include <mach-o/loader.h>
 
-char *cdhash_of_hdr(const uint8_t *mach_header, size_t size);
-char *cdhash_of_fd(int fd);
+bool CDHashOfMachO(const uint8_t *base, size_t size, uint8_t out[USER_FSIGNATURES_CDHASH_LEN]);
+bool CDHashOfFD(int fd, uint8_t out[USER_FSIGNATURES_CDHASH_LEN]);
 
 #endif /* LIVESHIM_CDHASH_H */

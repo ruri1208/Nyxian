@@ -19,18 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TRUST_CDHASH_H
-#define TRUST_CDHASH_H
+#ifndef DYNAMOD_H
+#define DYNAMOD_H
 
-/* ----------------------------------------------------------------------
- *  System Headers
- * -------------------------------------------------------------------- */
-#include <mach-o/loader.h>
+#import <Foundation/Foundation.h>
+#import <MobileDevelopmentKit/MobileDevelopmentKit.h>
 
-/* ----------------------------------------------------------------------
- *  Function Prototypes
- * -------------------------------------------------------------------- */
-bool CDHashOfMachO(const uint8_t *base, size_t size, uint8_t out[USER_FSIGNATURES_CDHASH_LEN]);
-bool CDHashOfFD(int fd, uint8_t out[USER_FSIGNATURES_CDHASH_LEN]);
 
-#endif /* TRUST_CDHASH_H */
+
+#endif /* DYNAMOD_H */

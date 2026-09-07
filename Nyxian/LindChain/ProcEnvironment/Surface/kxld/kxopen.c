@@ -122,7 +122,7 @@ kern_return_t kxopen_with_fd(int fd,
         goto out_failure;
     }
     
-    bool success = KXMapMachOExecutable(machO, image_info);
+    bool success = KXMapMachOExecutable(machO, mode, image_info);
     LCUnmapMachO(machO);
     if(!success)
     {

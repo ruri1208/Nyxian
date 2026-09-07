@@ -281,7 +281,12 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     {
         return KERN_FAILURE;
     }
-    char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
+    uint8_t cdhash[USER_FSIGNATURES_CDHASH_LEN];
+    if(CDHashOfMachO(machO->map, machO->size, (uint8_t*)&cdhash))
+    {
+        LCUnmapMachO(machO);
+        return KERN_FAILURE;
+    }
     LCUnmapMachO(machO);
     
     /* cut down to eof */
@@ -293,7 +298,6 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     CFDataRef entitlementsData = trust_dict_to_plist(entitlements);
     if(entitlementsData == NULL)
     {
-        free(cdhash);
         return KERN_FAILURE;
     }
     CFIndex entitlementsDataLength = CFDataGetLength(entitlementsData);
@@ -304,7 +308,6 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     if(blob_header == NULL)
     {
         CFRelease(entitlementsData);
-        free(cdhash);
         return KERN_RESOURCE_SHORTAGE;
     }
     
@@ -322,7 +325,6 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     {
         /* sign blob mode requires cdhash */
         memcpy((void*)(blob_header->cdhash), cdhash, USER_FSIGNATURES_CDHASH_LEN);
-        free(cdhash);
         
         /* generating nonce so it's harder to crack */
         arc4random_buf(&(blob_header->nonce), sizeof(uint64_t));
@@ -403,11 +405,6 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     else
     {
 #endif /* HAS_OPENSSL && !CLIENT_ENV */
-        if(cdhash != NULL)
-        {
-            free(cdhash);
-        }
-        
         /* zero out all signing related */
         bzero((void*)(blob_header->cdhash), sizeof(blob_header->cdhash));
         footer_size = sizeof(ksurface_nxt2_blob_footer_t);
@@ -588,10 +585,13 @@ kern_return_t trust_nxt2_read_fd(int fd,
     LCMachO *machO = LCMapMachOFromFDRO(dup(fd));
     if(machO != NULL)
     {
-        char *cdhash = cdhash_of_hdr((const uint8_t*)machO->header, machO->size);
-        if(cdhash != NULL && memcmp(cdhash, result->cdhash, USER_FSIGNATURES_CDHASH_LEN) == 0)
+        uint8_t cdhash[USER_FSIGNATURES_CDHASH_LEN];
+        if(CDHashOfMachO(machO->header, machO->size, (uint8_t*)&cdhash))
         {
-            result->isCdHashValid = true;
+            if(memcmp(cdhash, result->cdhash, USER_FSIGNATURES_CDHASH_LEN) == 0)
+            {
+                result->isCdHashValid = true;
+            }
         }
         LCUnmapMachO(machO);
     }

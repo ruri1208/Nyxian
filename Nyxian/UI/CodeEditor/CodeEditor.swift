@@ -57,13 +57,11 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
     
     let isReadOnly: Bool
     
-    init?(
-        project: NXProject?,
-        url: URL,
-        line: CFIndex? = nil,
-        column: CFIndex? = nil,
-        isReadOnly: Bool = false
-    ) {
+    init?(project: NXProject?,
+          url: URL,
+          line: CFIndex? = nil,
+          column: CFIndex? = nil,
+          isReadOnly: Bool = false) {
         guard let file = MDKFile(url: url) else {
             return nil
         }
@@ -76,7 +74,7 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
            let column = column {
             self.location = CCSourceLocationMake(line, column)
         }
-        self.isReadOnly = isReadOnly
+        self.isReadOnly = isReadOnly ? isReadOnly : !FileManager.default.isWritableFile(atPath: url.path)
         
         // Only allow C files to typecheck for now
         // Cuz swift is not supported yet by synpush

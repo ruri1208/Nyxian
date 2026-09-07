@@ -22,7 +22,7 @@
 import UIKit
 import UniformTypeIdentifiers
 
-@objc class FileListViewController: UIThemedTableViewController, UIDocumentPickerDelegate {
+class FileListViewController: UIThemedTableViewController, UIDocumentPickerDelegate {
     let project: NXProject?
     let path: String
     var entries: [FileListEntry]
@@ -33,12 +33,10 @@ import UniformTypeIdentifiers
     
     var observation: NSKeyValueObservation?
 
-    init(
-        isSublink: Bool = false,
-        project: NXProject?,
-        path: String? = nil,
-        isReadOnly: Bool = false
-    ) {
+    init(isSublink: Bool = false,
+         project: NXProject?,
+         path: String? = nil,
+         isReadOnly: Bool = false) {
         self.isReadOnly = isReadOnly
         self.project = project
         
@@ -57,11 +55,10 @@ import UniformTypeIdentifiers
         self.refreshControl?.addTarget(self, action: #selector(performRefresh), for: .valueChanged)
     }
     
-    @objc init(
-        isSublink: Bool = false,
-        path: String,
-        isReadOnly: Bool = false
-    ) {
+    init(isSublink: Bool = false,
+         path: String,
+         isReadOnly: Bool = false)
+    {
         self.project = nil
         self.path = path
         self.entries = FileListEntry.getEntries(ofPath: self.path)

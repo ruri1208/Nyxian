@@ -32,3 +32,4 @@ FOUNDATION_EXPORT const unsigned char MobileDevelopmentKitVersionString[];
 #import <MobileDevelopmentKit/MDKThreadPoolGroup.h>
 #import <MobileDevelopmentKit/MDKDriver.h>
 #import <MobileDevelopmentKit/MDKSDK.h>
+#import <MobileDevelopmentKit/MDKMachO.h>

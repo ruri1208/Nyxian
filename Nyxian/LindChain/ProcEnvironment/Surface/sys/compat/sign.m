@@ -70,17 +70,16 @@ DEFINE_SYSCALL_HANDLER(sign)
         sys_return_failure_with_errno(EBADF);
     }
     
-    char *cdhash = cdhash_of_fd(fd);
+    uint8_t cdhash[USER_FSIGNATURES_CDHASH_LEN];
+    bool success = CDHashOfFD(fd, (uint8_t*)&cdhash);
     close(fd);
-    if(cdhash == NULL)
+    if(!success)
     {
         sys_return_failure_with_errno(ENOEXEC);
     }
     
     int vfd = vnode_inaccessible_open(path, O_RDWR);
-    kern_return_t kr = CDHashMatchesCodeDirectoryFD(vfd, (const unsigned char*)cdhash);
-    free(cdhash);
-    if(kr != KERN_SUCCESS)
+    if(CDHashMatchesCodeDirectoryFD(vfd, (const unsigned char*)cdhash) != KERN_SUCCESS)
     {
         vnode_inaccessible_close(vfd, false);
         sys_return_failure_with_errno(EIO); /* file got swapped */

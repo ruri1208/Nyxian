@@ -262,7 +262,7 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
 
 - (kern_return_t)load
 {
-    return kxopen(self.executablePath.UTF8String, 0, NULL);
+    return kxopen(self.executablePath.UTF8String, KXLD_MAP_PRIVATE, NULL);
 }
 
 - (void)setIsEnabled:(BOOL)isEnabled

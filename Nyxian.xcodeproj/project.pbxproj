@@ -329,6 +329,8 @@
 				CoreCompiler/Tools/CCDependencyScanner.h,
 				CoreCompiler/Tools/CCDriver.cpp,
 				CoreCompiler/Tools/CCDriver.h,
+				CoreCompiler/Tools/CCMachO.cpp,
+				CoreCompiler/Tools/CCMachO.h,
 				CoreCompiler/Tools/CCSDK.cpp,
 				CoreCompiler/Tools/CCSDK.h,
 				CoreCompiler/Tools/Compiler/CCCompiler.cpp,
@@ -354,6 +356,7 @@
 				CoreCompiler/Tools/CCASTUnit.h,
 				CoreCompiler/Tools/CCDependencyScanner.h,
 				CoreCompiler/Tools/CCDriver.h,
+				CoreCompiler/Tools/CCMachO.h,
 				CoreCompiler/Tools/CCSDK.h,
 				CoreCompiler/Tools/Compiler/CCCompiler.h,
 				CoreCompiler/Tools/Compiler/CCSwiftCompiler.h,
@@ -441,6 +444,8 @@
 				MobileDevelopmentKit/Tools/MDKDependencyScanner.m,
 				MobileDevelopmentKit/Tools/MDKDriver.h,
 				MobileDevelopmentKit/Tools/MDKDriver.m,
+				MobileDevelopmentKit/Tools/MDKMachO.h,
+				MobileDevelopmentKit/Tools/MDKMachO.m,
 				MobileDevelopmentKit/Tools/MDKSDK.h,
 				MobileDevelopmentKit/Tools/MDKSDK.m,
 			);
@@ -466,6 +471,7 @@
 				MobileDevelopmentKit/Tools/MDKASTUnit.h,
 				MobileDevelopmentKit/Tools/MDKDependencyScanner.h,
 				MobileDevelopmentKit/Tools/MDKDriver.h,
+				MobileDevelopmentKit/Tools/MDKMachO.h,
 				MobileDevelopmentKit/Tools/MDKSDK.h,
 			);
 			target = 860D91742FAE1F95000D321B /* MobileDevelopmentKit */;
