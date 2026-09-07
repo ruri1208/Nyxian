@@ -45,9 +45,7 @@ typedef struct {
     /*
      * private key used for code signing.
      */
-    uint8_t *priv_key;
     uint8_t *pub_key;
-    size_t priv_key_len;
     size_t pub_key_len;
     
     /*

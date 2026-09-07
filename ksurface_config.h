@@ -27,15 +27,14 @@
  * -------------------------------------------------------------------- */
 
 /* kernel process configuration */
-#define KSURFACE_EMIT_KERNEL_TASK   0   /* adds kernel task entry, instead of Nyxian entry MARK: unsupported currently */
-#define KSURFACE_EMIT_LAUNCHD       0   /* adds a launchd entry MARK: unsupported currently */
+#define KSURFACE_EMIT_KERNEL_TASK               0   /* adds kernel task entry, instead of Nyxian entry MARK: unsupported currently */
 
 /* syscalling coverage configuration */
-#define KSURFACE_SYS_IOCTL_ENABLED  1
-#define KSURFACE_SYS_SYSCTL_ENABLED 1
-#define KSURFACE_SYS_TASK_ENABLED   1
-#define KSURFACE_SYS_UCRED_ENABLED  1
-#define KSURFACE_SYS_PROC_ENABLED   1
+#define KSURFACE_SYS_IOCTL_ENABLED              1
+#define KSURFACE_SYS_SYSCTL_ENABLED             1
+#define KSURFACE_SYS_TASK_ENABLED               1
+#define KSURFACE_SYS_UCRED_ENABLED              1
+#define KSURFACE_SYS_PROC_ENABLED               1
 
 /* codesigning feature configuration */
 #define KSURFACE_CS_SANITIZE_ENTITLEMENTS       1   /* strips unecessary entitlements at launch time */
@@ -51,6 +50,7 @@
 
 /* kernel extension features */
 #define KSURFACE_KEXT_HARDENED_LOADING          0   /* crash on failed loads */
+#define KSURFACE_KEXT_ALLOW_CONSTRUCTORS        0   /* allows that kext link editor runs __attribute__((constructor)) in kexts */
 
 /* in releases these features shall be disabled */
 #if !DEBUG
