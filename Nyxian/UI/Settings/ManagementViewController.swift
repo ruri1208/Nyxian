@@ -37,7 +37,7 @@ class ManagementViewController: UIThemedTableViewController {
             case 0:
                 return 1
             case 1:
-                return 2
+                return 1
             case 2:
                 return 2
             default:
@@ -53,12 +53,8 @@ class ManagementViewController: UIThemedTableViewController {
                 tableViewCell.textLabel?.text = "Browse Virtual File System"
                 tableViewCell.accessoryType = .disclosureIndicator
             case 1:
-                if indexPath.row == 0 {
-                    tableViewCell.textLabel?.text = "Generate Root Trust Key Pair"
-                } else if indexPath.row == 1 {
-                    tableViewCell.textLabel?.text = "Installed public root trust keys"
-                    tableViewCell.accessoryType = .disclosureIndicator
-                }
+                tableViewCell.textLabel?.text = "Installed Root Certificate Authorities"
+                tableViewCell.accessoryType = .disclosureIndicator
             case 2:
                 if indexPath.row == 0 {
                     tableViewCell.textLabel?.text = "Installed Applications"
@@ -89,22 +85,7 @@ class ManagementViewController: UIThemedTableViewController {
             case 0:
                 navigationController?.pushViewController(FileListViewController(isSublink: true, path: NXBootstrap.shared().rootfsURL.path), animated: true)
             case 1:
-                if indexPath.row == 0 {
-                    do {
-                        try FileManager.default.createDirectory(atPath: "\(NSHomeDirectory())/Library/RootCAGen", withIntermediateDirectories: true)
-                        trust_nxt2_generate_rootca_keypair(UserDefaults.standard.string(forKey: "LDEOrganizationPrefix") ?? NXUser.shared().username,"\(NSHomeDirectory())/Library/RootCAGen/pub.nxt2c", "\(NSHomeDirectory())/Library/RootCAGen/priv.der")
-                        if !zipDirectoryAtPath("\(NSHomeDirectory())/Library/RootCAGen", "\(NSHomeDirectory())/Library/RootCAGen.zip", false) {
-                            try FileManager.default.removeItem(atPath: "\(NSHomeDirectory())/Library/RootCAGen")
-                            throw NSError(domain: "org.emexlabs.nyxian.rootca.zip", code: -1, userInfo: [NSLocalizedDescriptionKey:"Failed to zip RootCA"])
-                        }
-                        try FileManager.default.removeItem(atPath: "\(NSHomeDirectory())/Library/RootCAGen")
-                        share(url: URL(fileURLWithPath: "\(NSHomeDirectory())/Library/RootCAGen.zip"), remove: true)
-                    } catch {
-                        NotificationServer.NotifyUser(level: .error, notification: "Failed to generate new RootCA: \(error.localizedDescription)")
-                    }
-                } else {
-                    print("pressed on list rootca")
-                }
+                print("pressed on list RootCAs")
             case 2:
                 if indexPath.row == 0 {
                     navigationController?.pushViewController(ApplicationManagementViewController(style: .insetGrouped), animated: true)

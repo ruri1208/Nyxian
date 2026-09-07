@@ -41,7 +41,7 @@ struct FileListEntry: Identifiable {
                let fileType = try FileManager.default.attributesOfItem(atPath: path)[.type] as? FileAttributeType {
                 let isLink: Bool = (fileType == .typeSymbolicLink)
                 entry = FileListEntry(name: URL(fileURLWithPath: path).lastPathComponent,
-                                      path: isLink ? try FileManager.default.destinationOfSymbolicLink(atPath: path) : path,
+                                      path: path,
                                       isLink: isLink,
                                       type: isDirectory.boolValue ? .dir : .file)
             }

@@ -196,11 +196,13 @@ static int path_validation_bypass_open(int fd,
                 lseek(fd, 0, SEEK_SET);
                 /* need to get cdhash and then reset it's position */
                 
-                char *cdhash = cdhash_of_fd(fd);
+                
+                uint8_t cdhash[USER_FSIGNATURES_CDHASH_LEN];
+                bool success = CDHashOfFD(fd, (uint8_t*)&cdhash);
                 dyld_hook_log("[path_validation_bypass_open] [nyxian cdhash verifier] (foundCdhash = %p, cdhash = %p)\n", cdhash, cdhash_data_container_match);
                 
                 /* match */
-                if(cdhash == NULL ||
+                if(!success ||
                    cdhash_data_container_match == NULL ||
                    memcmp(cdhash_data_container_match, cdhash, USER_FSIGNATURES_CDHASH_LEN) != 0)
                 {
@@ -231,9 +233,6 @@ static int path_validation_bypass_open(int fd,
                     cdhash_verified = true;
                     lseek(fd, 0, SEEK_SET);
                 }
-                
-                /* reset position */
-                free(cdhash);   /* free on macOS/iOS is NULL safe */
             }
         }
     }

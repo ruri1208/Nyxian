@@ -458,26 +458,3 @@ bool CDHashOfFD(int fd,
     munmap((void *)base, size);
     return ok;
 }
-
-char *cdhash_of_hdr(const uint8_t *mach_header,
-                    size_t size)
-{
-    uint8_t *hash = malloc(USER_FSIGNATURES_CDHASH_LEN);
-    if(!CDHashOfMachO(mach_header, size, hash))
-    {
-        free(hash);
-        return NULL;
-    }
-    return (char*)hash;
-}
-
-char *cdhash_of_fd(int fd)
-{
-    uint8_t *hash = malloc(USER_FSIGNATURES_CDHASH_LEN);
-    if(!CDHashOfFD(fd, hash))
-    {
-        free(hash);
-        return NULL;
-    }
-    return (char*)hash;
-}

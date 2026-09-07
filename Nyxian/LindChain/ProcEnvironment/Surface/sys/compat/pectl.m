@@ -300,7 +300,7 @@ DEFINE_SYSCALL_HANDLER(pectl_codesigning)
             
             /* spinning the extension up~ */
             kxld_image_info_t *image_info = NULL;
-            if(kxopen(extensionPath, 0, &image_info) != KERN_SUCCESS)
+            if(kxopen(extensionPath, KXLD_DEFAULT, &image_info) != KERN_SUCCESS)
             {
                 sys_return_failure_with_errno(errno);
             }

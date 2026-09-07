@@ -100,6 +100,12 @@ class FileIcon: UIView {
             default:
                 configureImageIcon(name: "document.fill")
             }
+        } else if entry.isLink {
+            if #available(iOS 26.0, *) {
+                configureImageIcon(name: "arrow.forward.folder.fill")
+            } else {
+                configureImageIcon(name: "folder.fill")
+            }
         } else {
             configureImageIcon(name: "folder.fill")
         }
