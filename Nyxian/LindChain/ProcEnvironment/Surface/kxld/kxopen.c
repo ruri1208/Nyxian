@@ -33,7 +33,8 @@
 #include <LindChain/ProcEnvironment/Surface/kxld/resolve.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
-#import <LindChain/ProcEnvironment/Utils/kpanic.h>
+#include <LindChain/ProcEnvironment/Utils/kpanic.h>
+#include <ksurface_config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -217,10 +218,12 @@ kern_return_t kxopen_with_fd(int fd,
         goto out_failure_destroy;
     }
     
+#if KSURFACE_KEXT_ALLOW_CONSTRUCTORS
     if(!KXRunInitializers(image_info))
     {
         goto out_failure_destroy;
     }
+#endif /* KSURFACE_KEXT_ALLOW_CONSTRUCTORS */
     
     /* now lets initialize the kext it self */
     if(image_info->mod->init)

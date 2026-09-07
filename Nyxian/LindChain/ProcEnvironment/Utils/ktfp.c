@@ -58,8 +58,8 @@ typedef struct {
     };
 } __Request__exception_raise_large_t;
 
-__attribute__((optnone))
-kern_return_t ktfp(mach_port_t exceptionPort, task_t *task)
+kern_return_t ktfp(mach_port_t exceptionPort,
+                   task_t *task)
 {
     kern_return_t kr = KERN_FAILURE;
     

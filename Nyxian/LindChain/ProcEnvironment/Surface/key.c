@@ -240,79 +240,93 @@ bool get_static_kernel_key(uint8_t **priv_bytes,
                            size_t *pub_len)
 {
     CFDictionaryRef privQuery = CFDictionaryCreate(
-        NULL,
-        (const void *[]){ kSecClass, kSecAttrService, kSecAttrAccount, kSecReturnData, kSecMatchLimit },
-        (const void *[]){ kSecClassGenericPassword, KEY_SERVICE, KEY_ACCOUNT_PRIV, kCFBooleanTrue, kSecMatchLimitOne },
-        5,
-        &kCFTypeDictionaryKeyCallBacks,
-        &kCFTypeDictionaryValueCallBacks
-    );
-
+                                                   NULL,
+                                                   (const void *[]){ kSecClass, kSecAttrService, kSecAttrAccount, kSecReturnData, kSecMatchLimit },
+                                                   (const void *[]){ kSecClassGenericPassword, KEY_SERVICE, KEY_ACCOUNT_PRIV, kCFBooleanTrue, kSecMatchLimitOne },
+                                                   5,
+                                                   &kCFTypeDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks
+                                                   );
+    
     CFDataRef privResult = NULL;
     OSStatus status = SecItemCopyMatching(privQuery, (CFTypeRef *)&privResult);
     CFRelease(privQuery);
-
+    
     if(status == errSecItemNotFound)
     {
         uint8_t *new_priv = NULL, *new_pub = NULL;
         size_t new_priv_len = 0, new_pub_len = 0;
-
+        
         if(!get_kernel_ec_key(&new_priv, &new_priv_len, &new_pub, &new_pub_len))
         {
             return false;
         }
-
+        
         if(store_kernel_key(new_priv, new_priv_len, new_pub, new_pub_len) != 0)
         {
             free(new_priv);
             free(new_pub);
             return false;
         }
-
+        
         *priv_bytes = new_priv;
         *priv_len = new_priv_len;
         *pub_bytes = new_pub;
         *pub_len = new_pub_len;
         return true;
     }
-
+    
     if(status != errSecSuccess || !privResult)
     {
         return false;
     }
-
-    CFDictionaryRef pubQuery = CFDictionaryCreate(
-        NULL,
-        (const void *[]){ kSecClass, kSecAttrService, kSecAttrAccount, kSecReturnData, kSecMatchLimit },
-        (const void *[]){ kSecClassGenericPassword, KEY_SERVICE, KEY_ACCOUNT_PUB, kCFBooleanTrue, kSecMatchLimitOne },
-        5,
-        &kCFTypeDictionaryKeyCallBacks,
-        &kCFTypeDictionaryValueCallBacks
-    );
-
+    
+    CFDictionaryRef pubQuery = CFDictionaryCreate(NULL, (const void *[]){ kSecClass, kSecAttrService, kSecAttrAccount, kSecReturnData, kSecMatchLimit }, (const void *[]){ kSecClassGenericPassword, KEY_SERVICE, KEY_ACCOUNT_PUB, kCFBooleanTrue, kSecMatchLimitOne }, 5, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks );
     CFDataRef pubResult = NULL;
     status = SecItemCopyMatching(pubQuery, (CFTypeRef *)&pubResult);
     CFRelease(pubQuery);
-
+    
     if(status != errSecSuccess || !pubResult)
     {
         CFRelease(privResult);
         return false;
     }
-
-    CFIndex plen = CFDataGetLength(privResult);
-    *priv_bytes = (uint8_t *)malloc(plen);
-    if(!*priv_bytes) { CFRelease(privResult); CFRelease(pubResult); return false; }
-    CFDataGetBytes(privResult, CFRangeMake(0, plen), *priv_bytes);
-    *priv_len = (size_t)plen;
+    
+    if(priv_bytes)
+    {
+        CFIndex plen = CFDataGetLength(privResult);
+        *priv_bytes = (uint8_t *)malloc(plen);
+        if(!*priv_bytes)
+        {
+            CFRelease(privResult);
+            CFRelease(pubResult);
+            return false;
+        }
+        CFDataGetBytes(privResult, CFRangeMake(0, plen), *priv_bytes);
+        if(priv_len)
+        {
+            *priv_len = (size_t)plen;
+        }
+    }
     CFRelease(privResult);
-
-    CFIndex publen = CFDataGetLength(pubResult);
-    *pub_bytes = (uint8_t *)malloc(publen);
-    if(!*pub_bytes) { free(*priv_bytes); *priv_bytes = NULL; CFRelease(pubResult); return false; }
-    CFDataGetBytes(pubResult, CFRangeMake(0, publen), *pub_bytes);
-    *pub_len = (size_t)publen;
+    if(pub_bytes)
+    {
+        CFIndex publen = CFDataGetLength(pubResult);
+        *pub_bytes = (uint8_t *)malloc(publen);
+        if(!*pub_bytes)
+        {
+            free(*priv_bytes);
+            *priv_bytes = NULL;
+            CFRelease(pubResult);
+            return false;
+        }
+        CFDataGetBytes(pubResult, CFRangeMake(0, publen), *pub_bytes);
+        if(pub_len)
+        {
+            *pub_len = (size_t)publen;
+        }
+    }
     CFRelease(pubResult);
-
+    
     return true;
 }

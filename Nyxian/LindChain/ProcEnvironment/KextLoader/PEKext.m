@@ -423,6 +423,8 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
     kext.executablePath = @"com.apple.iphoneos";
     kext.bundleID = @"com.apple.iphoneos";
     kext.version = [NSString stringWithFormat:@"%u.%u.%u", maj, min, pat];
+    kext.abi_version = KSURFACE_KMOD_ABI_VERSION;
+    kext.flags = KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED;
     return kext;
 }
 
@@ -432,13 +434,15 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
     kext.executablePath = @"ksurface";
     kext.bundleID = @"ksurface";
     kext.version = @"0.11.4";
+    kext.abi_version = KSURFACE_KMOD_ABI_VERSION;
+    kext.flags = KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED;
     
     PEDependency *dependency = [[PEDependency alloc] init];
     dependency.bundleID = @"com.apple.iphoneos";
     dependency.minVersion = @"18.4.0";
     dependency.maxVersion = @"99.99.99";
-    
     kext.dependencies = @[dependency];
+    
     return kext;
 }
 

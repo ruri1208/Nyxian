@@ -330,9 +330,20 @@ kern_return_t trust_nxt2_sign_fd(int fd,
         EVP_PKEY *priv = NULL;
         
 #if !__NXTOOL
+        uint8_t *p = NULL;
+        size_t p_len;
+        if(!get_static_kernel_key(&(p), &(p_len), NULL, NULL))
+        {
+            /* shall never happen */
+            free(blob_header);
+            return KERN_FAILURE;
+        }
+        
         /* signing blob */
-        const uint8_t *p = ksurface->priv_key;
-        priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p, (long)ksurface->priv_key_len);
+        const uint8_t *p_ptr = p;
+        priv = d2i_PrivateKey(EVP_PKEY_EC, NULL, &p_ptr, (long)p_len);
+        OPENSSL_cleanse(p, p_len);
+        free(p);
 #else
         if(priv_der_path == NULL)
         {
@@ -640,8 +651,7 @@ signature_invalid:
     return KERN_SUCCESS;
 }
 
-#if HAS_OPENSSL
-
+#if HAS_OPENSSL && HOST_ENV
 
 static int write_all(int fd,
                      const uint8_t *data,
@@ -666,8 +676,6 @@ static int write_all(int fd,
     
     return 0;
 }
-
-#if HAS_OPENSSL && HOST_ENV
 
 kern_return_t trust_nxt2_generate_rootca_keypair(const char *vendor_name,
                                                  const char *public_key_path,
@@ -955,5 +963,3 @@ done:
 }
 
 #endif /* HAS_OPENSSL && HOST_ENV */
-
-#endif /* HAS_OPENSSL */

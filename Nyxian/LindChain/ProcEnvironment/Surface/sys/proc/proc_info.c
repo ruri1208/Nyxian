@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <os/lock.h>
+#include <ksurface_config.h>
 
 static os_unfair_lock g_kernmsgbuf_lock = OS_UNFAIR_LOCK_INIT;
 
@@ -145,6 +146,18 @@ DEFINE_SYSCALL_HANDLER(proc_info_pidinfo)
             {
                 sys_return_failure_with_errno(ESRCH);
             }
+            
+#if KSURFACE_EMIT_KERNEL_TASK
+            /* check if it is kernel task */
+            kvo_rdlock(target);
+            if(target->bsd.kp_proc.p_flag & P_SYSTEM)
+            {
+                kvo_unlock(target);
+                kvo_release(target);
+                sys_return_failure_with_errno(ESRCH);
+            }
+            kvo_unlock(target);
+#endif /* KSURFACE_EMIT_KERNEL_TASK */
             
             /* checking if caller can see target process */
             proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);

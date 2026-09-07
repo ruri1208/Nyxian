@@ -671,6 +671,8 @@ ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(
             const void **childKeys = malloc((size_t)childCount * sizeof(*childKeys));
             if(childKeys == NULL)
             {
+                CFRelease(childNewEntitlements);
+                CFRelease(parentMergingEntitlements);
                 return false;
             }
             CFDictionaryGetKeysAndValues(childNewEntitlements, childKeys, NULL);
@@ -707,9 +709,85 @@ ksurface_trust_identity_t *trust_identity_create_from_path_with_parent_identity(
         CFDictionaryRemoveAllValues(parentMergingEntitlements);
     }
     
-    /* TODO: merging remaining parent entitlements */
+    CFIndex remainingParentCount = CFDictionaryGetCount(parentMergingEntitlements);
+    if(remainingParentCount > 0)
+    {
+        const void **parentKeys = malloc((size_t)remainingParentCount * sizeof(*parentKeys));
+        if(parentKeys == NULL)
+        {
+            CFRelease(childNewEntitlements);
+            CFRelease(parentMergingEntitlements);
+            return false;
+        }
+        CFDictionaryGetKeysAndValues(parentMergingEntitlements, parentKeys, NULL);
+        for(CFIndex index = 0; index < remainingParentCount; index++)
+        {
+            CFTypeRef value = CFDictionaryGetValue(parentMergingEntitlements, parentKeys[index]);
+            if(value == NULL)
+            {
+                continue;
+            }
+            
+            if(value == kCFBooleanTrue || value == kCFBooleanFalse)
+            {
+                /* handling booleans */
+                CFDictionaryAddValue(childNewEntitlements, parentKeys[index], value);
+            }
+            else if(CFGetTypeID(value) == CFArrayGetTypeID())
+            {
+                /* handling arrays */
+                CFArrayRef childArray = CFDictionaryGetValue(childNewEntitlements, parentKeys[index]);
+                if(childArray == NULL)
+                {
+                    /* not included */
+                    CFDictionaryAddValue(childNewEntitlements, parentKeys[index], value);
+                    continue;
+                }
+                
+                if(CFGetTypeID(childArray) != CFArrayGetTypeID())
+                {
+                    /* reject */
+                    continue;
+                }
+                
+                /* merge */
+                CFArrayRef parentArray = value;
+                CFIndex childArrayCount = CFArrayGetCount(childArray);
+                CFIndex parentArrayCount = CFArrayGetCount(parentArray);
+                CFMutableArrayRef childNewArray = CFArrayCreateMutableCopy(kCFAllocatorDefault, childArrayCount + parentArrayCount, childArray);
+                if(childNewArray == NULL)
+                {
+                    /* reject */
+                    continue;
+                }
+                
+                for(CFIndex indexParent = 0; indexParent < parentArrayCount; indexParent++)
+                {
+                    CFTypeRef parentValue = CFArrayGetValueAtIndex(parentArray, indexParent);
+                    if(CFGetTypeID(parentValue) != CFStringGetTypeID())
+                    {
+                        /* reject */
+                        continue;
+                    }
+                    
+                    if(CFArrayContainsValue(childArray, CFRangeMake(0, childArrayCount), parentValue))
+                    {
+                        /* exists already */
+                        continue;
+                    }
+                    
+                    CFArrayAppendValue(childNewArray, parentValue);
+                }
+                
+                CFDictionarySetValue(childNewEntitlements, parentKeys[index], childNewArray);
+                /* FIXME: only allow narrower or same file sandbox permissions gathering (so we dont only use the kern_proc to do it) */
+            }
+        }
+        free(parentKeys);
+    }
     
     /* refreshing childIdentity */
+    CFRelease(parentMergingEntitlements);
     CFRelease(childIdentity->entitlements);
     childIdentity->entitlements = childNewEntitlements;
     
