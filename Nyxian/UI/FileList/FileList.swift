@@ -423,7 +423,19 @@ class FileListViewController: UIThemedTableViewController, UIDocumentPickerDeleg
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] suggestedActions in
             guard let self = self else { return UIMenu() }
             
-            let copyAction = UIAction(title: "Copy", image: UIImage(systemName: "document.on.clipboard")) { action in
+            let getInfoAction = UIAction(title: "Get Info", image: UIImage(systemName: "info")) { [weak self] action in
+                guard let self = self else { return }
+                do {
+                    let nav: UINavigationController = UINavigationController(rootViewController: try FileInfoViewController(fileEntry: self.entries[indexPath.row]))
+                    nav.modalPresentationStyle = .formSheet
+                    self.present(nav, animated: true)
+                } catch {
+                    NotificationServer.NotifyUser(level: .error, notification: "Error Opening File Info View: \(error.localizedDescription)")
+                }
+            }
+            
+            let copyAction = UIAction(title: "Copy", image: UIImage(systemName: "document.on.clipboard")) { [weak self] action in
+                guard let self = self else { return }
                 PasteBoardServices.copy(mode: .copy, paths: [self.entries[indexPath.row].path])
             }
             let moveAction = UIAction(title: "Move", image: UIImage(systemName: "arrow.right")) { [weak self] action in
@@ -490,6 +502,7 @@ class FileListViewController: UIThemedTableViewController, UIDocumentPickerDeleg
             }
             
             var children: [UIMenu] = []
+            children.append(UIMenu(options: .displayInline, children: [getInfoAction]))
             children.append(UIMenu(options: .displayInline, children: self.isReadOnly ? [copyAction] : [copyAction, moveAction, renameAction]))
             children.append(UIMenu(options: .displayInline, children: [shareAction]))
             if !self.isReadOnly {

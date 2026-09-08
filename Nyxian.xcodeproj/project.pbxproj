@@ -275,6 +275,7 @@
 				LindChain/ProcEnvironment/Utils/PEMachOUtils.m,
 				LindChain/ProcEnvironment/Utils/vnode.c,
 				LindChain/Utils/CFTools.c,
+				LindChain/Utils/IconUtils.m,
 				LindChain/Utils/Swizzle.c,
 				LindChain/Utils/Zip.m,
 			);

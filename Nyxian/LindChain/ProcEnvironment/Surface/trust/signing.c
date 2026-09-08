@@ -282,7 +282,7 @@ kern_return_t trust_nxt2_sign_fd(int fd,
         return KERN_FAILURE;
     }
     uint8_t cdhash[USER_FSIGNATURES_CDHASH_LEN];
-    if(CDHashOfMachO(machO->map, machO->size, (uint8_t*)&cdhash))
+    if(!CDHashOfMachO(machO->map, machO->size, (uint8_t*)&cdhash))
     {
         LCUnmapMachO(machO);
         return KERN_FAILURE;

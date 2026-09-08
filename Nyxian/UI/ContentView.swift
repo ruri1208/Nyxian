@@ -292,7 +292,7 @@ import UIKit
         let cell: ProjectTableCell = self.tableView.dequeueReusableCell(withIdentifier: ProjectTableCell.reuseIdentifier) as! ProjectTableCell
         let icon: UIImage? = {
             switch project.projectConfig.schemeKind {
-            case .app: return UIImage(named: "DefaultIcon")
+            case .app: return nil
             case .kSurfaceKext: return UIImage(systemName: "puzzlepiece.extension.fill")
             default: return UIImage(named: "UtilityIcon")
             }

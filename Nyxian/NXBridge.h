@@ -46,6 +46,7 @@
 #import <LindChain/Downloader/fdownload.h>
 #import <LindChain/Utils/Zip.h>
 #import <LindChain/Utils/LDEDebouncer.h>
+#import <LindChain/Utils/IconUtils.h>
 
 /* Micro Kernel Headers */
 #import <LindChain/WindowServer/NXWindowServer.h>

@@ -225,6 +225,10 @@ kern_return_t ksurface_shimcache_build(void)
         klog_log("shimcache:emit", "refreshed vnode of shimcache", driverFlags);
     }
     
+    [[NSFileManager defaultManager] setAttributes:@{
+        NSFilePosixPermissions: @(0555),
+    } ofItemAtPath:shimCacheDylib error:nil];
+    
     os_unfair_lock_unlock(&g_shimcache_lock);
     return KERN_SUCCESS;
 }

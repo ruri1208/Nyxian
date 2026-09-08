@@ -22,6 +22,42 @@
 #import <LindChain/Utils/DynaMod.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
+
+extern kern_return_t mach_vm_remap(vm_map_t target_task, mach_vm_address_t *target_address, mach_vm_size_t size, mach_vm_offset_t mask, int flags, vm_map_t src_task, mach_vm_address_t src_address, boolean_t copy, vm_prot_t *cur_protection, vm_prot_t *max_protection, vm_inherit_t inheritance);
+extern kern_return_t mach_vm_allocate(vm_map_t target_task, mach_vm_address_t *address, mach_vm_size_t size, int flags);
+extern kern_return_t mach_vm_deallocate(vm_map_t target_task, mach_vm_address_t address, mach_vm_size_t size);
+extern kern_return_t mach_vm_protect(vm_map_t target_task, mach_vm_address_t address, mach_vm_size_t size, boolean_t set_maximum, vm_prot_t new_protection);
+
+static kern_return_t mach_vm_replace_cs_range_with_anon_rw(mach_vm_address_t addr,
+                                                           mach_vm_size_t len)
+{
+    kern_return_t kr;
+    
+    /*
+     *
+     * If we punch this hole into the virtual adressspace
+     * then the kernel will refuse to map a new page at that
+     * address in that address space.
+     *
+     *
+     * kr = mach_vm_deallocate(mach_task_self(), addr, len);
+     * if(kr != KERN_SUCCESS)
+     * {
+     *     return kr;
+     * }
+     */
+
+    mach_vm_address_t p = addr;
+    kr = mach_vm_allocate(mach_task_self(), &p, len, VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE);
+    if(kr != KERN_SUCCESS)
+    {
+        /* refuses to overwrite */
+        return kr;
+    }
+
+    return mach_vm_protect(mach_task_self(), p, len, FALSE, VM_PROT_READ | VM_PROT_WRITE);
+}
 
 unsigned char shellcode[] = {
     0x20, 0x00, 0x80, 0xd2,  // mov  x0, #1        (stdout)
@@ -99,6 +135,12 @@ int dynamod_mprotect(void *addr,
         }
         NSLog(@"signed!");
         
+        if(!vnode_refresh_with_path(dylibURL.path.UTF8String))
+        {
+            goto do_fallback;
+        }
+        NSLog(@"vn refreshed!");
+        
         /* now we try to map it fast */
         LCMachO *machO = LCMapMachO(dylibURL.path.UTF8String, false);
         if(!machO)
@@ -144,7 +186,7 @@ int dynamod_mprotect(void *addr,
                          * executable, even if the executable is not entirely mapped.
                          * which is crazy.
                          */
-                        void *r = mmap((void*)alignedAddr, sc->filesize - VM_PAGE_SIZE, prot, MAP_FIXED | MAP_PRIVATE, machO->fd, fileOff + VM_PAGE_SIZE);
+                        void *r = mmap((void*)alignedAddr, sc->filesize - VM_PAGE_SIZE, prot, MAP_FIXED | MAP_PRIVATE | MAP_COPY, machO->fd, fileOff + VM_PAGE_SIZE);
                         NSLog(@"mapped exec page at %p vs %p (first is JIT mapping location)", (void*)alignedAddr, r);
                     }
                     break;
@@ -155,11 +197,45 @@ int dynamod_mprotect(void *addr,
         
         LCUnmapMachO(machO);
     }
+    else if((prot & (PROT_READ | PROT_WRITE)) == (PROT_READ | PROT_WRITE))
+    {
+        /* aligning */
+        uintptr_t alignedAddr = (uintptr_t)addr & ~(uintptr_t)0x3FFF;
+        size_t alignedLen = (len + 0x3FFF) & ~(size_t)0x3FFF;
+        
+        void *newMapping = mmap(NULL, alignedLen, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if(newMapping == MAP_FAILED)
+        {
+            /* errno set */
+            return -1;
+        }
+        memcpy((void*)newMapping, (void*)alignedAddr, alignedLen);
+        
+        //munmap((void*)alignedAddr, alignedLen);
+        kern_return_t kr = mach_vm_replace_cs_range_with_anon_rw(alignedAddr, alignedLen);
+        if(kr != KERN_SUCCESS)
+        {
+            errno = EFAULT;
+            munmap(newMapping, alignedLen);
+            return -1;
+        }
+        
+        void *r = mmap((void*)alignedAddr, alignedLen, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE | MAP_COPY, -1, 0);
+        if(newMapping == MAP_FAILED)
+        {
+            /* errno set */
+            munmap(newMapping, alignedLen);
+            return -1;
+        }
+        memcpy(r, (void*)newMapping, alignedLen);
+        
+        munmap(newMapping, alignedLen);
+    }
 do_fallback:
     return mprotect(addr, len, prot);
 }
 
-__attribute__((constructor))
+//__attribute__((constructor))
 void test(void)
 {
     /* the JIT mapping basically */
@@ -174,13 +250,19 @@ void test(void)
     memcpy(ptr, shellcode, sizeof(shellcode));
     
     /* create MachO object file for it */
-    dynamod_mprotect(ptr, sizeof(shellcode), PROT_READ | PROT_EXEC);
+    if(dynamod_mprotect(ptr, sizeof(shellcode), PROT_READ | PROT_EXEC) != 0)
+    {
+        return;
+    }
     
     /* correctly mapped shall be executable and it does execute */
     int (*func)(void) = (int (*)(void))ptr;
     func();
     
-    dynamod_mprotect(ptr, sizeof(shellcode), PROT_READ | PROT_WRITE);
+    if(dynamod_mprotect(ptr, sizeof(shellcode), PROT_READ | PROT_WRITE) != 0)
+    {
+        return;
+    }
     
     memcpy(ptr, tim_shellcode, sizeof(tim_shellcode));
     
