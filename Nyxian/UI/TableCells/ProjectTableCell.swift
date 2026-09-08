@@ -23,128 +23,235 @@ import UIKit
 
 class ProjectTableCell: UITableViewCell {
     static var reuseIdentifier: String = "NXProjectTableCell"
+    private static let iconSide: CGFloat = 50
+    private static let renderQueue = DispatchQueue(label: "org.emexlabs.nyxian.icon-render", qos: .userInitiated)
+    private static let iconCache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.totalCostLimit = 8 * 1024 * 1024
+        return c
+    }()
     
-    var textCenterConstraint: NSLayoutConstraint? = nil
-    var textCenterConstraintBox: NSLayoutConstraint? = nil
-    var detailBelowTitleConstraint: NSLayoutConstraint? = nil
-    var imageConstraints: [NSLayoutConstraint]? = nil
+    private let iconView = UIImageView()
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
     
-    var leadingConstraintWImage: NSLayoutConstraint? = nil
-    var leadingConstraintWHImage: NSLayoutConstraint? = nil
-    var detailLeadingConstraintWImage: NSLayoutConstraint? = nil
-    var detailLeadingConstraintWHImage: NSLayoutConstraint? = nil
+    private var titleCenterConstraint: NSLayoutConstraint!
+    private var titleCenterConstraintBox: NSLayoutConstraint!
+    private var subtitleBelowTitleConstraint: NSLayoutConstraint!
+    private var iconConstraints: [NSLayoutConstraint] = []
     
-    override init(style: UITableViewCell.CellStyle,
-                  reuseIdentifier: String?) {
-        super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
-        self.setupConstraints()
+    private var titleLeadingWithIcon: NSLayoutConstraint!
+    private var titleLeadingWithoutIcon: NSLayoutConstraint!
+    private var subtitleLeadingWithIcon: NSLayoutConstraint!
+    private var subtitleLeadingWithoutIcon: NSLayoutConstraint!
+    
+    private var renderToken = UUID()
+    private var pendingRawIcon: UIImage?
+    private var pendingCacheKey: String?
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: .default, reuseIdentifier: reuseIdentifier)
+        setupViews()
+        setupConstraints()
+        observeScaleChanges()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func setupConstraints() {
-        self.textLabel?.numberOfLines = 1
-        self.textLabel?.font = UIFont.systemFont(ofSize: 14, weight: .bold)
-        self.detailTextLabel?.numberOfLines = 1
-        self.detailTextLabel?.font = UIFont.systemFont(ofSize: 10)
+    private func setupViews() {
+        titleLabel.numberOfLines = 1
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .bold)
+        titleLabel.textColor = .label
         
-        self.imageView?.translatesAutoresizingMaskIntoConstraints = false
-        self.textLabel?.translatesAutoresizingMaskIntoConstraints = false
-        self.detailTextLabel?.translatesAutoresizingMaskIntoConstraints = false
+        subtitleLabel.numberOfLines = 1
+        subtitleLabel.font = UIFont.systemFont(ofSize: 10)
+        subtitleLabel.textColor = .secondaryLabel
         
-        let imageSize: CGFloat = 50
+        iconView.contentMode = .scaleAspectFit
+        iconView.layer.minificationFilter = .trilinear
         
-        self.imageConstraints = [
-            self.imageView!.widthAnchor.constraint(equalToConstant: imageSize),
-            self.imageView!.heightAnchor.constraint(equalToConstant: imageSize),
-            self.imageView!.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor, constant: 16),
-            self.imageView!.centerYAnchor.constraint(equalTo: self.contentView.centerYAnchor)
-        ]
-        
-        self.leadingConstraintWImage = self.textLabel!.leadingAnchor.constraint(equalTo: self.imageView!.trailingAnchor, constant: 16)
-        self.leadingConstraintWHImage = self.textLabel!.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor, constant: 16)
-        self.detailLeadingConstraintWImage = self.detailTextLabel!.leadingAnchor.constraint(equalTo: self.imageView!.trailingAnchor, constant: 16)
-        self.detailLeadingConstraintWHImage = self.detailTextLabel!.leadingAnchor.constraint(equalTo: self.contentView.leadingAnchor, constant: 16)
-        
-        self.textCenterConstraint = self.textLabel?.centerYAnchor.constraint(equalTo: self.contentView.centerYAnchor)
-        self.textCenterConstraintBox = self.textLabel?.centerYAnchor.constraint(equalTo: self.contentView.centerYAnchor, constant: -10)
-        self.detailBelowTitleConstraint = self.detailTextLabel?.topAnchor.constraint(equalTo: self.textLabel!.bottomAnchor, constant: 4)
-        
-        NSLayoutConstraint.activate([
-            self.textCenterConstraint!,
-            self.detailBelowTitleConstraint!,
-            
-            self.textLabel!.trailingAnchor.constraint(equalTo: self.contentView.trailingAnchor, constant: -16),
-            self.detailTextLabel!.trailingAnchor.constraint(equalTo: self.textLabel!.trailingAnchor)
-        ])
-        
-        NSLayoutConstraint.activate(self.imageConstraints!)
-        self.leadingConstraintWImage?.isActive = true
-        self.detailLeadingConstraintWImage?.isActive = true
-        
-        if #available(iOS 26.0, *) {
-            self.imageView?.layer.cornerRadius = 15
-        } else {
-            self.imageView?.layer.cornerRadius = 10
+        if #unavailable(iOS 26.0) {
+            iconView.clipsToBounds = true
+            iconView.layer.cornerRadius = 10
+            iconView.layer.cornerCurve = .continuous
+            iconView.layer.borderWidth = 0.5
+            iconView.layer.borderColor = UIColor.gray.cgColor
         }
         
-        self.imageView?.clipsToBounds = true
-        self.imageView?.layer.borderWidth = 0.5
-        self.imageView?.layer.borderColor = UIColor.gray.cgColor
+        for v in [iconView, titleLabel, subtitleLabel] {
+            v.translatesAutoresizingMaskIntoConstraints = false
+            contentView.addSubview(v)
+        }
         
-        self.separatorInset = .zero
-        self.layoutMargins = .zero
-        self.preservesSuperviewLayoutMargins = false
+        separatorInset = .zero
+        layoutMargins = .zero
+        preservesSuperviewLayoutMargins = false
+    }
+    
+    private func setupConstraints() {
+        let side = Self.iconSide
+        
+        iconConstraints = [
+            iconView.widthAnchor.constraint(equalToConstant: side),
+            iconView.heightAnchor.constraint(equalToConstant: side),
+            iconView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            iconView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
+        ]
+        
+        titleLeadingWithIcon = titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 16)
+        titleLeadingWithoutIcon = titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
+        subtitleLeadingWithIcon = subtitleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 16)
+        subtitleLeadingWithoutIcon = subtitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
+        
+        titleCenterConstraint = titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
+        titleCenterConstraintBox = titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor, constant: -10)
+        subtitleBelowTitleConstraint = subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4)
+        
+        NSLayoutConstraint.activate([
+            titleCenterConstraint,
+            subtitleBelowTitleConstraint,
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor)
+        ])
+        
+        NSLayoutConstraint.activate(iconConstraints)
+        titleLeadingWithIcon.isActive = true
+        subtitleLeadingWithIcon.isActive = true
+    }
+    
+    private func observeScaleChanges() {
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitDisplayScale.self]) { (cell: ProjectTableCell, _) in
+                cell.rerenderIconIfNeeded()
+            }
+        }
+    }
+    
+    @available(iOS, deprecated: 17.0)
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        if #unavailable(iOS 17.0) {
+            if previous?.displayScale != traitCollection.displayScale {
+                rerenderIconIfNeeded()
+            }
+        }
     }
     
     func configure(displayName: String,
                    bundleIdentifier: String?,
                    appIcon: UIImage?,
-                   showArrow: Bool) {
-        self.textLabel?.text = displayName
-        self.imageView?.image = appIcon
-        self.accessoryType = showArrow ? .disclosureIndicator : .none
+                   showArrow: Bool,
+                   cacheKey: String? = nil) {
+        titleLabel.text = displayName
+        accessoryType = showArrow ? .disclosureIndicator : .none
         
-        if let bundleIdentifier = bundleIdentifier {
-            self.detailTextLabel?.text = bundleIdentifier
-            self.detailTextLabel?.isHidden = false
-            self.detailBelowTitleConstraint?.isActive = true
-            self.textCenterConstraint?.isActive = false
-            self.textCenterConstraintBox?.isActive = true
+        if let bundleIdentifier {
+            subtitleLabel.text = bundleIdentifier
+            subtitleLabel.isHidden = false
+            subtitleBelowTitleConstraint.isActive = true
+            titleCenterConstraint.isActive = false
+            titleCenterConstraintBox.isActive = true
         } else {
-            self.detailTextLabel?.isHidden = true
-            self.detailBelowTitleConstraint?.isActive = false
-            self.textCenterConstraint?.isActive = true
-            self.textCenterConstraintBox?.isActive = false
+            subtitleLabel.text = nil
+            subtitleLabel.isHidden = true
+            subtitleBelowTitleConstraint.isActive = false
+            titleCenterConstraintBox.isActive = false
+            titleCenterConstraint.isActive = true
         }
         
-        if let _ = appIcon {
-            self.imageView?.isHidden = false
-            NSLayoutConstraint.activate(self.imageConstraints!)
-            self.leadingConstraintWHImage?.isActive = false
-            self.leadingConstraintWImage?.isActive = true
-            self.detailLeadingConstraintWHImage?.isActive = false
-            self.detailLeadingConstraintWImage?.isActive = true
-        } else {
-            self.imageView?.isHidden = true
-            self.leadingConstraintWImage?.isActive = false
-            self.leadingConstraintWHImage?.isActive = true
-            self.detailLeadingConstraintWHImage?.isActive = false
-            self.detailLeadingConstraintWImage?.isActive = true
-            self.detailLeadingConstraintWImage?.isActive = false
-            self.detailLeadingConstraintWHImage?.isActive = true
+        var appIcon: UIImage? = appIcon
+        if appIcon == nil {
+            if #unavailable(iOS 26.0) {
+                appIcon = UIImage(named: "DefaultIcon")
+            }
+        }
+        
+        //if let appIcon {
+            iconView.isHidden = false
+            NSLayoutConstraint.activate(iconConstraints)
+            titleLeadingWithoutIcon.isActive = false
+            titleLeadingWithIcon.isActive = true
+            subtitleLeadingWithoutIcon.isActive = false
+            subtitleLeadingWithIcon.isActive = true
+            pendingRawIcon = appIcon
+            pendingCacheKey = cacheKey ?? bundleIdentifier ?? displayName
+            applyIcon(appIcon, key: pendingCacheKey!)
+        /*} else {
+            iconView.isHidden = true
+            iconView.image = nil
+            pendingRawIcon = nil
+            pendingCacheKey = nil
+            NSLayoutConstraint.deactivate(iconConstraints)
+            titleLeadingWithIcon.isActive = false
+            titleLeadingWithoutIcon.isActive = true
+            subtitleLeadingWithIcon.isActive = false
+            subtitleLeadingWithoutIcon.isActive = true
+        }*/
+    }
+    
+    private var currentScale: CGFloat {
+        let s = traitCollection.displayScale
+        return s > 0 ? s : 3.0
+    }
+    
+    private func rerenderIconIfNeeded() {
+        guard let raw = pendingRawIcon, let key = pendingCacheKey else { return }
+        applyIcon(raw, key: key)
+    }
+    
+    private func applyIcon(_ raw: UIImage?, key: String) {
+        guard #available(iOS 26.0, *) else {
+            renderToken = UUID()
+            iconView.image = raw
+            return
+        }
+        
+        let scale = currentScale
+        let side = Self.iconSide
+        let cacheKey = "\(key)|\(side)@\(scale)" as NSString
+        
+        if let hit = Self.iconCache.object(forKey: cacheKey) {
+            renderToken = UUID()
+            iconView.image = hit
+            return
+        }
+        
+        let token = UUID()
+        renderToken = token
+        iconView.image = nil
+        
+        Self.renderQueue.async { [weak self] in
+            var rendered: UIImage? = nil
+            if let raw = raw {
+                rendered = Gib26Icon(raw, CGSize(width: side, height: side), scale)
+            } else {
+                rendered = Gib26FallbackIcon(CGSize(width: side, height: side), scale)
+            }
+            rendered = rendered?.preparingForDisplay() ?? rendered
+            
+            DispatchQueue.main.async { [weak self] in
+                if let rendered {
+                    let px = side * scale
+                    Self.iconCache.setObject(rendered, forKey: cacheKey, cost: Int(px * px * 4))
+                }
+                guard let self, self.renderToken == token else { return }
+                self.iconView.image = rendered
+            }
         }
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        self.textLabel?.text = nil
-        self.detailTextLabel?.text = nil
-        self.imageView?.image = nil
-        self.accessoryType = .none
-        self.imageView?.isHidden = false
-        self.detailTextLabel?.isHidden = false
+        renderToken = UUID()
+        pendingRawIcon = nil
+        pendingCacheKey = nil
+        titleLabel.text = nil
+        subtitleLabel.text = nil
+        iconView.image = nil
+        accessoryType = .none
+        iconView.isHidden = false
+        subtitleLabel.isHidden = false
     }
 }

@@ -73,14 +73,14 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let application: LDEApplicationObject = self.applications[indexPath.row]
         let cell: ProjectTableCell = self.tableView.dequeueReusableCell(withIdentifier: ProjectTableCell.reuseIdentifier) as! ProjectTableCell
-        cell.configure(displayName: application.localizedName, bundleIdentifier: application.bundleIdentifier, appIcon: application.icon ?? UIImage(named: "DefaultIcon"), showArrow: false)
+        cell.configure(displayName: application.localizedName, bundleIdentifier: application.bundleIdentifier, appIcon: application.icon, showArrow: false)
         return cell
     }
     
     override func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         let application = self.applications[indexPath.row]
         
-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak application] _ in
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self, weak application] _ in
             // MARK: Open Menu
             let openMenu: UIMenuElement = UIAction(title: "Open", image: UIImage(systemName: "arrow.up.right.square.fill")) { _ in
                 guard let application = application else { return }
@@ -110,7 +110,23 @@ class ApplicationManagementViewController: UIThemedTableViewController, UITextFi
                 }
             }
             
-            menu.append(contentsOf: [clearContainerAction, deleteAction])
+            let browseBundle = UIAction(title: "Browse Bundle", image: UIImage(systemName: "arrow.forward.folder.fill")) { [weak self] _ in
+                guard let self = self,
+                      let application = application else { return }
+                
+                self.navigationController?.pushViewController(FileListViewController(isSublink: true, path: application.bundlePath), animated: true)
+            }
+            
+            let browseContainer = UIAction(title: "Browse Container", image: UIImage(systemName: "arrow.forward.folder.fill")) { [weak self] _ in
+                guard let self = self,
+                      let application = application else { return }
+                
+                self.navigationController?.pushViewController(FileListViewController(isSublink: true, path: application.containerPath), animated: true)
+            }
+            
+            // TODO: add a info panel for it like in files Get Info
+            menu.append(UIMenu(options: .displayInline, children: [browseBundle, browseContainer]))
+            menu.append(UIMenu(options: .displayInline, children: [clearContainerAction, deleteAction]))
             
             return UIMenu(title: "", children: menu)
         }

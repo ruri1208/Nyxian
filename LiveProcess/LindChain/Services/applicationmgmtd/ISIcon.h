@@ -35,6 +35,11 @@
 
 @end
 
+#define ISImageDescriptorApparanceVariantDefault        0
+#define ISImageDescriptorApparanceVariantTransparent    2
+#define ISImageDescriptorApparanceVariantTransparent2   3   // ??
+#define ISImageDescriptorApparanceVariantEdge           4
+
 @interface ISImageDescriptor : NSObject
 
 - (instancetype)initWithSize:(CGSize)size scale:(CGFloat)scale;
@@ -49,6 +54,9 @@
 @end
 
 @interface ISIcon : NSObject
+
++ (id)genericApplicationIcon;
++ (id)transparentIcon;
 
 - (instancetype)initWithImages:(NSArray<IFImage *> *)images;
 
