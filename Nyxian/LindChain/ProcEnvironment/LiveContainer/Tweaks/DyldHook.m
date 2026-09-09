@@ -71,11 +71,7 @@ bool performHookDyldApi(const char* functionName,
     
     adrpInstPtr += adrpExtraOffset;
 
-    static void* gdyldPtr = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        gdyldPtr = (void*)aarch64_emulate_adrp_ldr(*adrpInstPtr, *(adrpInstPtr + 1), (uint64_t)adrpInstPtr);
-    });
+    void* gdyldPtr = (void*)aarch64_emulate_adrp_ldr(*adrpInstPtr, *(adrpInstPtr + 1), (uint64_t)adrpInstPtr);
     
     assert(gdyldPtr != 0);
     assert(*(void**)gdyldPtr != 0);

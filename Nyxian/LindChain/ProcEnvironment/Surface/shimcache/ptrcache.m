@@ -63,6 +63,92 @@ static struct dyld_all_image_infos *_alt_dyld_get_all_image_infos(void)
     return result;
 }
 
+static inline bool a64_is_bl(uint32_t insn)
+{
+    return (insn & 0xFC000000u) == 0x94000000u;
+}
+
+static inline uintptr_t a64_resolve_bl(const uint32_t *pc)
+{
+    uint32_t insn = *pc;
+    int64_t imm26 = (int64_t)(insn & 0x03FFFFFFu);
+    if(imm26 & 0x02000000LL)
+    {
+        imm26 |= ~0x03FFFFFFLL;
+    }
+    return (uintptr_t)pc + (imm26 << 2);
+}
+
+static void *findDyldFcntl17(const char *base)
+{
+    static const uint32_t movFAddFileSigsReturn = 0x52800C21;
+    static const uint32_t movFGetSigsInfo = 0x52800D21;
+    
+    const size_t scanSize = 0x80000;
+    const uint32_t *text = (const uint32_t *)base;
+    const size_t count = scanSize / sizeof(uint32_t);
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        if(text[i] != movFAddFileSigsReturn)
+        {
+            continue;
+        }
+        
+        size_t bl1End = i + 12;
+        if(bl1End > count)
+        {
+            bl1End = count;
+        }
+        
+        for (size_t j = i + 1; j < bl1End; j++)
+        {
+            if(!a64_is_bl(text[j]))
+            {
+                continue;
+            }
+            
+            uintptr_t target1 = a64_resolve_bl(&text[j]);
+            size_t secondEnd = i + 0x100;
+            if(secondEnd > count)
+            {
+                secondEnd = count;
+            }
+            
+            for (size_t k = j + 1; k < secondEnd; k++)
+            {
+                if(text[k] != movFGetSigsInfo)
+                {
+                    continue;
+                }
+                
+                size_t bl2End = k + 12;
+                if(bl2End > count)
+                {
+                    bl2End = count;
+                }
+                
+                for(size_t l = k + 1; l < bl2End; l++)
+                {
+                    if(!a64_is_bl(text[l]))
+                    {
+                        continue;
+                    }
+                    
+                    uintptr_t target2 =
+                    a64_resolve_bl(&text[l]);
+                    
+                    if(target1 == target2)
+                    {
+                        return (void *)target1;
+                    }
+                }
+            }
+        }
+    }
+    
+    return NULL;
+}
 
 static void searchDyldFunctions(const char *base,
                                 dyld_search_entry_t *entries,
@@ -80,7 +166,7 @@ static void searchDyldFunctions(const char *base,
         entries[i].found = NULL;
     }
     
-    for(size_t off = 0; off + sizeof(uint64_t) <= 0x80000; off += 4)
+    for(size_t off = 0; off + sizeof(uint64_t) <= (0x80000); off += 4)
     {
         uint64_t value;
         memcpy(&value, base + off, sizeof(value));
@@ -198,7 +284,7 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         }
     };
     
-    int offset = kDyldGDyldPtr;
+    int offset = kDyldLockUnlockFunc;
     for(size_t i = 0; i < 3; i++)
     {
         uint32_t* baseAddr = dlsym(RTLD_DEFAULT, dyldNames[i].name);
@@ -240,16 +326,12 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         }
         
         adrpInstPtr += adrpExtraOffset;
-        entries[offset + 2].found = adrpInstPtr;
         
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            entries[kDyldGDyldPtr].found = (void*)aarch64_emulate_adrp_ldr(*adrpInstPtr, *(adrpInstPtr + 1), (uint64_t)adrpInstPtr);
-        });
+        void *dptr = (void*)aarch64_emulate_adrp_ldr(*adrpInstPtr, *(adrpInstPtr + 1), (uint64_t)adrpInstPtr);
         
-        assert(entries[kDyldGDyldPtr].found != 0);
-        assert(*(void**)entries[kDyldGDyldPtr].found != 0);
-        void* vtablePtr = **(void***)entries[kDyldGDyldPtr].found;
+        assert(dptr != NULL);
+        assert(*(void**)dptr != NULL);
+        void* vtablePtr = **(void***)dptr;
         
         void* vtableFunctionPtr = 0;
         uint32_t* movInstPtr = adrpInstPtr + 6;
@@ -276,9 +358,14 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
             vtableFunctionPtr = vtablePtr + (imm12_2 << size2);
         }
         
-        entries[kDyldNSGetExecutablePathVTFN + i].found = vtableFunctionPtr;
+        entries[offset + 1].found = vtableFunctionPtr;
         
-        offset += 2;
+        offset++;
+    }
+    
+    if(entries[kDyldPtrFcntl].found == NULL)
+    {
+        entries[kDyldPtrFcntl].found = findDyldFcntl17(dyldBase);
     }
     
     static const char *names[kDyldPtrCount] = {
@@ -289,23 +376,27 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         "dyld.openat",
         "dyld.lockUnlockFunc",
         
-        "dyld.gptr",
-        
         "_NSGetExecutablePath.vtable.fn",
         "dyld_program_sdk_at_least.vtable.fn",
         "dyld_get_program_sdk_version.vtable.fn",
     };
     
+    bool entryNotFound = false;
     for(size_t i = 0; i < kDyldPtrCount; i++)
     {
         if(entries[i].found == NULL)
         {
-            klog_log("ptrcache:emit", "couldn't find %s", names[i]);
-            return KERN_FAILURE;
+            entryNotFound = true;
         }
         
         out[i] = (uint64_t)(uintptr_t)entries[i].found;
         klog_log("ptrcache:emit", "%s @ %p", names[i], (void*)out[i]);
+    }
+    
+    if(entryNotFound)
+    {
+        klog_log("ptrcache:emit", "couldn't find all pointers");
+        return KERN_FAILURE;
     }
     
     return KERN_SUCCESS;

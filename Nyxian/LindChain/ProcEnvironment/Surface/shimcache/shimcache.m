@@ -139,7 +139,7 @@ kern_return_t ksurface_shimcache_build(void)
     [driverFlags addObject:shimCacheDylib];
     [driverFlags addObject:@"-shared"];
     [driverFlags addObject:@"-ObjC"];
-    [driverFlags addObject:@"-fobjc"];
+    [driverFlags addObject:@"-fobjc-arc"];
     [driverFlags addObject:@"-Wl,-undefined,dynamic_lookup"];
     
     MDKDriver *driver = [MDKDriver driverWithArguments:driverFlags withType:kCCDriverTypeClang];
