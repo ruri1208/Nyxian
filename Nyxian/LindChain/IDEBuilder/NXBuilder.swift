@@ -271,58 +271,60 @@ final class NXBuilder: NSObject {
         
         var execPath: String?
         
-        DispatchQueue.global().async {
-            NXBootstrap.shared().waitTillDone()
-            
-            var result: Bool = true
-            guard let builder: NXBuilder = NXBuilder(
-                project: project
-            ) else {
-                completion(false,nil)
-                return
-            }
-            
-            var resetNeeded: Bool = false
-            func progressStage(systemName: String? = nil, increment: Double? = nil, handler: () throws -> Void) throws {
-                let doReset: Bool = (increment == nil)
-                if doReset, resetNeeded {
-                    XCButton.resetProgress()
-                    resetNeeded = false
-                }
-                if let systemName = systemName { XCButton.switchImage(withSystemName: systemName, animated: true) }
-                try handler()
-                if !doReset, let increment = increment {
-                    XCButton.incrementProgress(withValue: increment)
-                    resetNeeded = true
-                }
-            }
-            
-            func progressFlowBuilder(flow: [(String?,Double?,() throws -> Void)]) throws {
-                for item in flow { try progressStage(systemName: item.0, increment: item.1, handler: item.2) }
-            }
-            
-            do {
-                // prepare
-                let flow: [(String?,Double?,() throws -> Void)] = [
-                    (nil,nil,{ try builder.headsup(buildType: buildType) }),
-                    (nil,nil,{ try builder.clean() }),
-                    (nil,nil,{ try builder.prepare() }),
-                    (nil,nil,{ try builder.build() }),
-                    ("arrow.down.app.fill",nil,{try builder.install(buildType: buildType, executablePathCallback: { path in
-                        execPath = path
-                    }) })
-                ];
+        MDKPthreadDispatch {
+            autoreleasepool {
+                NXBootstrap.shared().waitTillDone()
                 
-                // doit, just do it!
-                try progressFlowBuilder(flow: flow)
-            } catch {
-                try? builder.clean()
-                result = false
-                builder.database.addMessage(message: error.localizedDescription, severity: .error)
+                var result: Bool = true
+                guard let builder: NXBuilder = NXBuilder(
+                    project: project
+                ) else {
+                    completion(false,nil)
+                    return
+                }
+                
+                var resetNeeded: Bool = false
+                func progressStage(systemName: String? = nil, increment: Double? = nil, handler: () throws -> Void) throws {
+                    let doReset: Bool = (increment == nil)
+                    if doReset, resetNeeded {
+                        XCButton.resetProgress()
+                        resetNeeded = false
+                    }
+                    if let systemName = systemName { XCButton.switchImage(withSystemName: systemName, animated: true) }
+                    try handler()
+                    if !doReset, let increment = increment {
+                        XCButton.incrementProgress(withValue: increment)
+                        resetNeeded = true
+                    }
+                }
+                
+                func progressFlowBuilder(flow: [(String?,Double?,() throws -> Void)]) throws {
+                    for item in flow { try progressStage(systemName: item.0, increment: item.1, handler: item.2) }
+                }
+                
+                do {
+                    // prepare
+                    let flow: [(String?,Double?,() throws -> Void)] = [
+                        (nil,nil,{ try builder.headsup(buildType: buildType) }),
+                        (nil,nil,{ try builder.clean() }),
+                        (nil,nil,{ try builder.prepare() }),
+                        (nil,nil,{ try builder.build() }),
+                        ("arrow.down.app.fill",nil,{try builder.install(buildType: buildType, executablePathCallback: { path in
+                            execPath = path
+                        }) })
+                    ];
+                    
+                    // doit, just do it!
+                    try progressFlowBuilder(flow: flow)
+                } catch {
+                    try? builder.clean()
+                    result = false
+                    builder.database.addMessage(message: error.localizedDescription, severity: .error)
+                }
+                builder.database.saveDatabase(toPath: project.cacheURL.appendingPathComponent("debug.json").path)
+                
+                completion(result, execPath)
             }
-            builder.database.saveDatabase(toPath: project.cacheURL.appendingPathComponent("debug.json").path)
-            
-            completion(result, execPath)
         }
     }
 }

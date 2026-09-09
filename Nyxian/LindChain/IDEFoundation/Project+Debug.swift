@@ -319,6 +319,8 @@ class UIDebugViewController: UITableViewController {
             switch item.severity {
             case .warning:
                 return UIColor.systemOrange
+            case .fatal:
+                fallthrough
             case .error:
                 return UIColor.systemRed
             default:
@@ -330,6 +332,8 @@ class UIDebugViewController: UITableViewController {
             switch item.severity {
             case .warning:
                 return "exclamationmark.triangle.fill"
+            case .fatal:
+                fallthrough
             case .error:
                 return "xmark.octagon.fill"
             default:
