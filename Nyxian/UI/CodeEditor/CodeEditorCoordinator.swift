@@ -38,7 +38,8 @@ class CodeEditorCoordinator: NSObject, TextViewDelegate {
     private let vtkey: [CCDiagnosticLevel:(String,UIColor)] = [
         .note: ("info.circle.fill", UIColor.blue.withAlphaComponent(0.3)),
         .warning: ("exclamationmark.triangle.fill", UIColor.orange.withAlphaComponent(0.3)),
-        .error: ("xmark.octagon.fill", UIColor.red.withAlphaComponent(0.3))
+        .error: ("xmark.octagon.fill", UIColor.red.withAlphaComponent(0.3)),
+        .fatal: ("xmark.octagon.fill", UIColor.red.withAlphaComponent(0.3))
     ]
     
     init(parent: CodeEditorViewController) {

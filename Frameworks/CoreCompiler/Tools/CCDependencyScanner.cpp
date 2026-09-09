@@ -53,7 +53,7 @@ static void CCDependencyScannerFinalize(CFTypeRef cf)
 static void CCDependencyScannerInit(CFTypeRef cf)
 {
     CCDependencyScannerRef dependencyScanner = (CCDependencyScannerRef)cf;
-    new (&dependencyScanner->service) DependencyScanningService(ScanningMode::DependencyDirectivesScan, ScanningOutputFormat::Full, CASOptions{}, /*CAS=*/nullptr, /*Cache=*/nullptr, /*SharedFS=*/nullptr);
+    new (&dependencyScanner->service) DependencyScanningService(ScanningMode::DependencyDirectivesScan, ScanningOutputFormat::Make, CASOptions{}, /*CAS=*/nullptr, /*Cache=*/nullptr, /*SharedFS=*/nullptr);
     new (&dependencyScanner->BaseArgs) std::vector<std::string>();
     new (&dependencyScanner->sysroot) std::string();
     new (&dependencyScanner->resourceDir) std::string();
@@ -95,6 +95,7 @@ CCDependencyScannerRef CCDependencyScannerCreate(CFAllocatorRef allocator,
     }
     
     dependencyScanner->BaseArgs.push_back("clang");
+    dependencyScanner->BaseArgs.push_back("-fmodules-cache-path=" + std::string(std::getenv("HOME")) + "/Library/Caches/Clang");
     CFIndex count = CFArrayGetCount(arguments);
     for(CFIndex i = 0; i < count; i++)
     {
@@ -167,54 +168,101 @@ CFArrayRef CCDependencyScannerCopyDependencyFilesForFile(CCDependencyScannerRef 
     Args.push_back(filePathCStr);
     CFRelease(filePath);
     
-    llvm::Expected<std::string> depsOrErr = tool.getDependencyFile(Args, "/");
+    llvm::DenseSet<ModuleID> alreadySeen;
+    auto lookupModuleOutput = [](const ModuleDeps &MD, ModuleOutputKind kind) -> std::string
+    {
+        switch(kind)
+        {
+            case ModuleOutputKind::ModuleFile:
+            {
+                std::string name = MD.ID.ModuleName;
+                for(char &c : name)
+                {
+                    if(!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-')
+                    {
+                        c = '_';
+                    }
+                }
+                return "/__CCDependencyScanner__/" + name + "-" + MD.ID.ContextHash + ".pcm";
+            }
+                
+            case ModuleOutputKind::DependencyFile:
+            case ModuleOutputKind::DependencyTargets:
+            case ModuleOutputKind::DiagnosticSerializationFile:
+                return "";
+        }
+        
+        return "";
+    };
+    
+    llvm::Expected<TranslationUnitDeps> depsOrErr = tool.getTranslationUnitDependencies(Args, "/", alreadySeen, lookupModuleOutput);
     if(!depsOrErr)
     {
-        /* failed */
+        llvm::errs() << llvm::toString(depsOrErr.takeError()) << '\n';
         return nullptr;
     }
     
-    std::string depStr = *depsOrErr;
-    size_t colonPos = depStr.find(':');
-    if(colonPos == std::string::npos)
-    {
-        /* no scan output */
-        return nullptr;
-    }
-    
-    CFMutableArrayRef headers = CFArrayCreateMutable(CFGetAllocator(dependencyScanner), 0, &kCFTypeArrayCallBacks);
-    if(headers == nullptr)
-    {
-        return nullptr;
-    }
-    
-    llvm::StringRef remaining(depStr.c_str() + colonPos + 1);
-    llvm::SmallVector<llvm::StringRef, 32> tokens;
-    remaining.split(tokens, ' ', -1, false);
-    
+    const TranslationUnitDeps &deps = *depsOrErr;
     CFAllocatorRef allocator = CFGetAllocator(dependencyScanner);
-    bool first = true;
-    for(llvm::StringRef token : tokens)
+    
+    CFMutableArrayRef headers = CFArrayCreateMutable(allocator, 0, &kCFTypeArrayCallBacks);
+    if(!headers)
     {
-        token = token.trim(" \t\n\r\\");
-        if(token.empty()) continue;
-        if(first) { first = false; continue; }
-        if(!dependencyScanner->sysroot.empty() && token.starts_with(dependencyScanner->sysroot)) continue;
-        if(!dependencyScanner->resourceDir.empty() && token.starts_with(dependencyScanner->resourceDir)) continue;
-        
-        std::string tokenStr = token.str();
-        CCFileRef file = CCFileCreateWithCString(allocator, tokenStr.c_str(), kCFStringEncodingUTF8);
-        if(file == nullptr)
+        return nullptr;
+    }
+    
+    llvm::StringSet<> seen;
+    auto addDependency = [&](llvm::StringRef path)
+    {
+        if(path.empty())
         {
-            continue;
+            return;
         }
         
-        CFArrayAppendValue(headers, file);
-        
-        if(file != nullptr)
+        if(path == filePathCStr)
         {
-            CFRelease(file);
+            return;
         }
+        
+        if(!dependencyScanner->sysroot.empty() && path.starts_with(dependencyScanner->sysroot))
+        {
+            return;
+        }
+        
+        if(!dependencyScanner->resourceDir.empty() && path.starts_with(dependencyScanner->resourceDir))
+        {
+            return;
+        }
+        
+        if(!seen.insert(path).second)
+        {
+            return;
+        }
+        
+        std::string pathStr = path.str();
+        
+        CCFileRef depFile =
+        CCFileCreateWithCString(allocator, pathStr.c_str(), kCFStringEncodingUTF8);
+        
+        if(!depFile)
+        {
+            return;
+        }
+        
+        CFArrayAppendValue(headers, depFile);
+        CFRelease(depFile);
+    };
+    
+    for(const std::string &path : deps.FileDeps)
+    {
+        addDependency(path);
+    }
+    
+    for(const ModuleDeps &module : deps.ModuleGraph)
+    {
+        module.forEachFileDep([&](llvm::StringRef path){
+            addDependency(path);
+        });
     }
     
     return headers;

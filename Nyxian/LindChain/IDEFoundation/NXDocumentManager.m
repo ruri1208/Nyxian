@@ -106,7 +106,7 @@ out_complete:
     NSArray<NXDocument *> *documents = _documents.allValues;
     os_unfair_lock_unlock(&_lock);
     
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
         MDKThreadPoolGroup *threadPoolGroup = [[MDKThreadPoolGroup alloc] initWithThreads:CCGetMaximumPerformanceCores()];
 
         for(NXDocument *document in documents)
