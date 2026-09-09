@@ -37,8 +37,6 @@ enum {
     kDyldLockUnlockFunc,
     
     /* dyld hook ptrs */
-    kDyldGDyldPtr,
-    
     kDyldNSGetExecutablePathVTFN,
     kDyldProgramSDKAtLeastVTFN,
     kDyldGetProgramSDKVersionVTFN,

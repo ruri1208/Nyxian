@@ -76,8 +76,8 @@
     extern int kfd;
     NSMutableDictionary *mutableDictionary = [_dictionary mutableCopy];
     PEFileTable *fileTable = [PEFileTable emptyTable];
-    [fileTable appendFileDescriptor:kfd withMappingToLoc:STDOUT_FILENO];
-    [fileTable appendFileDescriptor:kfd withMappingToLoc:STDERR_FILENO];
+    [fileTable appendFileDescriptor:STDOUT_FILENO withMappingToLoc:STDOUT_FILENO];
+    [fileTable appendFileDescriptor:STDERR_FILENO withMappingToLoc:STDERR_FILENO];
     [mutableDictionary setObject:fileTable forKey:@"PEFileTable"];
     dictionary = [mutableDictionary copy];
 #endif /* DEBUG && KSURFACE_KLOG_ENABLE_DAEMONS */
