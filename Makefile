@@ -151,5 +151,5 @@ clean-artifacts:
 	-rm *.ipa
 
 clean-all: clean clean-artifacts
-	rm -rf CoreCompiler/CoreCompilerSupportLibs
+	rm -rf Frameworks/CoreCompiler/CoreCompilerSupportLibs
 	cd LLVM-On-iOS; make clean; git reset --hard
