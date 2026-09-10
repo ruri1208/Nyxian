@@ -138,21 +138,23 @@ kern_return_t proc_list(ksurface_proc_snapshot_t *proc_copy,
     assert(proc_copy != NULL && kp != NULL && len != NULL);
     
     proc_visibility_t vis = proc_get_proc_visibility(proc_copy);
-    
-    /* in case its none we dont even have to iterrate */
     if(vis == PROC_VIS_NONE)
     {
+        /*
+         * don't have to iterrate anything, it is none
+         * it cannot see shit.
+         */
         *len = 0;
         *kp = NULL;
         return KERN_SUCCESS;
     }
     
-    /* optimized path for pid query */
+    /* optimized path for single pid query */
     if(flavour == PROC_FLV_PID)
     {
         ksurface_proc_t *proc;
-        kern_return_t ksr = proc_for_pid(dsid, &proc);
-        if(ksr != KERN_SUCCESS)
+        kern_return_t kr = proc_for_pid(dsid, &proc);
+        if(kr != KERN_SUCCESS)
         {
             *len = 0;
             *kp = NULL;
@@ -200,7 +202,7 @@ kern_return_t proc_list(ksurface_proc_snapshot_t *proc_copy,
      */
     proc_table_rdlock();
     
-    w->kp = malloc(sizeof(kinfo_proc_t) * ksurface->proc_info.proc_count);
+    w->kp = malloc(sizeof(kinfo_proc_t) * ksurface->proc_info.proc_count);  /* have to lock cause proc_count is guarded under the proc table lock */
     if(w->kp == NULL)
     {
         proc_table_unlock();

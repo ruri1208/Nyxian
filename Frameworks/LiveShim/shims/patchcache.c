@@ -19,7 +19,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LiveShim/ptrcache.h>
+#include <LiveShim/patchcache.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -28,12 +28,12 @@
 #include <errno.h>
 #include <os/lock.h>
 
-uint64_t ptrcache[kDyldPtrCount];
+uint64_t patchcache[kDyldPtrCount];
 
 static bool g_have_ptrcache = false;
 static os_unfair_lock g_lock = OS_UNFAIR_LOCK_INIT;
 
-bool load_ptrcache(void)
+bool ksurface_user_patchcache_load(void)
 {
     os_unfair_lock_lock(&g_lock);
     if(g_have_ptrcache)
@@ -50,7 +50,7 @@ bool load_ptrcache(void)
     }
     
     char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s/boot/ptrcache", rootPath);
+    snprintf(path, PATH_MAX, "%s/boot/patchfinder.bin", rootPath);
     int fd = open(path, O_RDONLY);
     if(fd < 0)
     {
@@ -59,9 +59,9 @@ bool load_ptrcache(void)
     }
     
     size_t done = 0;
-    while(done < sizeof(ptrcache))
+    while(done < sizeof(patchcache))
     {
-        ssize_t n = read(fd, (char *)ptrcache + done, sizeof(ptrcache) - done);
+        ssize_t n = read(fd, (char *)patchcache + done, sizeof(patchcache) - done);
         if(n > 0)
         {
             done += (size_t)n;

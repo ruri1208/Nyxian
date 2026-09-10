@@ -44,8 +44,8 @@ enum {
     kDyldPtrCount,
 };
 
-extern uint64_t ptrcache[kDyldPtrCount];
+extern uint64_t patchcache[kDyldPtrCount];
 
-bool load_ptrcache(void);
+bool ksurface_user_patchcache_load(void);
 
 #endif /* LIVESHIM_PTRCACHE_H */

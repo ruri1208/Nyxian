@@ -844,8 +844,6 @@
     LDEApplicationObject *obj = [[LDEApplicationWorkspace shared] applicationObjectForBundleID:bundleIdentifier];
     if(obj && obj.icon)
     {
-        UIImage *rawIcon = obj.icon;
-        
         CGSize targetSize;
         {
             static NSMutableDictionary<NSString *, NSValue *> *sizeCache;
@@ -879,7 +877,7 @@
             if(@available(iOS 26.0, *))
             {
                 /* the asking apple way */
-                UIImage *image = Gib26Icon(rawIcon, targetSize, scale);
+                UIImage *image = Gib26Icon(obj.icon, obj.darkIcon, targetSize, scale);
                 if(image == nil)
                 {
                     goto manual_way;
@@ -897,7 +895,7 @@
                 UIGraphicsImageRenderer *rr = [[UIGraphicsImageRenderer alloc] initWithSize:targetSize format:fmt];
                 UIImage *curvedImage = [rr imageWithActions:^(UIGraphicsImageRendererContext *ctx){
                     [mask addClip];
-                    [rawIcon drawInRect:r];
+                    [obj.icon drawInRect:r];
                 }];
                 return curvedImage;
             }

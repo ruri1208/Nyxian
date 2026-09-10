@@ -35,7 +35,7 @@
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/DyldHook.h>
 #import <LindChain/Utils/CFTools.h>
 #import <LiveShim/LiveShimSyscall.h>
-#import <LiveShim/ptrcache.h>
+#import <LiveShim/patchcache.h>
 #import <LiveShim/dyld.h>
 #import <ksurface_config.h>
 #import <ksurface_abi.h>
@@ -43,7 +43,7 @@
 static const char *gHostImageNeedles[] = {
     "/Nyxian.app/PlugIns/LiveProcess.appex/LiveProcess",
     "/Nyxian.app/PlugIns/LiveProcess.appex/Frameworks/LiveShim.framework/LiveShim",
-    "/mntfs/bootfs/shimcache.dylib"
+    "/mntfs/bootfs/rtpatch"
 };
 
 static bool isHostImagePath(const char *path)
@@ -418,12 +418,12 @@ void *dlopenBypassingLockWithTrust(const char *path,
                                    int mode,
                                    const char *expectedCdhash)
 {
-    if(!load_ptrcache())
+    if(!ksurface_user_patchcache_load())
     {
         return NULL;
     }
     
-    void **lockUnlockPtr = (void**)ptrcache[kDyldLockUnlockFunc];
+    void **lockUnlockPtr = (void**)patchcache[kDyldLockUnlockFunc];
     kern_return_t ret;
     ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)lockUnlockPtr, sizeof(void*[2]), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
     assert(ret == KERN_SUCCESS);

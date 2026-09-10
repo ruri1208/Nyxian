@@ -47,6 +47,7 @@ class ProjectTableCell: UITableViewCell {
     
     private var renderToken = UUID()
     private var pendingRawIcon: UIImage?
+    private var pendingRawDarkIcon: UIImage?
     private var pendingCacheKey: String?
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -142,8 +143,10 @@ class ProjectTableCell: UITableViewCell {
     func configure(displayName: String,
                    bundleIdentifier: String?,
                    appIcon: UIImage?,
+                   darkAppIcon: UIImage? = nil,
                    showArrow: Bool,
                    cacheKey: String? = nil) {
+        var darkAppIcon: UIImage? = darkAppIcon == nil ? appIcon : darkAppIcon
         titleLabel.text = displayName
         accessoryType = showArrow ? .disclosureIndicator : .none
         
@@ -165,6 +168,7 @@ class ProjectTableCell: UITableViewCell {
         if appIcon == nil {
             if #unavailable(iOS 26.0) {
                 appIcon = UIImage(named: "DefaultIcon")
+                darkAppIcon = appIcon
             }
         }
         
@@ -176,8 +180,9 @@ class ProjectTableCell: UITableViewCell {
             subtitleLeadingWithoutIcon.isActive = false
             subtitleLeadingWithIcon.isActive = true
             pendingRawIcon = appIcon
+            pendingRawDarkIcon = darkAppIcon
             pendingCacheKey = cacheKey ?? bundleIdentifier ?? displayName
-            applyIcon(appIcon, key: pendingCacheKey!)
+            applyIcon(appIcon, darkAppIcon, key: pendingCacheKey!)
         /*} else {
             iconView.isHidden = true
             iconView.image = nil
@@ -198,10 +203,12 @@ class ProjectTableCell: UITableViewCell {
     
     private func rerenderIconIfNeeded() {
         guard let raw = pendingRawIcon, let key = pendingCacheKey else { return }
-        applyIcon(raw, key: key)
+        applyIcon(raw, pendingRawDarkIcon, key: key)
     }
     
-    private func applyIcon(_ raw: UIImage?, key: String) {
+    private func applyIcon(_ raw: UIImage?, _ dark: UIImage? = nil, key: String) {
+        let dark: UIImage? = dark == nil ? raw : dark
+        
         guard #available(iOS 26.0, *) else {
             renderToken = UUID()
             iconView.image = raw
@@ -224,12 +231,12 @@ class ProjectTableCell: UITableViewCell {
         
         Self.renderQueue.async { [weak self] in
             var rendered: UIImage? = nil
-            if let raw = raw {
-                rendered = Gib26Icon(raw, CGSize(width: side, height: side), scale)
+            if let raw = raw,
+               let dark = dark {
+                rendered = Gib26Icon(raw, dark, CGSize(width: side, height: side), scale)
             } else {
                 rendered = Gib26FallbackIcon(CGSize(width: side, height: side), scale)
             }
-            rendered = rendered?.preparingForDisplay() ?? rendered
             
             DispatchQueue.main.async { [weak self] in
                 if let rendered {
@@ -246,6 +253,7 @@ class ProjectTableCell: UITableViewCell {
         super.prepareForReuse()
         renderToken = UUID()
         pendingRawIcon = nil
+        pendingRawDarkIcon = nil
         pendingCacheKey = nil
         titleLabel.text = nil
         subtitleLabel.text = nil

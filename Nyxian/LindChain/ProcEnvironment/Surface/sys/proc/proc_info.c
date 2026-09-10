@@ -279,17 +279,18 @@ DEFINE_SYSCALL_HANDLER(proc_info_terminate)
     /* parsing arguments */
     pid_t u_pid = (pid_t)args[1];
     
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, u_pid, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
-    {
-        sys_return_failure_with_errno(errno);
-    }
-    
     /* we need the process */
     ksurface_proc_t *target;
     kern_return_t kr = proc_for_pid(u_pid, &target);
     if(kr != KERN_SUCCESS)
     {
         sys_return_failure_with_errno(ESRCH);
+    }
+    
+    if(!proc_snapshot_primitive_over_proc_allowed(sys_proc_snapshot_, target, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
+    {
+        kvo_release(target);
+        sys_return_failure_with_errno(errno);
     }
     
     /* making sure it is not ksurface it self */

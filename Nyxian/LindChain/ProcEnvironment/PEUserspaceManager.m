@@ -29,11 +29,11 @@
 #import <LindChain/ProcEnvironment/Utils/kpanic.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/ProcEnvironment/KextLoader/PEKextLoader.h>
-#import <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
+#import <LindChain/ProcEnvironment/Surface/cache/shimcache.h>
 #import <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #import <LindChain/ProcEnvironment/Surface/fs/preserver.h>
 #import <LindChain/ProcEnvironment/Surface/kxld/kxopen.h>
-#import <LindChain/ProcEnvironment/Surface/shimcache/ptrcache.h>
+#import <LindChain/ProcEnvironment/Surface/cache/patchcache.h>
 #import <Nyxian-Swift.h>
 
 @implementation PEUserspaceManager {
@@ -161,11 +161,11 @@
         }
         klog_log(domain, "shimcache [ok]");
         
-        if(ksurface_ptrcache_emit() != KERN_SUCCESS)
+        if(ksurface_patchcache_emit() != KERN_SUCCESS)
         {
-            ksurface_panic("ptrcache emission failed");
+            ksurface_panic("patchfinder emission failed");
         }
-        klog_log(domain, "ptrcache [ok]");
+        klog_log(domain, "patchfinder [ok]");
         
         /* spinning up the launch services */
         [[PELaunchServiceManager shared] reloadAllEntries];

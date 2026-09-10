@@ -868,6 +868,11 @@
 
 - (void)windowWantsToClose:(NXWindow *)window
 {
+    if(_presentationState == NXWindowServerPresentationStateFullScreen && _fullScreenWindow == window)
+    {
+        _fullScreenWindow = nil;
+        _presentationState = NXWindowServerPresentationStateDefault;
+    }
     if(_activeWindow == window)
     {
         _activeWindow = nil;

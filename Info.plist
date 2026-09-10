@@ -155,5 +155,7 @@
 			</dict>
 		</dict>
 	</array>
+	<key>_EXIgnoreHostAppStateChanges</key>
+	<true/>
 </dict>
 </plist>

@@ -151,7 +151,7 @@ int environment_init(EnvironmentExec exec,
         NSString *nyxianRoot = [NSString stringWithCString:getenv("NXROOT") encoding:NSUTF8StringEncoding];
         if(nyxianRoot != NULL)
         {
-            NSString *shimPath = [nyxianRoot stringByAppendingString:@"/boot/shimcache.dylib"];
+            NSString *shimPath = [nyxianRoot stringByAppendingString:@"/boot/rtpatch"];
             if([[NSFileManager defaultManager] fileExistsAtPath:shimPath])
             {
                 /* now load the shimcache! */

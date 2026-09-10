@@ -19,8 +19,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PTRCACHE_H
-#define PTRCACHE_H
+#ifndef PATCHCACHE_H
+#define PATCHCACHE_H
 
 #include <stdint.h>
 #include <mach/kern_return.h>
@@ -44,6 +44,6 @@ enum {
     kDyldPtrCount,
 };
 
-kern_return_t ksurface_ptrcache_emit(void);
+kern_return_t ksurface_patchcache_emit(void);
 
-#endif /* PTRCACHE_H */
+#endif /* PATCHCACHE_H */

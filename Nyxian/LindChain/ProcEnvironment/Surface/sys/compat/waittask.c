@@ -61,8 +61,8 @@ DEFINE_SYSCALL_HANDLER(waittask)
     
     /* getting target requested for caller */
     ksurface_proc_t *target;
-    kern_return_t ksr = proc_for_pid(pid, &target);
-    if(ksr != KERN_SUCCESS)
+    kern_return_t kr = proc_for_pid(pid, &target);
+    if(kr != KERN_SUCCESS)
     {
         sys_return_failure_with_errno(ECHILD);
     }
@@ -105,7 +105,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
         sys_return_failure_with_errno(ENOMEM);
     }
     
-    kern_return_t kr = mach_port_mod_refs(mach_task_self(), sys_task_, MACH_PORT_RIGHT_SEND, 1);
+    kr = mach_port_mod_refs(mach_task_self(), sys_task_, MACH_PORT_RIGHT_SEND, 1);
     if(kr != KERN_SUCCESS)
     {
         goto out_again;
@@ -116,8 +116,8 @@ DEFINE_SYSCALL_HANDLER(waittask)
     payload->buffer = *recv_buffer;
     
     /* register event */
-    ksr = kvo_event_register(target, kProcEventTypeWaitTask, waittask_proc_event_handler, payload, NULL);
-    if(ksr != KERN_SUCCESS)
+    kr = kvo_event_register(target, kProcEventTypeWaitTask, waittask_proc_event_handler, payload, NULL);
+    if(kr != KERN_SUCCESS)
     {
         mach_port_deallocate(mach_task_self(), sys_task_);  /* drop the reference, created prior */
     out_again:

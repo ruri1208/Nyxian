@@ -22,6 +22,7 @@
 #import <LindChain/WindowServer/Window/NXWindow.h>
 #import <LindChain/WindowServer/Window/NXResizeHandle.h>
 #import <LindChain/WindowServer/Window/NXWindowBar.h>
+#import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/Private/UIKitPrivate.h>
 
 @implementation NXWindow {
@@ -97,6 +98,11 @@
         [weakSelf maximizeWindow:YES];
     }];
     self.session.window = self;
+    
+    if(NXWindowServer.shared.presentationState != NXWindowServerPresentationStateDefault)
+    {
+        [_windowBar changeFocus:NO];
+    }
     
     [_contentStack addArrangedSubview:_windowBar];
     

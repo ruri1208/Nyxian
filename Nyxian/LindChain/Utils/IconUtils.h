@@ -24,7 +24,7 @@
 
 #import <UIKit/UIKit.h>
 
-UIImage *Gib26Icon(UIImage *rawIcon, CGSize size, CGFloat scale);
+UIImage *Gib26Icon(UIImage *rawLightIcon, UIImage *rawDarkIcon, CGSize size, CGFloat scale);
 UIImage *Gib26FallbackIcon(CGSize size, CGFloat scale);
 
 #endif /* ICONUTILS_H */

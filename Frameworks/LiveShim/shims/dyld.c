@@ -31,7 +31,7 @@
 #include <copyfile.h>
 #include <time.h>
 #include <os/lock.h>
-#include <LiveShim/ptrcache.h>
+#include <LiveShim/patchcache.h>
 
 #if __has_include(<ksurface_config.h>)
 #include <ksurface_config.h>
@@ -358,7 +358,7 @@ static int hook_stat64(const char *path,
 
 static HWHookThreadContextRef HWHookDlopenThreadContext(void)
 {
-    if(!load_ptrcache())
+    if(!ksurface_user_patchcache_load())
     {
         return NULL;
     }
@@ -366,11 +366,11 @@ static HWHookThreadContextRef HWHookDlopenThreadContext(void)
     static HWHookThreadContextRef context = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        orig_dyld_fcntl = (void*)ptrcache[kDyldPtrFcntl];
-        orig_dyld_open = (void*)ptrcache[kDyldPtrOpen];
-        orig_dyld_fstat64 = (void*)ptrcache[kDyldPtrFstat64];
-        orig_dyld_stat64 = (void*)ptrcache[kDyldPtrStat64];
-        orig_dyld_openat = (void*)ptrcache[kDyldPtrOpenat];
+        orig_dyld_fcntl = (void*)patchcache[kDyldPtrFcntl];
+        orig_dyld_open = (void*)patchcache[kDyldPtrOpen];
+        orig_dyld_fstat64 = (void*)patchcache[kDyldPtrFstat64];
+        orig_dyld_stat64 = (void*)patchcache[kDyldPtrStat64];
+        orig_dyld_openat = (void*)patchcache[kDyldPtrOpenat];
         if(orig_dyld_fcntl == NULL || orig_dyld_open == NULL || orig_dyld_fstat64 == NULL || orig_dyld_stat64 == NULL || orig_dyld_openat == NULL)
         {
             return;

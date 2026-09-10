@@ -19,7 +19,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/shimcache/shimcache.h>
+#include <LindChain/ProcEnvironment/Surface/cache/shimcache.h>
 #include <LindChain/ProcEnvironment/Surface/fs/fs.h>
 #include <LindChain/ProcEnvironment/Surface/fs/mount.h>
 #include <stdio.h>
@@ -128,7 +128,7 @@ kern_return_t ksurface_shimcache_build(void)
     }
     
     /* now we need to compile them together to one shimcache */
-    NSString *shimCacheDylib = [[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/shimcache.dylib"] path];
+    NSString *shimCacheDylib = [[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"/mntfs/bootfs/rtpatch"] path];
     
     NSMutableArray<NSString*> *driverFlags = [NSMutableArray array];
     [driverFlags addObjectsFromArray:[NXProjectConfig sdkCompilerFlags]];

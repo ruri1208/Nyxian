@@ -136,6 +136,10 @@ int LCBootstrapMain(NSString *executablePath,
     
     /* find main */
     int (*entry)(int, char**) = PEGetMachOEntryPointOfHeader(guestHandle);
+    if(entry == NULL)
+    {
+        entry = dlsym(guestHandle, "main");
+    }
     assert(entry);
     
     /*
