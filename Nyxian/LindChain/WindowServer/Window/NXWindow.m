@@ -22,6 +22,7 @@
 #import <LindChain/WindowServer/Window/NXWindow.h>
 #import <LindChain/WindowServer/Window/NXResizeHandle.h>
 #import <LindChain/WindowServer/Window/NXWindowBar.h>
+#import <LindChain/WindowServer/NXWindowServer.h>
 #import <LindChain/Private/UIKitPrivate.h>
 
 @implementation NXWindow {
@@ -84,20 +85,25 @@
     _contentStack.backgroundColor = UIColor.systemBackgroundColor;
     
     _contentStack.layer.cornerRadius = 20;
-    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    //{
-        //_contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
-    //}
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    {
+        _contentStack.layer.maskedCorners = kCALayerMinXMinYCorner | kCALayerMaxXMinYCorner;
+    }
     _contentStack.layer.masksToBounds = YES;
     [self.view addSubview:_contentStack];
-    /*
+    
     _windowBar = [[NXWindowBar alloc] initWithTitle:self.session.windowName withCloseCallback:^{
         [weakSelf closeWindowWithCompletion:nil];
     } withMaximizeCallback:^{
         [weakSelf maximizeWindow:YES];
     }];
-    
     self.session.window = self;
+    
+    if(NXWindowServer.shared.presentationState != NXWindowServerPresentationStateDefault)
+    {
+        [_windowBar changeFocus:NO];
+    }
+    
     [_contentStack addArrangedSubview:_windowBar];
     
     [NSLayoutConstraint activateConstraints:@[
@@ -105,54 +111,52 @@
         [_windowBar.leadingAnchor constraintEqualToAnchor:_contentStack.leadingAnchor],
         [_windowBar.trailingAnchor constraintEqualToAnchor:_contentStack.trailingAnchor],
     ]];
-    */
-    _windowBar = nil;
-    self.session.window = self;
+    
     [self addChildViewController:_session];
     _session.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [_contentStack addArrangedSubview:_session.view];
     [_contentStack sendSubviewToBack:_session.view];
     [_session didMoveToParentViewController:self];
     
-   // if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-   // {
+    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+    {
         /* this is to move the window obviously */
-       // UIPanGestureRecognizer *moveGesture =
-       // [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
-       // moveGesture.minimumNumberOfTouches = 1;
-       // moveGesture.maximumNumberOfTouches = 1;
-       // [_windowBar addGestureRecognizer:moveGesture];
+        UIPanGestureRecognizer *moveGesture =
+        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveWindow:)];
+        moveGesture.minimumNumberOfTouches = 1;
+        moveGesture.maximumNumberOfTouches = 1;
+        [_windowBar addGestureRecognizer:moveGesture];
         
         /* this is to full screen the window by double tap */
-       // UITapGestureRecognizer *fullScreenGesture =
-       // [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maximizeButtonPressed)];
-       // fullScreenGesture.numberOfTapsRequired = 2;
-       // fullScreenGesture.numberOfTouchesRequired = 1;
-       // fullScreenGesture.delaysTouchesBegan = NO;
-       // fullScreenGesture.delaysTouchesEnded = NO;
-       // fullScreenGesture.cancelsTouchesInView = NO;
-       // [_windowBar addGestureRecognizer:fullScreenGesture];
+        UITapGestureRecognizer *fullScreenGesture =
+        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(maximizeButtonPressed)];
+        fullScreenGesture.numberOfTapsRequired = 2;
+        fullScreenGesture.numberOfTouchesRequired = 1;
+        fullScreenGesture.delaysTouchesBegan = NO;
+        fullScreenGesture.delaysTouchesEnded = NO;
+        fullScreenGesture.cancelsTouchesInView = NO;
+        [_windowBar addGestureRecognizer:fullScreenGesture];
         
-       // moveGesture.delegate = self;
-       // fullScreenGesture.delegate = self;
+        moveGesture.delegate = self;
+        fullScreenGesture.delegate = self;
         
         /* and this is to resize a window lol */
-       // UIPanGestureRecognizer *resizeGesture =
-       // [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(resizeWindow:)];
-       // resizeGesture.minimumNumberOfTouches = 1;
-       // resizeGesture.maximumNumberOfTouches = 1;
-       // resizeGesture.cancelsTouchesInView = NO;
+        UIPanGestureRecognizer *resizeGesture =
+        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(resizeWindow:)];
+        resizeGesture.minimumNumberOfTouches = 1;
+        resizeGesture.maximumNumberOfTouches = 1;
+        resizeGesture.cancelsTouchesInView = NO;
         
-       // _resizeHandle = [[NXResizeHandle alloc] initWithFrame:CGRectMake(_contentStack.frame.size.width - 44, _contentStack.frame.size.height - 44, 44, 44)];
-       // [_resizeHandle addGestureRecognizer:resizeGesture];
-       // [_contentStack addSubview:_resizeHandle];
-   // }
-   // else
-   // {
+        _resizeHandle = [[NXResizeHandle alloc] initWithFrame:CGRectMake(_contentStack.frame.size.width - 44, _contentStack.frame.size.height - 44, 44, 44)];
+        [_resizeHandle addGestureRecognizer:resizeGesture];
+        [_contentStack addSubview:_resizeHandle];
+    }
+    else
+    {
         /* this is to close the app on iPhone lol */
-       // UIPanGestureRecognizer *pullDownGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(minimizeWindow:)];
-       // [_windowBar addGestureRecognizer:pullDownGesture];
-   // }
+        UIPanGestureRecognizer *pullDownGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(minimizeWindow:)];
+        [_windowBar addGestureRecognizer:pullDownGesture];
+    }
     
     _contentStack.layer.borderWidth = 0.5;
     _contentStack.layer.borderColor = UIColor.systemGray3Color.CGColor;
@@ -209,13 +213,11 @@
 - (void)changeFocus:(BOOL)focused
 {
     assert([NSThread isMainThread]);
-    /*
+    
     if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
     {
         return;
     }
-    */
-    
     if(!_focusHitView)
     {
         _focusHitView = [[UIView alloc] init];
@@ -224,14 +226,12 @@
         _focusHitView.translatesAutoresizingMaskIntoConstraints = NO;
         [_contentStack insertSubview:_focusHitView aboveSubview:self.session.view];
         [NSLayoutConstraint activateConstraints:@[
-            //[_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
-            [_focusHitView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+            [_focusHitView.topAnchor constraintEqualToAnchor:_windowBar.bottomAnchor],
             [_focusHitView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
             [_focusHitView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
             [_focusHitView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
         ]];
     }
-   
     if(![self.delegate windowWantsToFocus:self])
     {
         return;
@@ -287,21 +287,18 @@
         changes = ^{
             self.view.frame = newFrame;
             [self.view layoutIfNeeded];
-            /*
+            
             if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
             {
                 self->_contentStack.layer.cornerRadius = 20;
             }
-            */
             self->_contentStack.layer.borderWidth = 0.5;
             [self refreshEffects];
             self->_resizeHandle.hidden = NO;
         };
         
         completion = ^{
-            if (self->_windowBar){
             self->_windowBar.maximizeButton.imageView.image = [UIImage systemImageNamed:@"arrow.up.left.and.arrow.down.right.circle.fill"];
-            }
         };
     }
     else
@@ -316,21 +313,18 @@
         changes = ^{
             self.view.frame = newFrame;
             [self.view layoutIfNeeded];
-            /*
+            
             if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone)
             {
                 self->_contentStack.layer.cornerRadius = 0;
             }
-            */
             self->_contentStack.layer.borderWidth = 0;
             self.view.layer.shadowOpacity = 0;
             self->_resizeHandle.hidden = YES;
         };
         
         completion = ^{
-            if (self->_windowBar){
             self->_windowBar.maximizeButton.imageView.image = [UIImage systemImageNamed:@"arrow.down.right.and.arrow.up.left.circle.fill"];
-            }
         };
     }
     
@@ -555,10 +549,10 @@ static inline CGSize EVSizeForAspect(CGSize base,
     
     dispatch_once(&_viewDidAppearOnceDispatch, ^{
         // MARK: Suppose to only run on phones
-        //if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-        //{
+        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+        {
             [self maximizeWindow:NO];
-        //}
+        }
     });
 }
 
@@ -626,18 +620,6 @@ static inline CGSize EVSizeForAspect(CGSize base,
     _windowBar.title = windowName;
 }
 
-- (void)viewDidLayoutSubviews
-{
-    [super viewDidLayoutSubviews];   
-    self.session.additionalSafeAreaInsets = UIEdgeInsetsZero;  
-}
-
-- (void)viewSafeAreaInsetsDidChange
-{
-    [super viewSafeAreaInsetsDidChange];
-    [self.view setNeedsLayout];     
-}
-
 - (void)deinit
 {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -660,4 +642,3 @@ static inline CGSize EVSizeForAspect(CGSize base,
 #endif /* DEBUG */
 
 @end
-
