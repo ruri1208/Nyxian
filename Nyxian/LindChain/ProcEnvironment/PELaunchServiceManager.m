@@ -21,6 +21,7 @@
 
 #import <LindChain/ProcEnvironment/PELaunchServiceManager.h>
 #import <LindChain/ProcEnvironment/PEBootstrapRegistry.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 
 @implementation PELaunchServiceManager {
     os_unfair_lock _lock;
@@ -107,7 +108,7 @@
 {
     os_unfair_lock_lock(&_lock);
     [_launchServices removeAllObjects];
-    NSString *plistPath = [[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Shared"] stringByAppendingPathComponent:@"LaunchServices"];
+    NSString *plistPath = [[NXBootstrap.shared.rootURL URLByAppendingPathComponent:@"mntfs/lsfs"] path];
     NSArray<NSString*> *plists = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:plistPath error:nil];
     for(NSString *plist in plists)
     {
@@ -123,7 +124,7 @@
 - (void)loadEntryWithFileName:(NSString*)entryName
 {
     os_unfair_lock_lock(&_lock);
-    NSString *plistPath = [[[[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Shared"] stringByAppendingPathComponent:@"LaunchServices"] stringByAppendingPathComponent:entryName];
+    NSString *plistPath = [[NXBootstrap.shared.rootURL URLByAppendingPathComponent:@"mntfs/lsfs"] path];
     /* TODO: check if the daemon is already loaded */
     PELaunchService *launchService = [PELaunchService launchServiceWithPlistPath:plistPath];
     if(launchService)

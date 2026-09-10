@@ -93,6 +93,11 @@ kern_return_t ksurface_fs_init(void)
             "/dev/nounlink",
             [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String],
         },
+        {
+            kFSMountAttrRead | kFSMountAttrWrite,
+            "/dev/nounlink",
+            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home] UTF8String],
+        },
         
         /* bind mounts */
         {
@@ -124,6 +129,16 @@ kern_return_t ksurface_fs_init(void)
             kFSMountAttrRead,
             [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String],
             [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/boot", home] UTF8String],
+        },
+        {
+            kFSMountAttrRead,
+            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home] UTF8String],
+            [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/System/Library/LaunchDaemons", home] UTF8String],
+        },
+        {
+            kFSMountAttrRead,
+            [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.bootstrapd.plist"] UTF8String],
+            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs/org.emexlabs.bootstrapd.plist", home] UTF8String],
         },
         
         /* root mounts */
@@ -189,11 +204,6 @@ kern_return_t ksurface_fs_init(void)
         },
         
         /* root bind mounts */
-        {
-            kFSMountAttrRead,
-            [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.bootstrapd.plist"] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/System/Library/LaunchDaemons/org.emexlabs.bootstrapd.plist", home] UTF8String],
-        },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
             [[NSString stringWithFormat:@"%s/Documents/mntfs/rootfs/usr/bin", home] UTF8String],
