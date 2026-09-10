@@ -23,6 +23,7 @@
 #import <LindChain/WindowServer/NXAppTile.h>
 #import <LindChain/WindowServer/Session/NXWindowSessionApplication.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
+#import <LindChain/WindowServer/Window/NXFloatingBallWindow.h>
 
 @interface NXWindowLayerView : UIView
 @end
@@ -64,11 +65,11 @@
         _activeWindowIdentifier = (id_t)-1;
         _appSwitcherView = nil;
         
-        if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-        {
+        //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        //{
             [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
             [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged:) name:UIDeviceOrientationDidChangeNotification object:nil];
-        }
+        //}
         
         hasInitialized = YES;
     }
@@ -82,7 +83,10 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    _windowLayer.frame = self.bounds;
+    //_windowLayer.frame = self.bounds;
+    if (_activeWindow) {
+        [self layoutSimulatorWindow:_activeWindow];
+    }
 }
 
 + (instancetype)sharedWithWindowScene:(UIWindowScene*)windowScene
@@ -129,6 +133,14 @@
         [_windowLayer addSubview:window.view];
         [window openWindow];
         [window focusWindow];
+        
+        [self layoutSimulatorWindow:window];
+        NXFloatingBallWindow *ball = [NXFloatingBallWindow sharedInstance];
+        [ball updateVisibility];
+        if (!ball.hidden) {
+            ball.windowLevel = CGFLOAT_MAX;
+            [ball makeKeyAndVisible]; 
+        }
     }
     
     if(self.appSwitcherView)
@@ -247,7 +259,8 @@
 
 - (void)windowsGetOutOfMyWay
 {
-    if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
+    //if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
+    if(YES)
     {
         return;
     }
@@ -259,7 +272,8 @@
 
 - (void)windowsGetInMyWay
 {
-    if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
+    //if(UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPad)
+    if(YES)
     {
         return;
     }
@@ -307,8 +321,9 @@
     
     NXWindow *window = self.windows[@(_activeWindowIdentifier)];
     if(window != nil &&
-       _activeWindowIdentifier != window.identifier &&
-       [[UIDevice currentDevice] userInterfaceIdiom] != UIUserInterfaceIdiomPad)
+       _activeWindowIdentifier != window.identifier)
+       //&&
+       //[[UIDevice currentDevice] userInterfaceIdiom] != UIUserInterfaceIdiomPad)
     {
         // close first the old one and wait
         [self deactivateWindowByPullDown:YES withIdentifier:_activeWindowIdentifier withCompletion:^{
@@ -341,6 +356,7 @@
             {
                 [self.windows removeObjectForKey:@(identifier)];
                 [self.windowOrder removeObject:@(identifier)];
+                [[NXFloatingBallWindow sharedInstance] updateVisibility];
             }
             
             if(completion) completion(closedWindow);
@@ -360,19 +376,20 @@
     [self addSubview:_windowLayer];
     [self bringSubviewToFront:_windowLayer];
     [_windowLayer setUserInteractionEnabled:YES];
-
-    if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
-    {
+    
+    //if(UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone)
+    //{
         /* iOS 26 and above uses the tabbar button instead of gesture */
-        if(@available(iOS 26.0, *))
-        {
-            return;
-        }
+        //if(@available(iOS 26.0, *))
+        //{
+            //return;
+        //}
             
         /* add the gesture */
-        UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-        [self addGestureRecognizer:gestureRecognizer];
-    }
+        //UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+       // [self addGestureRecognizer:gestureRecognizer];
+    //}
+   
 }
 
 // TODO: FRIDA! PLS MAKE LDEWINDOWSERVERTILEVIEW!!!! IM SO LAZY ONG
@@ -880,6 +897,9 @@
     [window deinit];
     [self.windows removeObjectForKey:@(window.identifier)];
     [self.windowOrder removeObject:@(window.identifier)];
+    dispatch_async(dispatch_get_main_queue(), ^{ 
+        [[NXFloatingBallWindow sharedInstance] updateVisibility];
+    });
 }
 
 - (void)windowWantsToMinimize:(NXWindow *)window
@@ -936,24 +956,26 @@
     allowed.size.height += insets.bottom;
     
     /* checking if maximised */
-    if(window.isMaximized)
+    //if(window.isMaximized)
+    if(YES)
     {
-        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
-        {
+        //if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+        //{
             return self.bounds;
-        }
-        else
-        {
-            return allowed;
-        }
+        //}
+        //else
+        //{
+            //return allowed;
+        //}
     }
-    else
-    {
+    
+    //else
+    //{
         /* fixing non maximised constraints */
-        allowed.origin.x -= (rect.size.width - 50);
-        allowed.size.width += ((rect.size.width * 2) - 100);
-        allowed.size.height += (rect.size.height - 50);
-    }
+        //allowed.origin.x -= (rect.size.width - 50);
+        //allowed.size.width += ((rect.size.width * 2) - 100);
+        //allowed.size.height += (rect.size.height - 50);
+   // }
     
     /* a lot of math */
     if(rect.size.height > boundsInset.size.height)
@@ -992,9 +1014,11 @@
             NXWindow *window = self.windows[key];
             if(window != nil)
             {
-                [window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
+                //[window changeWindowToRect:[self window:window wantsToChangeToRect:window.view.frame] completion:nil];
+                [self layoutSimulatorWindow:window];
             }
         }
+        [self layoutIfNeeded];
     });
 }
 
@@ -1039,9 +1063,72 @@
             {
                 [super bringSubviewToFront:_fullScreenWindow.view];
             }
+            [[NXFloatingBallWindow sharedInstance] updateVisibility];
         }
         return;
     }
 }
+- (void)layoutSimulatorWindow:(NXWindow *)window
+{
+    if (!window || !window.view) return;
+    
+    window.view.frame = self.bounds;
+    window.view.backgroundColor = [UIColor blackColor];
+    
 
+    UIEdgeInsets safeArea = self.safeAreaInsets;
+    CGFloat availableW = self.bounds.size.width - safeArea.left - safeArea.right;
+    CGFloat availableH = self.bounds.size.height - safeArea.top - safeArea.bottom;
+
+    if (availableW <= 0 || availableH <= 0) return;
+
+    BOOL isPad = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
+    BOOL isLandscape = (availableW > availableH);
+
+    CGFloat targetW = 0.0;
+    CGFloat targetH = 0.0;
+
+    if (!isPad) {
+        if (!isLandscape) {
+
+            targetW = availableW;
+            targetH = (targetW) * (16.0 / 9.0);
+        } else {
+
+            targetH = availableH;
+            targetW = (targetH) * (16.0 / 9.0);
+        }
+    } else {
+        if (isLandscape) {
+            
+            targetH = availableH;
+            targetW = (targetH) * (9.0 / 16.0);
+        } else {
+         
+            targetW = availableW;
+            targetH = (targetW) * (9.0 / 16.0);
+        }
+    }
+    if (targetW > availableW) {
+        targetW = availableW;
+    }
+    if (targetH > availableH) {
+        targetH = availableH;
+    }
+
+    CGFloat x = safeArea.left + (availableW - targetW) / 2.0;
+    CGFloat y = safeArea.top  + (availableH - targetH) / 2.0;
+    CGRect contentFrame = CGRectMake(x, y, targetW, targetH);
+
+    for (UIView *subview in window.view.subviews) {
+        subview.frame = contentFrame;
+        subview.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | 
+                                   UIViewAutoresizingFlexibleRightMargin | 
+                                   UIViewAutoresizingFlexibleTopMargin | 
+                                   UIViewAutoresizingFlexibleBottomMargin;
+    }
+    
+    [window.view setNeedsLayout];
+    [window.view layoutIfNeeded];
+}
 @end
