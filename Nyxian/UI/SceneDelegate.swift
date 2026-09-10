@@ -160,7 +160,12 @@ App is now in extension-less mode, meaning apps cannot run within Nyxian until t
 
 struct UIOnboardingHelper {
     static func setUpIcon() -> UIImage {
-        return .init(named: "IconPreviewDefaultOld")!
+        if #unavailable(iOS 26.0) {
+            return .init(named: "IconPreviewDefaultOld")!
+        } else {
+            let object = LDEApplicationObject(nsBundle: Bundle.main)!
+            return Gib26Icon(object.icon, object.darkIcon, CGSize(width: 1024, height: 1024), UIScreen.main.scale)
+        }
     }
     
     static func setUpFirstTitleLine() -> NSMutableAttributedString {
@@ -169,7 +174,7 @@ struct UIOnboardingHelper {
     
     static func setUpSecondTitleLine() -> NSMutableAttributedString {
         .init(string: Bundle.main.displayName ?? "Nyxian", attributes: [
-            .foregroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) }
+            .foregroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) }
         ])
     }
     
@@ -178,7 +183,7 @@ struct UIOnboardingHelper {
             .init(icon: UIImage(systemName: "hammer.fill")!,
                 iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.55, green: 0.78, blue: 0.98, alpha: 1.0) : UIColor(red: 0.30, green: 0.58, blue: 0.88, alpha: 1.0) },
                 title: "Development",
-                description: "A full development environment supporting Swift, C, C++, Objective-C and Objective-C++ that runs on any iOS 18.4+ iPhone or iPad."),
+                description: "A full development environment supporting Swift, C, C++, Objective-C and Objective-C++ that runs on any iOS 18.0+ iPhone or iPad."),
             .init(icon: UIImage(systemName: "wrench.and.screwdriver.fill")!,
                 iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.78, green: 0.71, blue: 0.95, alpha: 1.0) : UIColor(red: 0.55, green: 0.45, blue: 0.85, alpha: 1.0) },
                 title: "MobileDevelopmentKit",
@@ -186,7 +191,7 @@ struct UIOnboardingHelper {
             .init(icon: UIImage(systemName: "cpu.fill")!,
                 iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.60, green: 0.88, blue: 0.80, alpha: 1.0) : UIColor(red: 0.30, green: 0.68, blue: 0.58, alpha: 1.0) },
                 title: "Native Performance",
-                description: "A custom micro kernel called ksurface providing real process management, mach IPC,(task ports for example), POSIX semantics, custom kernel extensions so you can extend ksurface your self and even a shimcache so you can add more rebinds in the userspace to syscalls you or someone else fixed and that directly on your restricted iOS device for your projects."),
+                description: "A custom micro kernel called ksurface providing real process management, mach IPC(task ports through task_for_pid() for example), POSIX semantics, custom kernel extensions so you can extend ksurface your self and even a shimcache so you can add more rebinds in the userspace to syscalls you or someone else fixed and that directly on your restricted iOS device for your projects."),
             .init(icon: UIImage(systemName: "exclamationmark.triangle.fill")!,
                 iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0) : UIColor(red: 0.85, green: 0.60, blue: 0.12, alpha: 1.0) },
                 title: "Warning",
@@ -199,13 +204,13 @@ struct UIOnboardingHelper {
                      text: "Contributions, feedback, and stars keep the project alive.",
                      linkTitle: "Contribute on GitHub",
                      link: "https://github.com/emexlab/Nyxian",
-                     linkColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
+                     linkColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
     
     static func setUpButton() -> UIOnboardingButtonConfiguration {
         let lightBackground = currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
         
-        return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.85, green: 0.74, blue: 0.93, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
+        return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
 }
 

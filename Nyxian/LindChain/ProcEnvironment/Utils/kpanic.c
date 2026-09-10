@@ -148,7 +148,7 @@ void ksurface_panic(const char *fmt, ...)
     
     /* structured block */
     ksurface_panic_log_append("Debugger message: panic\n");
-    ksurface_panic_log_append("Kernel version: %s + ksurface 0.11.4\n", xnu_version_string());
+    ksurface_panic_log_append("Kernel version: %s + ksurface 0.11.5\n", xnu_version_string());
     ksurface_panic_log_append("Paniclog version: %u\n", g_kpanic_header.version);
     ksurface_panic_log_append("Kernel slide: 0x%016llx\n", (uint64_t)_dyld_get_image_vmaddr_slide(0));
     ksurface_panic_log_append("Kernel text base: 0x%016llx\n", (uint64_t)_dyld_get_image_header(0));

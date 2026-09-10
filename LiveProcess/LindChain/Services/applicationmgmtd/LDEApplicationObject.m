@@ -31,9 +31,6 @@
 
 - (instancetype)initWithNSBundle:(NSBundle*)bundle
 {
-#if HOST_ENV
-    return nil;
-#else
     self = [super init];
     
     ksurface_nxt2_t result;
@@ -102,6 +99,7 @@
         localizedDisplayName = [bundle objectForInfoDictionaryKey:@"CFBundleName"];
     }
     self.localizedName = NSLocalizedStringFromTableInBundle(localizedDisplayName, @"InfoPlist", bundle, localizedDisplayName);
+#if !HOST_ENV
     self.isLaunchAllowed = [[LDEApplicationWorkspaceInternal shared] doWeTrustThatBundle:bundle];
     if(self.isLaunchAllowed)
     {
@@ -109,6 +107,7 @@
         self.executablePath = [[bundle executableURL] path];
         self.containerPath = [[[LDEApplicationWorkspaceInternal shared] applicationContainerForBundleID:bundle.bundleIdentifier] path];
     }
+#endif /* !HOST_ENV */
     
     ISBundleIcon *bundleIcon = [[PrivClass(ISBundleIcon) alloc] initWithBundleURL:bundle.bundleURL type:nil];
     if(bundleIcon)
@@ -143,7 +142,6 @@
     }
 
     return self;
-#endif /* HOST_ENV */
 }
 
 + (BOOL)supportsSecureCoding {

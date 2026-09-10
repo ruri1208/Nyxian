@@ -21,6 +21,20 @@
 
 import UIKit
 
+class NXManagementUISingleFlight {
+    private static let slot = DispatchSemaphore(value: 1)
+    private static let queue = DispatchQueue(label: "org.emexlabs.nyxian.mgmt.singleflight", qos: .userInitiated)
+    
+    @discardableResult static func run(_ body: @escaping () -> Void) -> Bool {
+        guard slot.wait(timeout: .now()) == .success else { return false }
+        queue.async {
+            defer { self.slot.signal() }
+            body()
+        }
+        return true
+    }
+}
+
 class ManagementViewController: UIThemedTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -94,9 +108,13 @@ class ManagementViewController: UIThemedTableViewController {
                 }
             default:
                 if indexPath.row == 0 {
-                    PEUserspaceManager.shared().rebootUserspace()
+                    NXManagementUISingleFlight.run {
+                        PEUserspaceManager.shared().rebootUserspace()
+                    }
                 } else if indexPath.row == 1 {
-                    PEUserspaceManager.shared().reloadDaemons()
+                    NXManagementUISingleFlight.run {
+                        PEUserspaceManager.shared().reloadDaemons()
+                    }
                 } else if indexPath.row == 2 {
                     let alert = UIAlertController(
                         title: "Clear Application Caches",

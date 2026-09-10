@@ -433,7 +433,7 @@ void ksurface_kext_free_deps(kmod_dependency_t *deps)
     PEKext *kext = [[self alloc] init];
     kext.executablePath = @"ksurface";
     kext.bundleID = @"ksurface";
-    kext.version = @"0.11.4";
+    kext.version = @"0.11.5";
     kext.abi_version = KSURFACE_KMOD_ABI_VERSION;
     kext.flags = KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED;
     

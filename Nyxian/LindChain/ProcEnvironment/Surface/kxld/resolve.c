@@ -188,7 +188,7 @@ static void register_nximage(void)
     }
     
     kxld_image_info_t *ksurface_image_info = NULL;
-    kr = kxopen_pseudo("ksurface", KMOD_VERSION(0, 11, 4), KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED, &ksurface_image_info);
+    kr = kxopen_pseudo("ksurface", KMOD_VERSION(0, 11, 5), KMOD_FLAG_PERSISTENT | KMOD_FLAG_OVERRIDE_CORE | KMOD_FLAG_ALLOW_UNRESOLVED, &ksurface_image_info);
     if(kr != KERN_SUCCESS)
     {
         ksurface_panic("failed to create pseudo kext for 'ksurface'.");
