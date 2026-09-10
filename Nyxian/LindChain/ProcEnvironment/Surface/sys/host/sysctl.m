@@ -147,10 +147,10 @@ int sysctl_kernproc(sysctl_req_t *req)
     
     /* copying current process table */
     kinfo_proc_t *kpbuf = NULL;
-    kern_return_t ksr = proc_list(req->proc_snapshot, &kpbuf, &needed, flavour, req->name[3]);
+    kern_return_t kr = proc_list(req->proc_snapshot, &kpbuf, &needed, flavour, req->name[3]);
     
     /* checking if succeeded  */
-    if(ksr != KERN_SUCCESS)
+    if(kr != KERN_SUCCESS)
     {
         req->err = ENOMEM;
         goto out_free_kpbuf_and_ret_excp;
@@ -349,9 +349,8 @@ int sysctl_kernprocargs2(sysctl_req_t *req)
     
     kinfo_proc_t *kpbuf = NULL;
     size_t needed = 0;
-    kern_return_t ksr = proc_list(req->proc_snapshot, &kpbuf, &needed, PROC_FLV_PID, pid); /* TODO: efficency using proc lookup api on PROC_FLV_PID, as its one pid and radix lookup gives you proc structure for one pid */
-    
-    if (ksr != KERN_SUCCESS || needed == 0 || kpbuf == NULL)
+    kern_return_t kr = proc_list(req->proc_snapshot, &kpbuf, &needed, PROC_FLV_PID, pid); /* TODO: efficency using proc lookup api on PROC_FLV_PID, as its one pid and radix lookup gives you proc structure for one pid */
+    if(kr != KERN_SUCCESS || needed == 0 || kpbuf == NULL)
     {
         req->err = ESRCH;
         free(kpbuf);

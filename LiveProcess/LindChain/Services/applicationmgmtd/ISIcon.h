@@ -40,6 +40,9 @@
 #define ISImageDescriptorApparanceVariantTransparent2   3   // ??
 #define ISImageDescriptorApparanceVariantEdge           4
 
+#define ISImageDescriptorApparanceLightMode             0
+#define ISImageDescriptorApparanceDarkMode              1
+
 @interface ISImageDescriptor : NSObject
 
 - (instancetype)initWithSize:(CGSize)size scale:(CGFloat)scale;

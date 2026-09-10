@@ -252,10 +252,9 @@ static inline void ksurface_kinit_kproc(void)
     strlcpy(kproc->bsd.kp_proc.p_comm, "kernel_task", MAXCOMLEN);
 #else
     /* setting up properties */
-    pid_t pid = getpid();
-    proc_setpid(kproc, pid);
-    proc_setppid(kproc, 1); /* this is done, because when debugging it has a other ppid than launchd's pid */
-    proc_setsid(kproc, pid);
+    proc_setpid(kproc, getpid());
+    proc_setppid(kproc, getppid());
+    proc_setsid(kproc, getsid(getpid()));
     const char *name = strrchr(kproc->nyx.identity->path, '/');
     name = name ? name + 1 : kproc->nyx.identity->path;
     strlcpy(kproc->bsd.kp_proc.p_comm, name, MAXCOMLEN);

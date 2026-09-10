@@ -26,7 +26,7 @@
 #include <assert.h>
 #include <LindChain/ProcEnvironment/LiveContainer/utils.h>
 #include <LindChain/ProcEnvironment/litehook/litehook.h>
-#include <LiveShim/ptrcache.h>
+#include <LiveShim/patchcache.h>
 #include <mach/mach.h>
 
 bool performHookDyldApi(const char* functionName,
@@ -128,12 +128,12 @@ bool performHookDyldApiFast(int ptrcacheIndex,
                             void** origFunction,
                             void* hookFunction)
 {
-    if(!load_ptrcache())
+    if(!ksurface_user_patchcache_load())
     {
         return false;
     }
     
-    void* vtableFunctionPtr = (void*)ptrcache[ptrcacheIndex];
+    void* vtableFunctionPtr = (void*)patchcache[ptrcacheIndex];
     
     kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
     if(ret != KERN_SUCCESS)

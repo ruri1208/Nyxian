@@ -45,6 +45,7 @@
 @property (nonatomic) UIInterfaceOrientationMask supportedInterfaceOrientations;
 
 @property (nonatomic) UIImage *icon;
+@property (nonatomic) UIImage *darkIcon;
 
 - (instancetype)initWithNSBundle:(NSBundle*)nsBundle;
 

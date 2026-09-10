@@ -42,7 +42,7 @@ DEFINE_SYSCALL_HANDLER(gettask)
      * in the first place and if the process allows for it except if the
      * caller is a special process.
      */
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, pid, name_only ? kPEEntitlementFlagNone : kPEEntitlementFlagTaskForPid, name_only ? kPEEntitlementFlagNone : kPEEntitlementFlagGetTaskAllowed))
+    if(!proc_snapshot_primitive_over_proc_allowed(sys_proc_snapshot_, target, name_only ? kPEEntitlementFlagNone : kPEEntitlementFlagTaskForPid, name_only ? kPEEntitlementFlagNone : kPEEntitlementFlagGetTaskAllowed))
     {
         sys_set_errno(errno);
         
@@ -65,15 +65,15 @@ skip_bsd_primitive_semantic_check:
     {
         /* getting task port of flavour */
         task_t exportTask = MACH_PORT_NULL;
-        kern_return_t ksr = proc_task_for_proc(target, name_only ? TASK_NAME_PORT : TASK_KERNEL_PORT, &exportTask);
+        kern_return_t kr = proc_task_for_proc(target, name_only ? TASK_NAME_PORT : TASK_KERNEL_PORT, &exportTask);
         kvo_release(target);
-        if(ksr != KERN_SUCCESS)
+        if(kr != KERN_SUCCESS)
         {
             sys_return_failure_with_errno(EACCES);
         }
         
         /* allocating syscall payload, so we can export it to the syscall caller */
-        kern_return_t kr = syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
+        kr = syscall_payload_create(NULL, sizeof(mach_port_t), (vm_address_t*)out_ports);
         if(kr != KERN_SUCCESS)
         {
             mach_port_deallocate(mach_task_self(), exportTask);

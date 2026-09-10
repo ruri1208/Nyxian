@@ -25,6 +25,8 @@
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 
-bool proc_snapshot_primitive_over_pid_allowed(ksurface_proc_snapshot_t *proc, pid_t targetPid, PEEntitlementFlags entitlementsNeeded, PEEntitlementFlags targetEntitlementsNeeded);
+bool proc_snapshot_primitive_over_proc_allowed(ksurface_proc_snapshot_t *proc, ksurface_proc_t *targetProc, PEEntitlementFlags entitlementsNeeded, PEEntitlementFlags targetEntitlementsNeeded);
+bool proc_primitive_over_proc_allowed(ksurface_proc_t *proc, ksurface_proc_t *targetProc, PEEntitlementFlags entitlementsNeeded, PEEntitlementFlags targetEntitlementsNeeded);
+bool proc_pid_primitive_over_pid_allowed(pid_t pid, pid_t targetPid, PEEntitlementFlags entitlementsNeeded, PEEntitlementFlags targetEntitlementsNeeded);
 
 #endif /* PROC_PERMIT_H */

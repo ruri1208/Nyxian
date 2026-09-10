@@ -55,8 +55,8 @@ kern_return_t tty_attach_proc(ksurface_proc_t *proc,
      * attach to process lifecycle
      * and consume callers reference.
      */
-    kern_return_t ksr = kvo_event_register(proc, 0, tty_proc_event_handler, tty, NULL);
-    if(ksr != KERN_SUCCESS)
+    kern_return_t kr = kvo_event_register(proc, 0, tty_proc_event_handler, tty, NULL);
+    if(kr != KERN_SUCCESS)
     {
         kvo_release(proc);
         return KERN_FAILURE;

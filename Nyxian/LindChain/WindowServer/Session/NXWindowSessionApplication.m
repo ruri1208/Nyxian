@@ -323,7 +323,7 @@ static os_unfair_lock g_window_rects_lock = OS_UNFAIR_LOCK_INIT;
         /* bye bye presenter */
         [_scenePresenter invalidate];
     }
-    [_process terminate];
+    [_process forceTerminate];
     
     return YES;
 }

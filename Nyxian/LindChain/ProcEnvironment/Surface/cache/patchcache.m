@@ -20,7 +20,7 @@
 */
 
 #import <LindChain/IDEFoundation/NXBootstrap.h>
-#import <LindChain/ProcEnvironment/Surface/shimcache/ptrcache.h>
+#import <LindChain/ProcEnvironment/Surface/cache/patchcache.h>
 #import <LindChain/ProcEnvironment/Surface/fs/mount.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <LindChain/ProcEnvironment/litehook/litehook.h>
@@ -202,14 +202,14 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
     struct dyld_all_image_infos *infos = _alt_dyld_get_all_image_infos();
     if(infos == NULL)
     {
-        klog_log("ptrcache:emit", "couldn't obtain dyld_all_image_infos");
+        klog_log("patchfinder:emit", "couldn't obtain dyld_all_image_infos");
         return KERN_FAILURE;
     }
     
     const char *dyldBase = (const char *)infos->dyldImageLoadAddress;
     if(dyldBase == NULL)
     {
-        klog_log("ptrcache:emit", "dyldImageLoadAddress is NULL");
+        klog_log("patchfinder:emit", "dyldImageLoadAddress is NULL");
         return KERN_FAILURE;
     }
     
@@ -363,9 +363,13 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         offset++;
     }
     
-    if(entries[kDyldPtrFcntl].found == NULL)
+    /* on iOS 17 it seems like there is no normal fcntl call */
+    if(!@available(iOS 18.0, *))
     {
-        entries[kDyldPtrFcntl].found = findDyldFcntl17(dyldBase);
+        if(entries[kDyldPtrFcntl].found == NULL)
+        {
+            entries[kDyldPtrFcntl].found = findDyldFcntl17(dyldBase);
+        }
     }
     
     static const char *names[kDyldPtrCount] = {
@@ -390,38 +394,38 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         }
         
         out[i] = (uint64_t)(uintptr_t)entries[i].found;
-        klog_log("ptrcache:emit", "%s @ %p", names[i], (void*)out[i]);
+        klog_log("patchfinder:emit", "%s @ %p", names[i], (void*)out[i]);
     }
     
     if(entryNotFound)
     {
-        klog_log("ptrcache:emit", "couldn't find all pointers");
+        klog_log("patchfinder:emit", "couldn't find all pointers");
         return KERN_FAILURE;
     }
     
     return KERN_SUCCESS;
 }
 
-kern_return_t ksurface_ptrcache_emit(void)
+kern_return_t ksurface_patchcache_emit(void)
 {
-    uint64_t pointers[kDyldPtrCount];
-    kern_return_t kr = findDyldFunctionPointers(pointers);
+    uint64_t patches[kDyldPtrCount];
+    kern_return_t kr = findDyldFunctionPointers(patches);
     if(kr != KERN_SUCCESS)
     {
         return kr;
     }
     
-    NSData *data = [NSData dataWithBytes:pointers length:sizeof(pointers)];
+    NSData *data = [NSData dataWithBytes:patches length:sizeof(patches)];
     if(data == nil)
     {
         return KERN_RESOURCE_SHORTAGE;
     }
     
-    NSURL *url = [NXBootstrap.shared.rootURL URLByAppendingPathComponent:@"mntfs/bootfs/ptrcache"];
+    NSURL *url = [NXBootstrap.shared.rootURL URLByAppendingPathComponent:@"mntfs/bootfs/patchfinder.bin"];
     NSError *error = nil;
     if(![data writeToURL:url options:NSDataWritingAtomic error:&error])
     {
-        klog_log("ptrcache:emit", "couldn't write dyld.ptrs: %@", error);
+        klog_log("patchfinder:emit", "couldn't write dyld.ptrs: %@", error);
         return KERN_FAILURE;
     }
     

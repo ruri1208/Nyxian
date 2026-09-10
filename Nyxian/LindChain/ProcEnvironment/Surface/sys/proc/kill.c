@@ -35,21 +35,22 @@ DEFINE_SYSCALL_HANDLER(kill)
         sys_return_failure_with_errno(EINVAL);
     }
     
-    /*
-     * checking if the caller process that makes the call is the same process,
-     * also checks if the caller process has the entitlement to kill
-     * and checks if the process has primitive over the other process.
-     */
-    if(!proc_snapshot_primitive_over_pid_allowed(sys_proc_snapshot_, u_pid, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
-    {
-        sys_return_failure_with_errno(errno);
-    }
-    
     ksurface_proc_t *target;
     kern_return_t kr = proc_for_pid(u_pid, &target);
     if(kr != KERN_SUCCESS)
     {
         sys_return_failure_with_errno(ESRCH);
+    }
+    
+    /*
+     * checking if the caller process that makes the call is the same process,
+     * also checks if the caller process has the entitlement to kill
+     * and checks if the process has primitive over the other process.
+     */
+    if(!proc_snapshot_primitive_over_proc_allowed(sys_proc_snapshot_, target, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
+    {
+        kvo_release(target);
+        sys_return_failure_with_errno(errno);
     }
     
     /* making sure it is not ksurface it self */

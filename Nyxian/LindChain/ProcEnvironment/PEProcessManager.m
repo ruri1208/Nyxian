@@ -111,7 +111,7 @@
         }
         else
         {
-            [existingProcess terminate];
+            [existingProcess forceTerminate];
         }
     }
     
@@ -197,7 +197,7 @@
     PEProcess *process = [self processForBundleIdentifier:bundleIdentifier];
     if(process)
     {
-        [process terminate];
+        [process forceTerminate];
     }
 }
 

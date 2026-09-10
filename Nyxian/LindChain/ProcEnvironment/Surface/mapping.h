@@ -32,8 +32,6 @@
 #include <limits.h>
 #include <pthread.h>
 
-
-/// Structure that holds surface information and other structures
 typedef struct {
     
     /*
@@ -43,7 +41,8 @@ typedef struct {
     syscall_server_t *sys_server;
     
     /*
-     * private key used for code signing.
+     * public static key used to validate
+     * nyxian trust entitlement blobs.
      */
     uint8_t *pub_key;
     size_t pub_key_len;
