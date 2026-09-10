@@ -21,6 +21,8 @@
 
 #import <LindChain/ProcEnvironment/PELaunchService.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
+#import <LindChain/IDEFoundation/NXPlist.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <os/lock.h>
 #import <ksurface_config.h>
 
@@ -47,13 +49,25 @@
     if(self)
     {
         _lock = OS_UNFAIR_LOCK_INIT;
-        _dictionary = [NSDictionary dictionaryWithContentsOfFile:plistPath];
+        NXPlist *plist = [[NXPlist alloc] initWithPlistPath:plistPath withVariables:@{
+            @"NXROOT": NXBootstrap.shared.rootfsURL.path,
+        }];
+        
+        if(plist == NULL)
+        {
+            return nil;
+        }
+        
+        _dictionary = plist.dictionary;
         if(_dictionary == NULL)
         {
             return nil;
         }
         
         /* TODO: add sanitization */
+        NSMutableDictionary *mutableDictionary = [_dictionary mutableCopy];
+        mutableDictionary[@"PEExecutablePath"] = [_dictionary varObjectForKey:@"PEExecutablePath"];
+        _dictionary = [mutableDictionary copy];
         _executablePath = _dictionary[@"PEExecutablePath"];
         _serviceIdentifier = _dictionary[@"PEServiceIdentifier"];
         _autoRestart = [((NSNumber*)[_dictionary valueForKey:@"PEShouldAutorestart"]) boolValue];

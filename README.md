@@ -1,4 +1,4 @@
-<diƒv align="center">
+<div align="center">
   <h1><b>Nyxian</b></h1>
   <p><i>A full native IDE and a userspace microkernel for building and running iOS apps entirely on-device. offline, unjailbroken, iOS 18.0 all the way through iOS 27.0</i></p>
 </div>
