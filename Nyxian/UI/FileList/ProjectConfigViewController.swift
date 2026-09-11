@@ -33,7 +33,7 @@ enum FlagType {
     }
 }
 
-class FlagsEditViewController: UIThemedTableViewController {
+class FlagsEditViewController: NXUITableViewController {
     let flagType: FlagType
     private var flags: [String]
     var onFlagsChanged: (([String]) -> Void)?
@@ -202,7 +202,7 @@ class FlagsEditViewController: UIThemedTableViewController {
     }
 }
 
-class ProjectConfigViewController: UIThemedTableViewController {
+class ProjectConfigViewController: NXUITableViewController {
     let project: NXProject
     
     private var pendingDisplayName: String

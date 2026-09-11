@@ -25,6 +25,7 @@
 #import <Foundation/Foundation.h>
 #import <MobileDevelopmentKit/MobileDevelopmentKit.h>
 
-
+/* MARK: This API is unavailable in release builds */
+int dynamod_mprotect(void *addr, size_t len, int prot);
 
 #endif /* DYNAMOD_H */

@@ -19,14 +19,16 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KVOBJECT_LOCK_H
-#define KVOBJECT_LOCK_H
+#ifndef KVOBJECT_EVENT_H
+#define KVOBJECT_EVENT_H
 
-#import <LindChain/ProcEnvironment/Surface/obj/defs.h>
-#import <LindChain/ProcEnvironment/Surface/lock.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/defs.h>
+#include <mach/kern_return.h>
 
-#define kvo_rdlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_RDLOCK(&(((kvobject_t *)obj)->rwlock))
-#define kvo_wrlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(((kvobject_t *)obj)->rwlock))
-#define kvo_unlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(&(((kvobject_t *)obj)->rwlock))
+#define kvo_event_register(kvo, mask, handler, context, event) kvobject_event_register((kvobject_t*)kvo, (kvobject_event_type_t)mask, handler, context, event)
+#define kvo_event_trigger(kvo, mask, value) kvobject_event_trigger((kvobject_t*)kvo, (kvobject_event_type_t)mask, value)
 
-#endif /* KVOBJECT_LOCK_H */
+kern_return_t kvobject_event_register(kvobject_t *kvo, kvobject_event_type_t mask, kvobject_event_handler_t handler, void *context, kvobject_event_t **event);
+void kvobject_event_trigger(kvobject_t *kvo, kvobject_event_type_t mask, uint64_t value);
+
+#endif /* KVOBJECT_EVENT_H */

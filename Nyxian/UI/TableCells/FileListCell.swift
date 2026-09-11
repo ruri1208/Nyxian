@@ -127,7 +127,7 @@ class FileIcon: UIView {
         if let tintColor = tintColor {
             iconImageView.tintColor = tintColor
         } else {
-            iconImageView.tintColor = currentTheme?.textColor
+            iconImageView.tintColor = LDETheme.currentTheme?.textColor
         }
         iconImageView.isHidden = false
     }

@@ -22,7 +22,7 @@
 import UIKit
 import UniformTypeIdentifiers
 
-class FileListViewController: UIThemedTableViewController, UIDocumentPickerDelegate {
+class FileListViewController: NXUITableViewController, UIDocumentPickerDelegate {
     let project: NXProject?
     let path: String
     var entries: [FileListEntry]

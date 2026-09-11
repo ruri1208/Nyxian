@@ -158,6 +158,8 @@ func ldeThemeColorGen(colorEntry: Any) -> UIColor {
 }
 
 @objc class LDETheme: NSObject, Theme {
+    @objc static var currentTheme: LDETheme? = nil
+    
     @objc var fontSize: CGFloat {
         return UserDefaults.standard.object(forKey: "LDEFontSize") == nil ? 12.0 : CGFloat(UserDefaults.standard.integer(forKey: "LDEFontSize"))
     }

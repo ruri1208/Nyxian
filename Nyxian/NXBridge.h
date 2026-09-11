@@ -24,6 +24,8 @@
 
 /* Objective-C UI Headers */
 #import <UI/XCodeButton.h>
+#import <UI/UIInit/NXUITableViewController.h>
+#import <UI/Settings/NXSettingsTableViewController.h>
 
 /* Apple Private API Headers */
 #import <LindChain/Private/UIKitPrivate.h>

@@ -19,11 +19,17 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KTFP_KTFP_H
-#define KTFP_KTFP_H
+#ifndef KVOBJECT_REFERENCE_H
+#define KVOBJECT_REFERENCE_H
 
-#include <mach/mach.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/defs.h>
 
-kern_return_t ktfp(mach_port_t exceptionPort, task_t *task);
+#define kvo_retain(obj) kvobject_retain((kvobject_t *)(obj))
+#define kvo_invalidate(obj) kvobject_invalidate((kvobject_t *)(obj))
+#define kvo_release(obj) kvobject_release((kvobject_t *)(obj))
 
-#endif /* KTFP_KTFP_H */
+bool kvobject_retain(kvobject_t *kvo);
+void kvobject_invalidate(kvobject_t *kvo);
+void kvobject_release(kvobject_t *kvo);
+
+#endif /* KVOBJECT_REFERENCE_H */

@@ -24,7 +24,7 @@
 #include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
 #include <LindChain/ProcEnvironment/Surface/proc/def.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
-#include <LindChain/ProcEnvironment/Utils/ktfp.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/task_handoff.h>
 
 DEFINE_SYSCALL_HANDLER(handoffep)
 {
@@ -50,7 +50,7 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     *recv_buffer = NULL;    /* consuming the mach message header the syscall server uses so it won't attempt to reply. */
     
     task_t returnedTask;
-    kern_return_t kr = ktfp(exceptionPort, &returnedTask);
+    kern_return_t kr = task_handoff(exceptionPort, &returnedTask);
     mach_port_mod_refs(mach_task_self(), exceptionPort, MACH_PORT_RIGHT_RECEIVE, -1);
     if(kr != KERN_SUCCESS)
     {

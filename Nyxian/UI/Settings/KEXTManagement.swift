@@ -71,8 +71,8 @@ class KextToggleTableCell: UITableViewCell {
     }
     
     private func applyTheme() {
-        toggle.onTintColor = currentTheme?.appLabel
-        toggle.thumbTintColor = currentTheme?.appTableCell
+        toggle.onTintColor = LDETheme.currentTheme?.appLabel
+        toggle.thumbTintColor = LDETheme.currentTheme?.appTableCell
     }
     
     override func layoutSubviews() {
@@ -89,7 +89,7 @@ class KextToggleTableCell: UITableViewCell {
     }
 }
 
-class KEXTManagementViewController: UIThemedTableViewController, UITextFieldDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
+class KEXTManagementViewController: NXUITableViewController, UITextFieldDelegate, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
     
     var kexts: [PEKext] = []
     static var kextConfigChanged: Bool = false

@@ -19,12 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_PROC_INFO_H
-#define SURFACE_SYS_PROC_INFO_H
+#ifndef NXSETTINGSTABLEVIEWCONTROLLER_H
+#define NXSETTINGSTABLEVIEWCONTROLLER_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
-#include <LindChain/ProcEnvironment/Surface/libkern/bsd/proc_info.h>
+#import <UIKit/UIKit.h>
+#import <UI/UIInit/NXUITableViewController.h>
 
-DEFINE_SYSCALL_HANDLER(proc_info);
+@interface NXSettingsTableViewController : NXUITableViewController
 
-#endif /* SURFACE_SYS_PROC_INFO_H */
+@end
+
+#endif /* NXSETTINGSTABLEVIEWCONTROLLER_H */

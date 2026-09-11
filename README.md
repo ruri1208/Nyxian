@@ -57,7 +57,7 @@ The only current limitation is that we cannot intercept a arm64 supervisor call,
       - [x] act upon `kmod_info_t`
     - Syscall handling
       - [x] Mach IPC syscall server
-      - [x] Task port handoff (usually they are guarded we bypass that by moving a receive right after the send right has been set as exception port to the host and then executing a `__builtin_trap` which then causes the host to get a `ÌKOT_TASK` which is a control task port which can be reference retained and boom we got our redistributable unguarded task port)
+      - [x] Task port handoff (usually they are guarded we bypass that by moving a receive right after the send right has been set as exception port to the host and then executing a `brk` instruction which then causes the host to get a `IKOT_TASK` mach port reference which is a control task port which can be reference retained and boom we got our redistributable unguarded task port)
       - [x] Memory copy in/out of guests (yep out of the iOS processes and into them without assistance, this is not a typo lol)
     - Subprocess Patches
       - [x] `posix_spawn`/`posix_spawnp` fix

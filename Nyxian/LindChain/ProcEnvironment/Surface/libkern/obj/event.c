@@ -19,8 +19,8 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/obj/event.h>
-#import <LindChain/ProcEnvironment/Surface/obj/reference.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/event.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/reference.h>
 #import <LindChain/ProcEnvironment/Surface/lock.h>
 #import <stdlib.h>
 #import <assert.h>

@@ -21,7 +21,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/kxld/resolve.h>
 #include <LindChain/ProcEnvironment/Surface/kxld/pseudo.h>
-#include <LindChain/ProcEnvironment/Surface/radix/radix.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/radix/radix.h>
 #include <sys/sysctl.h>
 #include <dlfcn.h>
 #include <os/lock.h>

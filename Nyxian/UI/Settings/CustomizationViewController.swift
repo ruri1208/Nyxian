@@ -22,7 +22,7 @@
 import UIKit
 import Runestone
 
-class CustomizationViewController: UIThemedTableViewController {
+class CustomizationViewController: NXUITableViewController {
     var textField: UITextField?
     
     var currentIconName: String {

@@ -24,7 +24,7 @@ import UIKit
 import Darwin
 import UniformTypeIdentifiers
 
-class FileInfoViewController: UIThemedTableViewController {
+class FileInfoViewController: NXUITableViewController {
     
     private struct Row {
         let title: String

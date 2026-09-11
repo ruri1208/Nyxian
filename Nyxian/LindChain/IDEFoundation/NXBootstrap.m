@@ -22,7 +22,7 @@
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/Utils/Zip.h>
 #import <LindChain/Downloader/fdownload.h>
-#import <LindChain/ProcEnvironment/Surface/extra/relax.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/relax.h>
 #import <MobileDevelopmentKit/MDKThreadPool.h>
 #import <UI/XCodeButton.h>
 #import <Nyxian-Swift.h>

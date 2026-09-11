@@ -22,7 +22,7 @@
 #ifndef KXLD_IMAGE_H
 #define KXLD_IMAGE_H
 
-#include <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/obj/kvobject.h>
 #include <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #include <LindChain/ProcEnvironment/Surface/trust/signing.h>
 #include <stdio.h>

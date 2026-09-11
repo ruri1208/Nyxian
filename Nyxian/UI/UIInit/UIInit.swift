@@ -21,14 +21,13 @@
 
 import UIKit
 
-var currentTheme: LDETheme?
 var currentNavigationBarAppearance = UINavigationBarAppearance()
 var currentTabBarAppearance = UITabBarAppearance()
 
 func RevertUI() {
-    currentTheme = LDEThemeReader.shared.currentlySelectedTheme()
+    LDETheme.currentTheme = LDEThemeReader.shared.currentlySelectedTheme()
     
-    guard let currentTheme = currentTheme else { return }
+    guard let currentTheme = LDETheme.currentTheme else { return }
     
     if #unavailable(iOS 26.0) {
         currentNavigationBarAppearance.backgroundColor = currentTheme.gutterBackgroundColor

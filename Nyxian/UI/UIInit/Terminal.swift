@@ -98,9 +98,9 @@ import UIKit
         super.init(frame: frame)
         
         self.isOpaque = false;
-        self.backgroundColor = currentTheme?.backgroundColor ?? .secondarySystemBackground
-        self.nativeForegroundColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
-        self.caretTextColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
+        self.backgroundColor = LDETheme.currentTheme?.backgroundColor ?? .secondarySystemBackground
+        self.nativeForegroundColor = LDETheme.currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
+        self.caretTextColor = LDETheme.currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
         self.font = UIFont.monospacedSystemFont(ofSize: (UIDevice.current.userInterfaceIdiom == .pad) ? 14 : 10, weight: .regular)
         
         self.ttyHandle?.readabilityHandler = { [weak self] fileHandle in
@@ -138,8 +138,8 @@ import UIKit
     }
     
     @objc func handleThemeChange(_ notification: Notification?) {
-        self.backgroundColor = currentTheme?.backgroundColor ?? .secondarySystemBackground
-        self.nativeForegroundColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
-        self.caretTextColor = currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
+        self.backgroundColor = LDETheme.currentTheme?.backgroundColor ?? .secondarySystemBackground
+        self.nativeForegroundColor = LDETheme.currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
+        self.caretTextColor = LDETheme.currentTheme?.textColor ?? gibDynamicColor(light: .label, dark: self.nativeForegroundColor)
     }
 }

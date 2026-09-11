@@ -19,10 +19,10 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Surface/obj/alloc.h>
-#import <LindChain/ProcEnvironment/Surface/obj/reference.h>
-#import <LindChain/ProcEnvironment/Surface/obj/lock.h>
-#import <LindChain/ProcEnvironment/Surface/obj/event.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/alloc.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/reference.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/lock.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/event.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

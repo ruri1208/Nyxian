@@ -25,7 +25,7 @@
 #include <LindChain/ProcEnvironment/Surface/proc/def.h>
 #include <LindChain/ProcEnvironment/Surface/tty/def.h>
 #include <LindChain/ProcEnvironment/Surface/sys/core.h>
-#include <LindChain/ProcEnvironment/Surface/radix/radix.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/radix/radix.h>
 #include <LindChain/ProcEnvironment/Surface/lock.h>
 #include <LindChain/ProcEnvironment/Surface/key.h>
 #include <stdint.h>

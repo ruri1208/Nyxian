@@ -22,7 +22,7 @@
 import UIKit
 import UniformTypeIdentifiers
 
-class CertificateImporter: UIThemedTableViewController, UITextFieldDelegate {
+class CertificateImporter: NXUITableViewController, UITextFieldDelegate {
     var textField: NXTextFieldTableCell?
     
     var cert: ComplexImportTableCell?

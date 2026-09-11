@@ -19,18 +19,13 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KVOBJECT_ALLOC_H
-#define KVOBJECT_ALLOC_H
+#ifndef KVOBJECT_H
+#define KVOBJECT_H
 
-#import <LindChain/ProcEnvironment/Surface/obj/defs.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/defs.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/alloc.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/lock.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/reference.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/event.h>
 
-#define kvo_alloc(main) (void*)kvobject_alloc(main)
-#define kvo_alloc_fastpath(name) (void*)kvobject_alloc(GET_KVOBJECT_MAIN_EVENT_HANDLER(name))
-#define kvo_copy(kvo) (void*)kvobject_copy((kvobject_t*)kvo)
-#define kvo_snapshot(kvo, option) (void*)kvobject_snapshot((kvobject_t*)kvo, option)
-
-kvobject_t *kvobject_alloc(kvobject_main_event_handler_t handler);
-kvobject_t *kvobject_copy(kvobject_t *kvo);
-kvobject_snapshot_t *kvobject_snapshot(kvobject_t *kvo, kvobject_snapshot_options_t option);
-
-#endif /* KVOBJECT_ALLOC_H */
+#endif /* KVOBJECT_H */
