@@ -22,7 +22,7 @@
 #ifndef TTY_DEF_H
 #define TTY_DEF_H
 
-#include <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/obj/kvobject.h>
 #include <LindChain/ProcEnvironment/Surface/proc/def.h>
 #include <limits.h>
 #include <unistd.h>

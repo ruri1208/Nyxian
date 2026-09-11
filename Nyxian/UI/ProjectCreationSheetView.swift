@@ -44,7 +44,7 @@ struct ProjectCreationSheetView: View {
         VStack(spacing: 0) {
             header
             Rectangle()
-                .fill(Color(uiColor: currentTheme!.gutterHairlineColor))
+                .fill(Color(uiColor: LDETheme.currentTheme!.gutterHairlineColor))
                 .frame(height: 1 / UIScreen.main.scale)
             ScrollView {
                 Group {
@@ -57,11 +57,11 @@ struct ProjectCreationSheetView: View {
                 .padding(.vertical, 16)
             }
             Rectangle()
-                .fill(Color(uiColor: currentTheme!.gutterHairlineColor))
+                .fill(Color(uiColor: LDETheme.currentTheme!.gutterHairlineColor))
                 .frame(height: 1 / UIScreen.main.scale)
             controls
         }
-        .background(Color(uiColor: currentTheme!.backgroundColor))
+        .background(Color(uiColor: LDETheme.currentTheme!.backgroundColor))
         .onAppear {
             NXWindowServer.shared().windowsGetOutOfMyWay()
         }
@@ -78,7 +78,7 @@ struct ProjectCreationSheetView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 14)
-            .foregroundColor(Color(currentTheme!.textColor))
+            .foregroundColor(Color(LDETheme.currentTheme!.textColor))
     }
     
     private var controls: some View {
@@ -120,10 +120,10 @@ private struct ProjectCreationLegacyPrimaryButtonStyle: ButtonStyle {
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 18)
             .frame(minHeight: 44)
-            .foregroundStyle(Color(uiColor: currentTheme!.backgroundColor))
+            .foregroundStyle(Color(uiColor: LDETheme.currentTheme!.backgroundColor))
             .background {
                 Capsule(style: .continuous)
-                    .fill(Color(uiColor: currentTheme!.textColor))
+                    .fill(Color(uiColor: LDETheme.currentTheme!.textColor))
                     .opacity(buttonOpacity(isPressed: configuration.isPressed))
             }
     }
@@ -161,14 +161,14 @@ private struct ProjectCreationLegacySecondaryButtonStyle: ButtonStyle {
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 18)
             .frame(minHeight: 44)
-            .foregroundStyle(Color(uiColor: currentTheme!.textColor))
+            .foregroundStyle(Color(uiColor: LDETheme.currentTheme!.textColor))
             .background {
                 Capsule(style: .continuous)
-                    .fill(Color(uiColor: currentTheme!.backgroundColor))
+                    .fill(Color(uiColor: LDETheme.currentTheme!.backgroundColor))
                     .overlay {
                         Capsule(style: .continuous)
                             .strokeBorder(
-                                Color(uiColor: currentTheme!.gutterHairlineColor),
+                                Color(uiColor: LDETheme.currentTheme!.gutterHairlineColor),
                                 lineWidth: 1
                             )
                     }

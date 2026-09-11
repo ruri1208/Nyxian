@@ -22,7 +22,7 @@
 import Foundation
 import UIKit
 
-class CreditsViewController: UIThemedTableViewController {
+class CreditsViewController: NXUITableViewController {
     
     struct CreditSection {
         let title: String

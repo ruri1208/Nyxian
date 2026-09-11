@@ -25,7 +25,7 @@ class ProjectTableCell: UITableViewCell {
     static var reuseIdentifier: String = "NXProjectTableCell"
     private static let iconSide: CGFloat = 50
     private static let renderQueue = DispatchQueue(label: "org.emexlabs.nyxian.icon-render", qos: .userInitiated)
-    private static let iconCache: NSCache<NSString, UIImage> = {
+    static let iconCache: NSCache<NSString, UIImage> = {
         let c = NSCache<NSString, UIImage>()
         c.totalCostLimit = 8 * 1024 * 1024
         return c

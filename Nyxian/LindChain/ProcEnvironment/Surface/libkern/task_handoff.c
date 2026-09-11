@@ -19,12 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#import <LindChain/ProcEnvironment/Utils/ktfp.h>
-#import <LindChain/ProcEnvironment/Utils/klog.h>
-#import <LiveShim/LiveShimSyscall.h>
-#import <assert.h>
-#import <ksurface_config.h>
-#import <ksurface_abi.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/task_handoff.h>
+#include <LindChain/ProcEnvironment/Utils/klog.h>
+#include <LiveShim/LiveShimSyscall.h>
+#include <ksurface_abi.h>
+#include <assert.h>
 
 void task_normalize(task_t task)
 {
@@ -58,13 +57,14 @@ typedef struct {
     };
 } __Request__exception_raise_large_t;
 
-kern_return_t ktfp(mach_port_t exceptionPort,
-                   task_t *task)
+kern_return_t task_handoff(mach_port_t exceptionPort,
+                           task_t *task)
 {
     kern_return_t kr = KERN_FAILURE;
     
 #if !HOST_ENV
     bool success = false;
+    bool needs_restore = false;
     
     /*
      * constructing the exception port and
@@ -83,7 +83,7 @@ kern_return_t ktfp(mach_port_t exceptionPort,
     mach_port_t old_ports[EXC_TYPES_COUNT];
     exception_behavior_t old_behaviors[EXC_TYPES_COUNT];
     thread_state_flavor_t old_flavors[EXC_TYPES_COUNT];
-    thread_get_exception_ports(thread, EXC_MASK_BREAKPOINT, old_masks, &old_count, old_ports, old_behaviors, old_flavors);
+    needs_restore = thread_get_exception_ports(thread, EXC_MASK_BREAKPOINT, old_masks, &old_count, old_ports, old_behaviors, old_flavors) == KERN_SUCCESS;
     
     kr = mach_port_construct(mach_task_self(), &opt, 0, &exceptionPort);
     if(kr != KERN_SUCCESS)
@@ -120,7 +120,7 @@ out_dealloc:
      * since the exception port was moved to
      * the host process we just need one dealloc.
      */
-    if(old_count > 0)
+    if(needs_restore && old_count > 0)
     {
         thread_set_exception_ports(thread, old_masks[0], old_ports[0], old_behaviors[0], old_flavors[0]);
     }

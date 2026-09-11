@@ -20,13 +20,13 @@
 */
 
 #import <LindChain/ProcEnvironment/Shims/environment.h>
-#import <LindChain/ProcEnvironment/Surface/extra/relax.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/relax.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/task_handoff.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCBootstrap.h>
 #import <LiveShim/LiveShimSyscall.h>
 #import <LindChain/Utils/CFTools.h>
-#include <LindChain/ProcEnvironment/Utils/ktfp.h>
-#include <dlfcn.h>
 #import <ksurface_config.h>
+#import <dlfcn.h>
 
 #if !HOST_ENV
 
@@ -176,7 +176,7 @@ int environment_init(EnvironmentExec exec,
         }
         
         /* handoffs task port */
-        ktfp(MACH_PORT_NULL, NULL);
+        task_handoff(MACH_PORT_NULL, NULL);
         
         /* invoking code execution or let it return */
         if(exec == EnvironmentExecLiveContainer)

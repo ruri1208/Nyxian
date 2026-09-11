@@ -19,16 +19,13 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KVOBJECT_EVENT_H
-#define KVOBJECT_EVENT_H
+#ifndef NXUITABLEVIEWCONTROLLER_H
+#define NXUITABLEVIEWCONTROLLER_H
 
-#import <LindChain/ProcEnvironment/Surface/obj/defs.h>
-#include <mach/kern_return.h>
+#import <UIKit/UIKit.h>
 
-#define kvo_event_register(kvo, mask, handler, context, event) kvobject_event_register((kvobject_t*)kvo, (kvobject_event_type_t)mask, handler, context, event)
-#define kvo_event_trigger(kvo, mask, value) kvobject_event_trigger((kvobject_t*)kvo, (kvobject_event_type_t)mask, value)
+@interface NXUITableViewController : UITableViewController
+@end
 
-kern_return_t kvobject_event_register(kvobject_t *kvo, kvobject_event_type_t mask, kvobject_event_handler_t handler, void *context, kvobject_event_t **event);
-void kvobject_event_trigger(kvobject_t *kvo, kvobject_event_type_t mask, uint64_t value);
+#endif /* NXUITABLEVIEWCONTROLLER_H */
 
-#endif /* KVOBJECT_EVENT_H */

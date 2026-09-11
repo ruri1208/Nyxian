@@ -20,7 +20,7 @@
 */
 
 #import <LindChain/ProcEnvironment/PEFileTable.h>
-#import <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/bsd/proc_info.h>
 #import <xpc/xpc.h>
 #include <LindChain/ProcEnvironment/Utils/fd.h>
 

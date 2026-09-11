@@ -19,7 +19,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/radix/radix.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/radix/radix.h>
 #include <stdlib.h>
 #include <stdbool.h>
 

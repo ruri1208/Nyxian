@@ -39,21 +39,21 @@ fileprivate func errorFallback(title: String, message: String) {
     }
 }
 
-struct NXApplicationState {
-    static var extensionExists: Bool = {
+@objc class NXApplicationState: NSObject {
+    @objc static var extensionExists: Bool = {
         return PEGetLiveProcessBundle() != nil
     }()
     
-    static var extensionCorrectlyEntitled: Bool = {
+    @objc static var extensionCorrectlyEntitled: Bool = {
         return PEExtensionHasGetTaskAllowed()
     }()
     
-    static var extensionLessMode: Bool = {
+    @objc static var extensionLessMode: Bool = {
         return !extensionExists || !extensionCorrectlyEntitled;
     }()
     
     private static var actualLoadKernelExtensions: Bool = false
-    static var loadKernelExtensions: Bool {
+    @objc static var loadKernelExtensions: Bool {
         get {
             if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
                 UserDefaults.standard.removeObject(forKey: "LDEDisableKernelExtensionsForce")
@@ -69,9 +69,9 @@ struct NXApplicationState {
         }
     }
     
-    static var fileListRequiresToSendRequests: Bool = false
+    @objc static var fileListRequiresToSendRequests: Bool = false
     
-    static func restartAppWithoutKEXTLoadingEnabled() {
+    @objc static func restartAppWithoutKEXTLoadingEnabled() {
         UserDefaults.standard.set(true, forKey: "LDEDisableKernelExtensionsForce")
         PERestartSelf()
     }
@@ -208,7 +208,7 @@ struct UIOnboardingHelper {
     }
     
     static func setUpButton() -> UIOnboardingButtonConfiguration {
-        let lightBackground = currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
+        let lightBackground = LDETheme.currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
         
         return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
@@ -239,7 +239,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
         
         let contentViewController: ContentViewController = ContentViewController()
-        let settingsViewController: SettingsViewController = SettingsViewController()
+        let settingsViewController: NXSettingsTableViewController = NXSettingsTableViewController()
         
         let contentNavigationController: UINavigationController = UINavigationController(rootViewController: contentViewController)
         let settingsNavigationController: UINavigationController = UINavigationController(rootViewController: settingsViewController)
@@ -275,7 +275,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         let onboardingConfiguration = UIOnboardingViewConfiguration(appIcon: UIOnboardingHelper.setUpIcon(), firstTitleLine: UIOnboardingHelper.setUpFirstTitleLine(), secondTitleLine: UIOnboardingHelper.setUpSecondTitleLine(), features: UIOnboardingHelper.setUpFeatures(), textViewConfiguration: UIOnboardingHelper.setUpNotice(), buttonConfiguration: UIOnboardingHelper.setUpButton())
         let onboardingController: UIOnboardingViewController = UIOnboardingViewController(withConfiguration: onboardingConfiguration)
         onboardingController.delegate = self
-        onboardingController.backgroundColor = currentTheme!.backgroundColor
+        onboardingController.backgroundColor = LDETheme.currentTheme!.backgroundColor
         
         self.window?.rootViewController?.present(onboardingController, animated: false)
     }

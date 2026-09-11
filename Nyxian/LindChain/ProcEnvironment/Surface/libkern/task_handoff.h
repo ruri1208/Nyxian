@@ -19,12 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_PROC_INFO_H
-#define SURFACE_SYS_PROC_INFO_H
+#ifndef SURFACE_LIBKERN_TASK_HANDOFF_H
+#define SURFACE_LIBKERN_TASK_HANDOFF_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
-#include <LindChain/ProcEnvironment/Surface/libkern/bsd/proc_info.h>
+#include <mach/mach.h>
 
-DEFINE_SYSCALL_HANDLER(proc_info);
+kern_return_t task_handoff(mach_port_t exceptionPort, task_t *task);
 
-#endif /* SURFACE_SYS_PROC_INFO_H */
+#endif /* SURFACE_LIBKERN_TASK_HANDOFF_H */

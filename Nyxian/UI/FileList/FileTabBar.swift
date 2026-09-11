@@ -57,7 +57,7 @@ class FileTabStack: UIStackView {
     
     private func createSeparator() -> UIView {
         let separator = UIView()
-        separator.backgroundColor = currentTheme?.gutterHairlineColor ?? UIColor.separator
+        separator.backgroundColor = LDETheme.currentTheme?.gutterHairlineColor ?? UIColor.separator
         separator.translatesAutoresizingMaskIntoConstraints = false
         separator.tag = 8888
         
@@ -297,8 +297,8 @@ class FileTabBar: UIVisualEffectView, UIScrollViewDelegate {
                     rightShadowLayer.colors = [UIColor.white.withAlphaComponent(0).cgColor, UIColor.white.withAlphaComponent(1.0).cgColor]
             }
         } else {
-            leftShadowLayer.colors = [(currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(1).cgColor, (currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(0).cgColor]
-            rightShadowLayer.colors = [(currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(0).cgColor, (currentTheme?.gutterBackgroundColor ?? UIColor.black).cgColor]
+            leftShadowLayer.colors = [(LDETheme.currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(1).cgColor, (LDETheme.currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(0).cgColor]
+            rightShadowLayer.colors = [(LDETheme.currentTheme?.gutterBackgroundColor ?? UIColor.black).withAlphaComponent(0).cgColor, (LDETheme.currentTheme?.gutterBackgroundColor ?? UIColor.black).cgColor]
         }
     }
 }

@@ -149,7 +149,7 @@ class CodeEditorViewController: UIViewController, NXDocumentDelegate {
             self.navigationItem.setLeftBarButton(closeButton, animated: true)
         }
         
-        let theme: LDETheme = currentTheme ?? LDEThemeReader.shared.currentlySelectedTheme()
+        let theme: LDETheme = LDETheme.currentTheme ?? LDEThemeReader.shared.currentlySelectedTheme()
             
         self.view.backgroundColor = .systemBackground
         self.textView.backgroundColor = theme.backgroundColor

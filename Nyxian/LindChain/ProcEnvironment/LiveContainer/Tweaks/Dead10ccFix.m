@@ -23,7 +23,7 @@
 #include <sys/xattr.h>
 #include "utils.h"
 #include <unistd.h>
-#include <LindChain/ProcEnvironment/Surface/extra/xnubits/proc_info.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/bsd/proc_info.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
 #include <fcntl.h>

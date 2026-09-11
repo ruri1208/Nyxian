@@ -19,17 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef KVOBJECT_REFERENCE_H
-#define KVOBJECT_REFERENCE_H
+#ifndef KVOBJECT_LOCK_H
+#define KVOBJECT_LOCK_H
 
-#import <LindChain/ProcEnvironment/Surface/obj/defs.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/defs.h>
+#import <LindChain/ProcEnvironment/Surface/lock.h>
 
-#define kvo_retain(obj) kvobject_retain((kvobject_t *)(obj))
-#define kvo_invalidate(obj) kvobject_invalidate((kvobject_t *)(obj))
-#define kvo_release(obj) kvobject_release((kvobject_t *)(obj))
+#define kvo_rdlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_RDLOCK(&(((kvobject_t *)obj)->rwlock))
+#define kvo_wrlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_WRLOCK(&(((kvobject_t *)obj)->rwlock))
+#define kvo_unlock(obj) PTHREAD_RWLOCK_DEBUG_IMP_UNLOCK(&(((kvobject_t *)obj)->rwlock))
 
-bool kvobject_retain(kvobject_t *kvo);
-void kvobject_invalidate(kvobject_t *kvo);
-void kvobject_release(kvobject_t *kvo);
-
-#endif /* KVOBJECT_REFERENCE_H */
+#endif /* KVOBJECT_LOCK_H */

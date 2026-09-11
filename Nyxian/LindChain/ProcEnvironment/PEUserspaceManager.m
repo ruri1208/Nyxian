@@ -112,7 +112,6 @@
     
     if(enabled)
     {
-        klog_log(domain, "loading kexts into address space");
         NSMutableString *string = [[NSMutableString alloc] init];
         klog_log(domain, "kextloader %s", PEKextLoaderLoad(string) ? "[ok]" : "[fail]");
         NSString *message = [string copy];

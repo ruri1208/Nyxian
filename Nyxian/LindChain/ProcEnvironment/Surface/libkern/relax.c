@@ -19,7 +19,7 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/extra/relax.h>
+#include <LindChain/ProcEnvironment/Surface/libkern/relax.h>
 
 void relax(void)
 {

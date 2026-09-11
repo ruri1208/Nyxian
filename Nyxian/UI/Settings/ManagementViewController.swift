@@ -35,7 +35,7 @@ class NXManagementUISingleFlight {
     }
 }
 
-class ManagementViewController: UIThemedTableViewController {
+class ManagementViewController: NXUITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Management"
@@ -55,7 +55,7 @@ class ManagementViewController: UIThemedTableViewController {
             case 2:
                 return 2
             default:
-                return 4
+                return 5
         }
     }
     
@@ -79,13 +79,15 @@ class ManagementViewController: UIThemedTableViewController {
                 }
             default:
                 if indexPath.row == 0 {
-                    tableViewCell.textLabel?.text = "Userspace Reboot"
+                    tableViewCell.textLabel?.text = "Clear IconCache"
                 } else if indexPath.row == 1 {
-                    tableViewCell.textLabel?.text = "Reload Daemons"
+                    tableViewCell.textLabel?.text = "Userspace Reboot"
                 } else if indexPath.row == 2 {
+                    tableViewCell.textLabel?.text = "Reload Daemons"
+                } else if indexPath.row == 3 {
                     tableViewCell.textLabel?.text = "Clear Application Caches"
                     tableViewCell.textLabel?.textColor = .systemRed
-                } else if indexPath.row == 3 {
+                } else if indexPath.row == 4 {
                     tableViewCell.textLabel?.text = "Restore"
                     tableViewCell.textLabel?.textColor = .systemRed
                 }
@@ -108,14 +110,16 @@ class ManagementViewController: UIThemedTableViewController {
                 }
             default:
                 if indexPath.row == 0 {
+                    ProjectTableCell.iconCache.removeAllObjects()
+                } else if indexPath.row == 1 {
                     NXManagementUISingleFlight.run {
                         PEUserspaceManager.shared().rebootUserspace()
                     }
-                } else if indexPath.row == 1 {
+                } else if indexPath.row == 2 {
                     NXManagementUISingleFlight.run {
                         PEUserspaceManager.shared().reloadDaemons()
                     }
-                } else if indexPath.row == 2 {
+                } else if indexPath.row == 3 {
                     let alert = UIAlertController(
                         title: "Clear Application Caches",
                         message: "All application caches will be wiped, this can have consequences, but it will result in less data being in use. (Some people like that for performance reasons)",
@@ -174,7 +178,7 @@ class ManagementViewController: UIThemedTableViewController {
                     alert.addAction(UIAlertAction(title: "Keep Caches", style: .cancel))
                 
                     self.present(alert, animated: true)
-                } else if indexPath.row == 3 {
+                } else if indexPath.row == 4 {
                     let alert = UIAlertController(
                         title: "Restore",
                         message: "All apps, binaries and data containers in the virtual environment will be wiped.",

@@ -31,9 +31,9 @@ struct ProjectTemplateSelectionView: View {
     
     @ObservedObject var model: ProjectTemplateOptionsModel
     
-    private var textColor: Color { Color(uiColor: currentTheme!.textColor) }
-    private var backgroundColor: Color { Color(uiColor: currentTheme!.backgroundColor) }
-    private var hairlineColor: Color { Color(uiColor: currentTheme!.gutterHairlineColor) }
+    private var textColor: Color { Color(uiColor: LDETheme.currentTheme!.textColor) }
+    private var backgroundColor: Color { Color(uiColor: LDETheme.currentTheme!.backgroundColor) }
+    private var hairlineColor: Color { Color(uiColor: LDETheme.currentTheme!.gutterHairlineColor) }
     
     var body: some View {
         VStack(spacing: 0) {

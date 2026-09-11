@@ -23,7 +23,7 @@
 #define PROC_DEF_H
 
 #import <LindChain/ProcEnvironment/Surface/limits.h>
-#import <LindChain/ProcEnvironment/Surface/obj/kvobject.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/obj/kvobject.h>
 #include <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #include <sys/sysctl.h>
 
@@ -81,9 +81,8 @@ struct ksurface_proc {
     /* header of process */
     kvobject_t header;
     
-    
     /*
-     * task port of a process, the biggest permitive
+     * task port of a process, the biggest primitive
      * a other process can have over a process, once
      * given to a other process we cannot take it back
      * we cannot control the mach kernel!

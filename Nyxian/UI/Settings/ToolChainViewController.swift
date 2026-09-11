@@ -22,7 +22,7 @@
 import UIKit
 import CoreCompiler
 
-class ToolChainViewController: UIThemedTableViewController {
+class ToolChainViewController: NXUITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()

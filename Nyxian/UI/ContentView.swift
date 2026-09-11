@@ -23,7 +23,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
-@objc class ContentViewController: UIThemedTableViewController, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
+@objc class ContentViewController: NXUITableViewController, UIDocumentPickerDelegate, UIAdaptivePresentationControllerDelegate {
     var sessionIndex: IndexPath? = nil
     var projectsList: [String:[NXProject]] = [:]
     
@@ -86,7 +86,7 @@ import UIKit
             }
         )
         
-        _ = view.presentationBackground(Color(uiColor: currentTheme!.backgroundColor))
+        _ = view.presentationBackground(Color(uiColor: LDETheme.currentTheme!.backgroundColor))
 
         let hostingController = UIHostingController(rootView: view)
         hostingController.modalPresentationStyle = .pageSheet
@@ -94,7 +94,7 @@ import UIKit
             sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
         }
-        hostingController.view.backgroundColor = currentTheme!.backgroundColor;
+        hostingController.view.backgroundColor = LDETheme.currentTheme!.backgroundColor;
         present(hostingController, animated: true)
     }
 
@@ -446,6 +446,10 @@ final class ProjectTemplateOptionsModel: ObservableObject {
     var showsAppOptions: Bool {
         return schemeKind == .app
     }
+    
+    var showLanguageOptions: Bool {
+        return schemeKind != .kSurfaceKext
+    }
 
     var normalizedOrganizationIdentifier: String {
         return Self.organizationIdentifier(from: organizationIdentifier)
@@ -566,8 +570,8 @@ final class ProjectTemplateOptionsModel: ObservableObject {
 struct ProjectTemplateOptionsView: View {
     @ObservedObject var model: ProjectTemplateOptionsModel
     
-    private var textColor: Color { Color(uiColor: currentTheme!.textColor) }
-    private var hairlineColor: Color { Color(uiColor: currentTheme!.gutterHairlineColor) }
+    private var textColor: Color { Color(uiColor: LDETheme.currentTheme!.textColor) }
+    private var hairlineColor: Color { Color(uiColor: LDETheme.currentTheme!.gutterHairlineColor) }
     private var groupBackground: Color { textColor.opacity(0.05) }
     private var secondaryTextColor: Color { textColor.opacity(0.6) }
     
@@ -598,27 +602,28 @@ struct ProjectTemplateOptionsView: View {
                         title: "Interface:",
                         options: model.interfaceOptions,
                         disabledIDs: model.interfaceDisabledIDs,
-                        selectionID: Binding(
-                            get: { model.interfaceSelection },
-                            set: { model.interfaceSelection = $0 }
-                        )
+                        selectionID: $model.interfaceSelection
                     )
                 }
                 
-                ProjectTemplatePickerRow(
-                    title: "Language:",
-                    options: model.languageOptions,
-                    selectionID: Binding(
-                        get: { model.languageSelection },
-                        set: { model.languageSelection = $0 }
+                if model.showLanguageOptions {
+                    ProjectTemplatePickerRow(
+                        title: "Language:",
+                        options: model.languageOptions,
+                        selectionID: $model.languageSelection
                     )
-                )
+                }
             }
         }
         .padding(.top, 2)
         .padding(.horizontal, 18)
         .padding(.bottom, 6)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear {
+            if model.schemeKind == .kSurfaceKext {
+                model.languageSelection = "C"
+            }
+        }
     }
     
     private var themedDivider: some View {
