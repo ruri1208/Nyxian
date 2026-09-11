@@ -207,7 +207,7 @@ struct UIOnboardingHelper {
     }
     
     static func setUpButton() -> UIOnboardingButtonConfiguration {
-        let lightBackground = currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
+        let lightBackground = LDETheme.currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
         
         return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
@@ -280,7 +280,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         let onboardingConfiguration = UIOnboardingViewConfiguration(appIcon: UIOnboardingHelper.setUpIcon(), firstTitleLine: UIOnboardingHelper.setUpFirstTitleLine(), secondTitleLine: UIOnboardingHelper.setUpSecondTitleLine(), features: UIOnboardingHelper.setUpFeatures(), textViewConfiguration: UIOnboardingHelper.setUpNotice(), buttonConfiguration: UIOnboardingHelper.setUpButton())
         let onboardingController: UIOnboardingViewController = UIOnboardingViewController(withConfiguration: onboardingConfiguration)
         onboardingController.delegate = self
-        onboardingController.backgroundColor = currentTheme!.backgroundColor
+        onboardingController.backgroundColor = LDETheme.currentTheme!.backgroundColor
         
         self.window?.rootViewController?.present(onboardingController, animated: false)
     }
