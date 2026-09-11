@@ -39,21 +39,21 @@ fileprivate func errorFallback(title: String, message: String) {
     }
 }
 
-struct NXApplicationState {
-    static var extensionExists: Bool = {
+@objc class NXApplicationState: NSObject {
+    @objc static var extensionExists: Bool = {
         return PEGetLiveProcessBundle() != nil
     }()
     
-    static var extensionCorrectlyEntitled: Bool = {
+    @objc static var extensionCorrectlyEntitled: Bool = {
         return PEExtensionHasGetTaskAllowed()
     }()
     
-    static var extensionLessMode: Bool = {
+    @objc static var extensionLessMode: Bool = {
         return !extensionExists || !extensionCorrectlyEntitled;
     }()
     
     private static var actualLoadKernelExtensions: Bool = false
-    static var loadKernelExtensions: Bool {
+    @objc static var loadKernelExtensions: Bool {
         get {
             if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
                 UserDefaults.standard.removeObject(forKey: "LDEDisableKernelExtensionsForce")
@@ -69,9 +69,9 @@ struct NXApplicationState {
         }
     }
     
-    static var fileListRequiresToSendRequests: Bool = false
+    @objc static var fileListRequiresToSendRequests: Bool = false
     
-    static func restartAppWithoutKEXTLoadingEnabled() {
+    @objc static func restartAppWithoutKEXTLoadingEnabled() {
         UserDefaults.standard.set(true, forKey: "LDEDisableKernelExtensionsForce")
         PERestartSelf()
     }
@@ -107,9 +107,10 @@ App is now in extension-less mode, meaning apps cannot run within Nyxian until t
         completionHandler(false)
         return
     }
+    
     LCUtils.validateCertificate { status, someWords in
         completionHandler(status == 0)
-        if status == 0 {
+        if status == 0 || !showAlert {
             return
         }
         
@@ -117,16 +118,16 @@ App is now in extension-less mode, meaning apps cannot run within Nyxian until t
             let alert = UIAlertController(
                 title: {
                     switch status {
-                        default:
-                            return "Signing Isn't Set Up"
+                    default:
+                        return "Signing Isn't Set Up"
                     }
                 }(),
                 message: {
                     switch status {
-                        default:
-                            return "Nyxian needs a signing certificate to install and launch the apps you build. Without one you can still write and compile code, but you won't be able to run it on this device."
-                }
-            }(), preferredStyle: .alert)
+                    default:
+                        return "Nyxian needs a signing certificate to install and launch the apps you build. Without one you can still write and compile code, but you won't be able to run it on this device."
+                    }
+                }(), preferredStyle: .alert)
             
             alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
             alert.addAction(UIAlertAction(title: "Set Up Signing", style: .default) { _ in
@@ -144,7 +145,7 @@ App is now in extension-less mode, meaning apps cannot run within Nyxian until t
                                 }
                             ]
                         }
-                            
+                        
                         sheet.prefersGrabberVisible = true
                     }
                 }
@@ -207,7 +208,7 @@ struct UIOnboardingHelper {
     }
     
     static func setUpButton() -> UIOnboardingButtonConfiguration {
-        let lightBackground = currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
+        let lightBackground = LDETheme.currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
         
         return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
@@ -215,7 +216,7 @@ struct UIOnboardingHelper {
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDelegate, UIOnboardingViewControllerDelegate {
     var window: NXWindowServer?
-    weak var themedTabViewController: UIThemedTabViewController?
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         NXApplicationState.loadKernelExtensions = (connectionOptions.shortcutItem?.type != "org.emexlabs.nyxian.noload")
         PEUserspaceManager.shared().boot(withKextLoadingEnabled: NXApplicationState.loadKernelExtensions)
@@ -233,38 +234,32 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
             return;
         }
         
-        
         NXBootstrap.shared().bootstrap()
         
-        //let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
-        let themedTabViewController = UIThemedTabViewController() 
-        self.themedTabViewController = themedTabViewController
-     
+        let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
+        
         let contentViewController: ContentViewController = ContentViewController()
-        let settingsViewController: SettingsViewController = SettingsViewController()
-        let appsViewController: ApplicationManagementViewController = ApplicationManagementViewController(style: .insetGrouped)
-     
+        let settingsViewController: NXSettingsTableViewController = NXSettingsTableViewController()
+        
         let contentNavigationController: UINavigationController = UINavigationController(rootViewController: contentViewController)
         let settingsNavigationController: UINavigationController = UINavigationController(rootViewController: settingsViewController)
-        let appsNavigationController: UINavigationController = UINavigationController(rootViewController: appsViewController)
-     
+        
         contentNavigationController.tabBarItem = UITabBarItem(title: "Projects", image: UIImage(systemName: "square.grid.2x2.fill"), tag: 0)
         settingsNavigationController.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gear"), tag: 1)
-        appsNavigationController.tabBarItem = UITabBarItem(title: "Apps", image: UIImage(systemName: "app.badge"), tag: 2)
-     
-        var viewControllers: [UIViewController] = [contentNavigationController, settingsNavigationController, appsNavigationController]
         
-        //if UIDevice.current.userInterfaceIdiom == .phone {
-            //if #available(iOS 26.0, *) {
-                //if !NXApplicationState.extensionLessMode {
-                    //let fakeViewController: UIViewController = UIViewController()
-                    //fakeViewController.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
-                    //fakeViewController.tabBarItem.title = "Switcher"
-                    //fakeViewController.tabBarItem.image = UIImage(systemName: "iphone.app.switcher")
-                    //viewControllers.append(fakeViewController)
-                //}
-            //}
-        //}
+        var viewControllers: [UIViewController] = [contentNavigationController, settingsNavigationController]
+        
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            if #available(iOS 26.0, *) {
+                if !NXApplicationState.extensionLessMode {
+                    let fakeViewController: UIViewController = UIViewController()
+                    fakeViewController.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
+                    fakeViewController.tabBarItem.title = "Switcher"
+                    fakeViewController.tabBarItem.image = UIImage(systemName: "iphone.app.switcher")
+                    viewControllers.append(fakeViewController)
+                }
+            }
+        }
         
         themedTabViewController.viewControllers = viewControllers
         themedTabViewController.delegate = self
@@ -280,7 +275,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         let onboardingConfiguration = UIOnboardingViewConfiguration(appIcon: UIOnboardingHelper.setUpIcon(), firstTitleLine: UIOnboardingHelper.setUpFirstTitleLine(), secondTitleLine: UIOnboardingHelper.setUpSecondTitleLine(), features: UIOnboardingHelper.setUpFeatures(), textViewConfiguration: UIOnboardingHelper.setUpNotice(), buttonConfiguration: UIOnboardingHelper.setUpButton())
         let onboardingController: UIOnboardingViewController = UIOnboardingViewController(withConfiguration: onboardingConfiguration)
         onboardingController.delegate = self
-        onboardingController.backgroundColor = currentTheme!.backgroundColor
+        onboardingController.backgroundColor = LDETheme.currentTheme!.backgroundColor
         
         self.window?.rootViewController?.present(onboardingController, animated: false)
     }
@@ -289,10 +284,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         if tabBarController.selectedViewController === viewController && NXBuilder.builds {
             return false
         }
-        //if viewController.tabBarItem.tag == 2 {
-            //self.window?.showAppSwitcherExternal()
-            //return false
-        //}
+        if viewController.tabBarItem.tag == 2 {
+            self.window?.showAppSwitcherExternal()
+            return false
+        }
         return true
     }
     
