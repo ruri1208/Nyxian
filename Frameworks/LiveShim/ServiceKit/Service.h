@@ -23,7 +23,7 @@
 #define SERVICEKIT_SERVICE_H
 
 #import <Foundation/Foundation.h>
-#import <LindChain/ServiceKit/ServiceProtocol.h>
+#import <LiveShim/ServiceProtocol.h>
 
 @interface ServiceServer : NSObject <NSXPCListenerDelegate>
 

@@ -24,23 +24,23 @@
 
 CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
 CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonBootstrap;
+CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonExec;
 
 __attribute__((constructor))
 void TrustPresetsInit(void)
 {
     kPEEntitlementsNXT2PresetsKernel = (__bridge CFDictionaryRef)@{
         /* platformization */
-        (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
+        (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),   /* needed so trust layer allows creation of other platform identities */
     };
     
     kPEEntitlementsNXT2PresetsDaemonBootstrap = (__bridge CFDictionaryRef)@{
         /* platformization */
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
-        (__bridge NSString*)kNXT2EntitlementPlatformUser: @(0), /* make sure once set they cannot go back up */
-        (__bridge NSString*)kNXT2EntitlementPlatformGroup: @(0),
+        (__bridge NSString*)kNXT2EntitlementPlatformRoot: @(YES),
         
         /* management */
-        (__bridge NSString*)kNXT2EntitlementManagementProcEnvironment: @(YES),
+        (__bridge NSString*)kNXT2EntitlementManagementProcEnvironment: @(YES),  /* needed to open apps for other processes that issue a request */
         
         /* launch services */
         (__bridge NSString*)kNXT2EntitlementLaunchServicesSetEndpointAllowList: @[
@@ -49,9 +49,15 @@ void TrustPresetsInit(void)
         
         /* sandbox */
         (__bridge NSString*)kNXT2EntitlementSandboxFileReadWrite: @[
-            @"$(ROOTFS)"
+            @"$(ROOTFS)/usr/bin",           /* needs access to fastpath binaries */
+            @"$(ROOTFS)/var",               /* needs access to application bundles and data containers */
         ],
-        (__bridge NSString*)kNXT2EntitlementSandboxFileRead: @[],
-        (__bridge NSString*)kNXT2EntitlementSandboxNoContainer: @(YES),
+    };
+    
+    kPEEntitlementsNXT2PresetsDaemonExec = (__bridge CFDictionaryRef)@{
+        /* platformization */
+        (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
+        (__bridge NSString*)kNXT2EntitlementPlatformUser: @(1),     /* it is just a proof of concept */
+        (__bridge NSString*)kNXT2EntitlementPlatformGroup: @(1),
     };
 }

@@ -23,6 +23,7 @@
 
 #include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
 #include <LindChain/ProcEnvironment/Surface/proc/def.h>
+#include <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #include <LindChain/ProcEnvironment/Utils/klog.h>
 #include <LindChain/ProcEnvironment/Surface/libkern/task_handoff.h>
 
@@ -31,12 +32,14 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     sys_need_in_ports(1, MACH_MSG_TYPE_MOVE_RECEIVE);
     
     kvo_wrlock(sys_proc_);
-    if(sys_proc_->task != MACH_PORT_NULL)
+    if(sys_proc_->task != MACH_PORT_NULL || sys_proc_->in_tfp_handoff)
     {
         /* task port's can only be initialized once per process lifecycle. */
         kvo_unlock(sys_proc_);
         sys_return_failure_with_errno(EPERM);
     }
+    sys_proc_->in_tfp_handoff = true;
+    kvo_unlock(sys_proc_);
     
     /* consuming the exception port so it won't be released by the send_reply symbol. */
     mach_port_t exceptionPort = sys_in_ports[0];
@@ -54,7 +57,7 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     mach_port_mod_refs(mach_task_self(), exceptionPort, MACH_PORT_RIGHT_RECEIVE, -1);
     if(kr != KERN_SUCCESS)
     {
-        kvo_unlock(sys_proc_);
+        proc_kill(sys_proc_, SIGKILL);
         sys_return;
     }
     
@@ -64,13 +67,16 @@ DEFINE_SYSCALL_HANDLER(handoffep)
     if(kr != KERN_SUCCESS || pid != proc_getpid(sys_proc_snapshot_))
     {
         mach_port_deallocate(mach_task_self(), returnedTask);
-        kvo_unlock(sys_proc_);
+        proc_kill(sys_proc_, SIGKILL);
         sys_return;
     }
     
+    kvo_wrlock(sys_proc_);
     sys_proc_->task = returnedTask;
-    
+    sys_proc_->in_tfp_handoff = false;
     kvo_unlock(sys_proc_);
+    
     kvo_event_trigger(sys_proc_, kProcEventTypeWaitTask, 0);
+    
     sys_return;
 }

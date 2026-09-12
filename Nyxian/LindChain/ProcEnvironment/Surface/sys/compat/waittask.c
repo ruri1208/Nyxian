@@ -54,14 +54,11 @@ bool waittask_proc_event_handler(uint32_t type,
 DEFINE_SYSCALL_HANDLER(waittask)
 {
     /* prepare arguments */
-    pid_t pid = (pid_t)args[0];
-    
-    /* need process visibility */
-    proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
+    pid_t u_pid = (pid_t)args[0];
     
     /* getting target requested for caller */
     ksurface_proc_t *target;
-    kern_return_t kr = proc_for_pid(pid, &target);
+    kern_return_t kr = proc_for_pid(u_pid, &target);
     if(kr != KERN_SUCCESS)
     {
         sys_return_failure_with_errno(ECHILD);
@@ -69,6 +66,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     
     /* visibility check */
     kvo_rdlock(target);
+    proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
     if(!proc_can_see_proc(sys_proc_snapshot_, target, vis))
     {
         goto out_nochild;
@@ -89,7 +87,7 @@ DEFINE_SYSCALL_HANDLER(waittask)
     }
     kvo_unlock(target);
     
-    /* looking if state is already set */
+    /* looking if task is already there (cuz the caller wants to wait till that is the case) */
     if(target->task != MACH_PORT_NULL)
     {
         kvo_release(target);
@@ -98,7 +96,6 @@ DEFINE_SYSCALL_HANDLER(waittask)
     
     /* creating payload */
     waittask_payload_t *payload = malloc(sizeof(waittask_payload_t));
-    
     if(payload == NULL)
     {
         kvo_release(target);

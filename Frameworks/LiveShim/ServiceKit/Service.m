@@ -20,8 +20,8 @@
 */
 
 #import <LiveShim/LiveShimSyscall.h>
-#import <LindChain/ServiceKit/Service.h>
-#import <LindChain/ProcEnvironment/Server/Server.h>
+#import <LiveShim/Service.h>
+#import <Nyxian/LindChain/ProcEnvironment/Server/Server.h>
 #include <dlfcn.h>
 #include <mach/mach.h>
 #include <ksurface_config.h>

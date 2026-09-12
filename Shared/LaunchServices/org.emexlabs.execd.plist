@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>PEServiceIdentifier</key>
-	<string>org.emexlabs.bootstrapd</string>
+	<string>org.emexlabs.execd</string>
 	<key>PEShouldAutorestart</key>
 	<true/>
 	<key>PEExecutablePath</key>
-	<string>$(NXROOT)/boot/libexec/bootstrapd</string>
+	<string>$(NXROOT)/boot/libexec/execd</string>
 </dict>
 </plist>

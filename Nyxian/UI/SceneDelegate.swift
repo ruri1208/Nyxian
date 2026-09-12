@@ -220,6 +220,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         NXApplicationState.loadKernelExtensions = (connectionOptions.shortcutItem?.type != "org.emexlabs.nyxian.noload")
         PEUserspaceManager.shared().boot(withKextLoadingEnabled: NXApplicationState.loadKernelExtensions)
+        NXBootstrap.shared().bootstrap()
         
         guard let windowScene = scene as? UIWindowScene else { return }
         
@@ -233,8 +234,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UITabBarControllerDeleg
         {
             return;
         }
-        
-        NXBootstrap.shared().bootstrap()
         
         let themedTabViewController: UIThemedTabViewController = UIThemedTabViewController()
         

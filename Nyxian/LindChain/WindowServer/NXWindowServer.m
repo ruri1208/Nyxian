@@ -160,10 +160,17 @@
 
     [window.view.layer removeAllAnimations];
     
-    [UIView animateWithDuration:0.3 animations:^{
-        window.view.alpha = 0.0;
+    [UIView animateKeyframesWithDuration:0.25 delay:0 options:UIViewKeyframeAnimationOptionCalculationModeCubic animations:^{
+        [UIView addKeyframeWithRelativeStartTime:0.0 relativeDuration:0.25 animations:^{
+            window.view.alpha = 0.8;
+            window.view.transform = CGAffineTransformMakeScale(1.05, 1.05);
+        }];
+        [UIView addKeyframeWithRelativeStartTime:0.25 relativeDuration:0.75 animations:^{
+            window.view.alpha = 0.0;
+            window.view.transform = CGAffineTransformMakeScale(0.6, 0.6);
+        }];
     } completion:^(BOOL finished) {
-        window.view.hidden = YES;
+        [window.view removeFromSuperview];
         window.view.alpha = 1.0;
         window.view.transform = CGAffineTransformIdentity;
         [window.session deactivateWindow];
@@ -307,7 +314,6 @@
     
     NXWindow *window = self.windows[@(_activeWindowIdentifier)];
     if(window != nil &&
-       _activeWindowIdentifier != window.identifier &&
        [[UIDevice currentDevice] userInterfaceIdiom] != UIUserInterfaceIdiomPad)
     {
         // close first the old one and wait

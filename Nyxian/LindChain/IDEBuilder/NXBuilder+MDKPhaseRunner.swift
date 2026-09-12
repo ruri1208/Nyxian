@@ -41,7 +41,7 @@ extension NXBuilder: MDKPhaseRunnerDelegate {
             if job.type == .linker {
                 self.database.addDiagnosticMessages(title: "Linker", items: diagnostics, clearPrevious: true)
             } else {
-                self.database.appendDebug(synItems: diagnostics)
+                self.database.appendDebug(originatorPath: mainSource, synItems: diagnostics)
             }
         }
     }

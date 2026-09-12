@@ -173,7 +173,6 @@ NSAttributedString *KSurfaceNXT2CreateEntitlementSummary(NSDictionary *entitleme
         { kNXT2EntitlementLaunchServicesGetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can look up the endpoint of arbitary service running in Nyxian.") },
         { kNXT2EntitlementLaunchServicesSetEndpoint, KSNXT2SectionServices, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can redirect service endpoints of some 3rd party services to code of its own.") },
         { kNXT2EntitlementManagementHost, KSNXT2SectionManagement, KSNXT2ValueBool, KSNXT2SeverityWarn, NO, CFSTR("Can overwrite the hostname (as of now).") },
-        { kNXT2EntitlementDYLDHideLP, KSNXT2SectionStealth, KSNXT2ValueBool, KSNXT2SeverityNote, NO, CFSTR("Runs hidden from DYLD inside of it's own address space.") },
         { kNXT2EntitlementLaunchServicesGetEndpointAllowList, KSNXT2SectionServices, KSNXT2ValuePathArray, KSNXT2SeverityNote, NO, CFSTR("Can look up service endpoints: %@") },
         { kNXT2EntitlementLaunchServicesSetEndpointAllowList, KSNXT2SectionServices, KSNXT2ValuePathArray, KSNXT2SeverityWarn, NO, CFSTR("Can redirect service service endpoints: %@") },
         { kNXT2EntitlementKsurfaceKEXTLoading, KSNXT2SectionTrust, KSNXT2ValueBool, KSNXT2SeverityCrit, NO, CFSTR("Can run code in Nyxians address space and can pose a huge security risk and threat to your data as well as primitives of other apps you use, use this app only if you truly know what it does and what you do.") },

@@ -69,7 +69,7 @@ static dispatch_queue_t g_q;
 static dispatch_source_t g_timer;
 static bool g_started;
 
-static dispatch_queue_t pres_queue(void);
+dispatch_queue_t pres_queue(void);
 static kern_return_t repair_symlink(const pres_node_t *n);
 
 static int node_index_for_path(const char *p)
@@ -621,7 +621,7 @@ kern_return_t ksurface_fs_preserver_kickstart(void)
     return kr;
 }
 
-static dispatch_queue_t pres_queue(void)
+extern dispatch_queue_t pres_queue(void)
 {
     static dispatch_once_t once;
     dispatch_once(&once, ^{

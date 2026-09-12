@@ -30,5 +30,7 @@ CF_EXPORT const unsigned char LiveShimVersionString[];
 #include <LiveShim/LiveShimSyscall.h>
 #include <LiveShim/dyld.h>
 #include <LiveShim/patchcache.h>
+#import <LiveShim/Service.h>
+#import <LiveShim/ServiceProtocol.h>
 
 #endif /* LIVESHIM_H */

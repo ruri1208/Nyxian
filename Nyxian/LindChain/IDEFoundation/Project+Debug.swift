@@ -26,6 +26,7 @@ import MobileDevelopmentKit
 class DebugItem: Codable {
     let severity: CCDiagnosticLevel
     let message: String
+    let originator: String
     
     // TODO: make CCSourceLocation conforming to codable
     private var isValid: Bool = false
@@ -43,7 +44,8 @@ class DebugItem: Codable {
         }
     }
     
-    init(severity: CCDiagnosticLevel, message: String, sourceLocation: CCSourceLocation = CCSourceLocationZero) {
+    init(originator: String = "self", severity: CCDiagnosticLevel, message: String, sourceLocation: CCSourceLocation = CCSourceLocationZero) {
+        self.originator = originator
         self.severity = severity
         self.message = message
         self.sourceLocation = sourceLocation
@@ -185,7 +187,7 @@ class DebugDatabase: Codable {
         self.debugObjects[absPath] = fileObject
     }
 
-    func appendFileDebug(ofPath path: String, synItems: [MDKDiagnostic]) {
+    func appendFileDebug(ofPath path: String, originatorPath: String = "self", synItems: [MDKDiagnostic]) {
         guard !synItems.isEmpty else { return }
         let absPath = standardize(path)
         
@@ -195,7 +197,7 @@ class DebugDatabase: Codable {
         let fileObject = self.debugObjects[absPath] ?? DebugObject(title: absPath, flavour: .File)
         
         let newItems = synItems.map {
-            DebugItem(severity: $0.level, message: $0.message, sourceLocation: $0.fileSourceLocation?.location ?? CCSourceLocationZero)
+            DebugItem(originator: originatorPath, severity: $0.level, message: $0.message, sourceLocation: $0.fileSourceLocation?.location ?? CCSourceLocationZero)
         }
         fileObject.debugItems.append(contentsOf: newItems)
         
@@ -208,16 +210,31 @@ class DebugDatabase: Codable {
         os_unfair_lock_lock(&lock)
         defer { os_unfair_lock_unlock(&lock) }
         self.debugObjects[absPath] = nil
+        
+        var keysToRemove: [String] = []
+        for debugObjectKey in debugObjects.keys {
+            debugObjects[debugObjectKey]!.debugItems.removeAll(where: { $0.originator == absPath })
+            if debugObjects[debugObjectKey]!.debugItems.isEmpty {
+                keysToRemove.append(debugObjectKey)
+            }
+        }
+        
+        for key in keysToRemove {
+            debugObjects.removeValue(forKey: key)
+        }
     }
 
-    func appendDebug(synItems: [MDKDiagnostic]) {
+    func appendDebug(originatorPath: String,
+                     synItems: [MDKDiagnostic]) {
+        let absOriginatorPath = standardize(originatorPath)
+        
         let grouped = Dictionary(grouping: synItems) { item -> String in
             let rawPath = item.fileSourceLocation?.fileURL.path ?? ""
             return rawPath.isEmpty ? "" : standardize(rawPath)
         }
         
         for (absPath, items) in grouped where !absPath.isEmpty {
-            appendFileDebug(ofPath: absPath, synItems: items)
+            appendFileDebug(ofPath: absPath, originatorPath: absOriginatorPath, synItems: items)
         }
     }
     

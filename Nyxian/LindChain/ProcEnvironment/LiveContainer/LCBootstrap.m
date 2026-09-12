@@ -38,7 +38,7 @@
 #import <LindChain/ProcEnvironment/litehook/litehook.h>
 #import <LindChain/ProcEnvironment/LiveContainer/Tweaks/Tweaks.h>
 #include <mach-o/ldsyms.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationObject.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCBootstrap.h>
 #import <malloc/malloc.h>

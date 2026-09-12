@@ -21,7 +21,7 @@
 
 #import <LindChain/WindowServer/Session/NXWindowSessionTerminal.h>
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/Surface/tty/tty.h>
 #import <Nyxian-Swift.h>
 

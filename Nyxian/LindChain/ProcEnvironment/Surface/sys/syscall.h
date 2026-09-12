@@ -28,7 +28,7 @@
 /* headers to all syscall handlers */
 #include <LindChain/ProcEnvironment/Surface/sys/host/ioctl.h>
 #include <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
-#include <LindChain/ProcEnvironment/Surface/sys/compat/gettask.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/task_for_pid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/handoffep.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/waittask.h>
 #include <LindChain/ProcEnvironment/Surface/sys/compat/pectl.h>

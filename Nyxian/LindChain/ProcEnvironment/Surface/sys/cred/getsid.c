@@ -26,11 +26,11 @@
 
 DEFINE_SYSCALL_HANDLER(getsid)
 {
-    pid_t pid = (pid_t)args[0];
+    pid_t u_pid = (pid_t)args[0];
     
     /* getting process */
     ksurface_proc_t *target = NULL;
-    kern_return_t kr = proc_for_pid(pid, &target);
+    kern_return_t kr = proc_for_pid(u_pid, &target);
     if(kr != KERN_SUCCESS || target == NULL)
     {
         sys_return_failure_with_errno(ESRCH);

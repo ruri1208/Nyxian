@@ -25,7 +25,7 @@
 #import <LindChain/ProcEnvironment/PEExtension.h>
 #import <LindChain/Utils/Swizzle.h>
 
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/Utils/klog.h>
 #import <objc/runtime.h>
 #import <os/lock.h>

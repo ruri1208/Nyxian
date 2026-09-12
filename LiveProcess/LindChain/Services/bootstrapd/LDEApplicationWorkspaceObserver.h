@@ -19,11 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SURFACE_SYS_GETTASK_H
-#define SURFACE_SYS_GETTASK_H
+#ifndef LDEAPPLICATIONWORKSPACEOBSERVER_H
+#define LDEAPPLICATIONWORKSPACEOBSERVER_H
 
-#include <LindChain/ProcEnvironment/Surface/surface.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationObject.h>
 
-DEFINE_SYSCALL_HANDLER(gettask);
+@protocol LDEApplicationWorkspaceObserver <NSObject>
 
-#endif /* SURFACE_SYS_GETTASK_H */
+@required
+- (void)applicationInitialPopulationDone;
+- (void)applicationWasInstalled:(LDEApplicationObject*)app;
+- (void)applicationWithBundleIdentifierWasUninstalled:(NSString*)bundleIdentifier;
+
+@end
+
+#endif /* LDEAPPLICATIONWORKSPACEOBSERVER_H */

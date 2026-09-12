@@ -86,9 +86,81 @@ typedef struct {
  *  Functions
  * -------------------------------------------------------------------- */
 /* TODO: melt verifier and getter */
-extern bool __is_code_directory_slot(uint32_t slot);
-extern bool __range_valid(size_t offset, size_t length, size_t total);
-extern bool __cdhash_for_code_directory(const uint8_t *cd_bytes, size_t available, uint8_t result[USER_FSIGNATURES_CDHASH_LEN]);
+static bool __range_valid(size_t offset, size_t length, size_t total)
+{
+    return offset <= total && length <= total - offset;
+}
+
+static bool __is_code_directory_slot(uint32_t slot)
+{
+    if(slot == CSSLOT_CODEDIRECTORY)
+    {
+        return true;
+    }
+    
+    if(slot >= CSSLOT_ALTERNATE_CODEDIRECTORIES &&
+       slot < CSSLOT_ALTERNATE_CODEDIRECTORY_LIMIT)
+    {
+        return true;
+    }
+    
+    return false;
+}
+
+static bool __cdhash_for_code_directory(const uint8_t *cd_bytes,
+                                        size_t available,
+                                        uint8_t result[USER_FSIGNATURES_CDHASH_LEN])
+{
+    if(cd_bytes == NULL ||
+       result == NULL ||
+       available < sizeof(CS_CodeDirectoryPrefix))
+    {
+        return false;
+    }
+    
+    CS_CodeDirectoryPrefix cd;
+    memcpy(&cd, cd_bytes, sizeof(cd));
+    if(OSSwapBigToHostInt32(cd.magic) != CSMAGIC_CODEDIRECTORY)
+    {
+        return false;
+    }
+    
+    uint32_t length = OSSwapBigToHostInt32(cd.length);
+    if(length < sizeof(CS_CodeDirectoryPrefix) || length > available)
+    {
+        return false;
+    }
+    
+    switch(cd.hashType)
+    {
+        case CS_HASHTYPE_SHA1:
+        {
+            uint8_t digest[CC_SHA1_DIGEST_LENGTH];
+            CC_SHA1(cd_bytes, (CC_LONG)length, digest);
+            memcpy(result, digest, USER_FSIGNATURES_CDHASH_LEN);
+            return true;
+        }
+        case CS_HASHTYPE_SHA256:
+        case CS_HASHTYPE_SHA256_TRUNCATED:
+        {
+            uint8_t digest[CC_SHA256_DIGEST_LENGTH];
+            CC_SHA256(cd_bytes, (CC_LONG)length, digest);
+            memcpy(result, digest, USER_FSIGNATURES_CDHASH_LEN);
+            return true;
+        }
+        case CS_HASHTYPE_SHA384:
+        {
+            uint8_t digest[CC_SHA384_DIGEST_LENGTH];
+            CC_SHA384(cd_bytes, (CC_LONG)length, digest);
+            memcpy(result, digest, USER_FSIGNATURES_CDHASH_LEN);
+            return true;
+        }
+        default:
+        {
+            return false;
+        }
+    }
+}
 
 static bool superblob_get_cdhash(const uint8_t *signature,
                                  size_t signature_size,

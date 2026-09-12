@@ -28,7 +28,7 @@
 DEFINE_SYSCALL_HANDLER(setgid)
 {
     /* getting arguments */
-    gid_t gid = (gid_t)args[0];
+    gid_t u_gid = (gid_t)args[0];
     
     kvo_wrlock(sys_proc_);
     ksurface_proc_ucred_backup_t ucred_backup = proc_make_ucred_backup(sys_proc_);
@@ -37,20 +37,20 @@ DEFINE_SYSCALL_HANDLER(setgid)
     if(proc_is_privileged(sys_proc_))
     {
         /* updating credentials */
-        proc_setrgid(sys_proc_, gid);
-        proc_setegid(sys_proc_, gid);
-        proc_setsvgid(sys_proc_, gid);
+        proc_setrgid(sys_proc_, u_gid);
+        proc_setegid(sys_proc_, u_gid);
+        proc_setsvgid(sys_proc_, u_gid);
         
         /* update and return */
         goto out_update;
     }
     else
     {
-        if(gid == proc_getrgid(sys_proc_) ||
-           gid == proc_getsvgid(sys_proc_))
+        if(u_gid == proc_getrgid(sys_proc_) ||
+           u_gid == proc_getsvgid(sys_proc_))
         {
             /* updating credentials */
-            proc_setegid(sys_proc_, gid);
+            proc_setegid(sys_proc_, u_gid);
             
             /* update and return */
             goto out_update;
@@ -70,7 +70,7 @@ out_update:
 DEFINE_SYSCALL_HANDLER(setegid)
 {
     /* getting arguments */
-    gid_t egid = (gid_t)args[0];
+    gid_t u_egid = (gid_t)args[0];
     
     kvo_wrlock(sys_proc_);
     ksurface_proc_ucred_backup_t ucred_backup = proc_make_ucred_backup(sys_proc_);
@@ -79,19 +79,19 @@ DEFINE_SYSCALL_HANDLER(setegid)
     if(proc_is_privileged(sys_proc_))
     {
         /* updating credentials */
-        proc_setegid(sys_proc_, egid);
+        proc_setegid(sys_proc_, u_egid);
         
         /* update and return */
         goto out_update;
     }
     else
     {
-        if(egid == proc_getrgid(sys_proc_) ||
-           egid == proc_getegid(sys_proc_) ||
-           egid == proc_getsvgid(sys_proc_))
+        if(u_egid == proc_getrgid(sys_proc_) ||
+           u_egid == proc_getegid(sys_proc_) ||
+           u_egid == proc_getsvgid(sys_proc_))
         {
             /* updating credentials */
-            proc_setegid(sys_proc_, egid);
+            proc_setegid(sys_proc_, u_egid);
             
             /* update and return */
             goto out_update;
@@ -114,23 +114,18 @@ DEFINE_SYSCALL_HANDLER(setregid)
     ksurface_proc_ucred_backup_t ucred_backup = proc_make_ucred_backup(sys_proc_);
     
     /* getting arguments */
-    gid_t rgid = (gid_t)args[0];
-    gid_t egid = (gid_t)args[1];
-    
-    /* getting current credentials */
-    gid_t cur_rgid = proc_getrgid(sys_proc_);
-    gid_t cur_egid = proc_getegid(sys_proc_);
-    gid_t cur_svgid = proc_getsvgid(sys_proc_);
+    gid_t u_rgid = (gid_t)args[0];
+    gid_t u_egid = (gid_t)args[1];
     
     /* getting privele status of the process */
     bool privileged = proc_is_privileged(sys_proc_);
     
     /* performing rgid priv check */
-    if(rgid != (gid_t)-1 &&
+    if(u_rgid != (gid_t)-1 &&
        !privileged)
     {
-        if(rgid != cur_rgid &&
-           rgid != cur_egid)
+        if(u_rgid != ucred_backup.rgid &&
+           u_rgid != ucred_backup.egid)
         {
             kvo_unlock(sys_proc_);
             sys_return_failure_with_errno(EPERM);
@@ -138,11 +133,11 @@ DEFINE_SYSCALL_HANDLER(setregid)
     }
     
     /* performing egid priv check */
-    if(egid != (gid_t)-1 &&
+    if(u_egid != (gid_t)-1 &&
        !privileged)
     {
-        if(egid != cur_rgid &&
-           egid != cur_egid && egid != cur_svgid)
+        if(u_egid != ucred_backup.rgid &&
+           u_egid != ucred_backup.egid && u_egid != ucred_backup.svgid)
         {
             kvo_unlock(sys_proc_);
             sys_return_failure_with_errno(EPERM);
@@ -150,18 +145,18 @@ DEFINE_SYSCALL_HANDLER(setregid)
     }
     
     /* setting credential */
-    if(rgid != (gid_t)-1)
+    if(u_rgid != (gid_t)-1)
     {
-        proc_setrgid(sys_proc_, rgid);
+        proc_setrgid(sys_proc_, u_rgid);
     }
     
     /* setting credential */
-    if(egid != (gid_t)-1)
+    if(u_egid != (gid_t)-1)
     {
-        proc_setegid(sys_proc_, egid);
+        proc_setegid(sys_proc_, u_egid);
         if(privileged)
         {
-            proc_setsvgid(sys_proc_, egid);
+            proc_setsvgid(sys_proc_, u_egid);
         }
     }
     

@@ -22,8 +22,8 @@
 #import <Foundation/Foundation.h>
 #import <LindChain/Utils/Swizzle.h>
 #import <LindChain/Private/UIKitPrivate.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
-#import <LindChain/Services/applicationmgmtd/ISIcon.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/bootstrapd/ISIcon.h>
 #import <LindChain/Utils/IconUtils.h>
 
 /* WIP TO A HUGE EXTEND! */

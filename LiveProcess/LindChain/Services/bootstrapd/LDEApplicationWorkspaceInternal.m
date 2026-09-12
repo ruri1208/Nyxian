@@ -25,40 +25,11 @@
 #import <LindChain/Utils/Zip.h>
 #import <Security/Security.h>
 #import <LindChain/ProcEnvironment/PEFileTable.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceObserver.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspaceObserver.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LiveShim/dyld.h>
 
 @implementation LDEApplicationWorkspaceInternal
-
-- (BOOL)isInstalled
-{
-    return self.version > 0;
-}
-
-- (UInt64)version
-{
-    NSDictionary *bootstrapPlist = [NSDictionary dictionaryWithContentsOfURL:self.bootstrapPlistURL];
-    if(bootstrapPlist == nil)
-    {
-        /* plist doesn't exist or is malformed? */
-        return 0;
-    }
-    
-    NSNumber *versionNumber = bootstrapPlist[@"PEBootstrapVersion"];
-    if(![versionNumber isKindOfClass:NSNumber.class])
-    {
-        /* illegal object */
-        return 0;
-    }
-    
-    return [versionNumber unsignedLongValue];
-}
-
-- (void)setVersion:(UInt64)version
-{
-    [@{ @"PEBootstrapVersion":[NSNumber numberWithUnsignedLong:version] } writeToURL:self.bootstrapPlistURL error:nil];
-}
 
 - (instancetype)init
 {
@@ -69,9 +40,7 @@
     self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/containers/Bundle/Application"]];
     self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile/Containers/Data/Application"]];
     self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/usr/bin"]];
-    self.homeURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile"]];
-    self.tmpURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/root/tmp/bootstrapd"]];
-    self.bootstrapPlistURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/kstrapped.plist"]];
+    setenv("TMPDIR", [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/root/tmp/bootstrapd"]].path.UTF8String, 1);
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
@@ -103,14 +72,6 @@
             [fileManager removeItemAtPath:newPath error:nil];
         }
     });
-    
-    // Creating paths if they dont exist
-    [fileManager createDirectoryAtURL:self.applicationsURL withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:self.containersURL withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:self.binaryURL withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:self.homeURL withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"var/root"]] withIntermediateDirectories:YES attributes:nil error:nil];
-    [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
     
     // Enumerating all app bundles
     NSArray<NSURL*> *uuidURLs = [fileManager contentsOfDirectoryAtURL:self.applicationsURL includingPropertiesForKeys:nil options:0 error:nil];
@@ -431,7 +392,7 @@ create_container:
         return NO;
     }
     
-    NSURL *graveURL = [self.tmpURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSURL *graveURL = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     if([fileManager moveItemAtURL:url toURL:graveURL error:nil])
     {
         return YES;
@@ -444,9 +405,9 @@ create_container:
 {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
-    if([self blastItemAtURL:self.tmpURL])
+    if([self blastItemAtURL:[NSURL fileURLWithPath:NSTemporaryDirectory()]])
     {
-        [fileManager createDirectoryAtURL:self.tmpURL withIntermediateDirectories:YES attributes:nil error:nil];
+        [fileManager createDirectoryAtURL:[NSURL fileURLWithPath:NSTemporaryDirectory()] withIntermediateDirectories:YES attributes:nil error:nil];
     }
     
     NSArray<NSURL *> *containerURLs = [fileManager contentsOfDirectoryAtURL:self.containersURL includingPropertiesForKeys:@[NSURLIsDirectoryKey] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
@@ -471,7 +432,7 @@ create_container:
 {
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_BACKGROUND, 0), ^{
         NSFileManager *fileManager = [[NSFileManager alloc] init];
-        NSArray<NSURL *> *graves = [fileManager contentsOfDirectoryAtURL:self.tmpURL includingPropertiesForKeys:nil options:0 error:nil];
+        NSArray<NSURL *> *graves = [fileManager contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSTemporaryDirectory()] includingPropertiesForKeys:nil options:0 error:nil];
         for(NSURL *grave in graves)
         {
             [fileManager removeItemAtURL:grave error:nil];

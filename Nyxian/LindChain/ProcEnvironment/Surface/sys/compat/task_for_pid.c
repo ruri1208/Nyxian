@@ -19,12 +19,12 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <LindChain/ProcEnvironment/Surface/sys/compat/gettask.h>
+#include <LindChain/ProcEnvironment/Surface/sys/compat/task_for_pid.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Surface/proc/permit.h>
 
-DEFINE_SYSCALL_HANDLER(gettask)
-{    
+DEFINE_SYSCALL_HANDLER(task_for_pid)
+{
     /* parse arguments */
     pid_t pid = (pid_t)args[0];
     bool name_only = (bool)args[1];

@@ -51,6 +51,7 @@
         _lock = OS_UNFAIR_LOCK_INIT;
         NXPlist *plist = [[NXPlist alloc] initWithPlistPath:plistPath withVariables:@{
             @"NXROOT": NXBootstrap.shared.rootfsURL.path,
+            @"BLROOT": NSBundle.mainBundle.bundlePath,
         }];
         
         if(plist == NULL)

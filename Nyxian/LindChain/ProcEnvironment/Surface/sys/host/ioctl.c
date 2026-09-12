@@ -30,11 +30,11 @@ DEFINE_SYSCALL_HANDLER(ioctl)
     sys_need_in_ports(1, MACH_MSG_TYPE_MOVE_SEND);
     
     /* prepare arguments */
-    fileport_t port = sys_in_ports[0];
-    unsigned long flag = (unsigned long)args[1];
-    userspace_pointer_t user_ptr = (userspace_pointer_t)args[2];
+    fileport_t u_port = sys_in_ports[0];
+    unsigned long u_flag = (unsigned long)args[1];
+    userspace_pointer_t u_ptr = (userspace_pointer_t)args[2];
     
-    switch(flag)
+    switch(u_flag)
     {
         case TIOCGETA:
         case TIOCSETA:
@@ -48,7 +48,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
     
     /* looking up tty */
     ksurface_tty_t *tty = NULL;
-    kern_return_t kr = tty_for_port(port, &tty);
+    kern_return_t kr = tty_for_port(u_port, &tty);
     
     /* final check */
     if(kr != KERN_SUCCESS)
@@ -57,12 +57,12 @@ DEFINE_SYSCALL_HANDLER(ioctl)
     }
     
     /* ioctl paths */
-    switch(flag)
+    switch(u_flag)
     {
         case TIOCGETA:
             kvo_rdlock(tty);
             
-            if(!syscall_copy_out(sys_task_, sizeof(struct termios), &(tty->t), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(struct termios), &(tty->t), u_ptr))
             {
                 goto out_fault;
             }
@@ -74,7 +74,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             /* there is no rollback from a failed copy-in */
             struct termios temp;
             
-            if(!syscall_copy_in(sys_task_, sizeof(struct termios), &(temp), user_ptr))
+            if(!syscall_copy_in(sys_task_, sizeof(struct termios), &(temp), u_ptr))
             {
                 goto out_fault;
             }
@@ -95,12 +95,12 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             kvo_wrlock(tty);
             pid_t user_pgrp = 0;
             
-            if(!syscall_copy_in(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
+            if(!syscall_copy_in(sys_task_, sizeof(pid_t), &user_pgrp, u_ptr))
             {
                 goto out_fault;
             }
             
-            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), u_ptr))
             {
                 goto out_fault;
             }
@@ -111,7 +111,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
                 goto out_perm;
             }
             
-            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &user_pgrp, user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &user_pgrp, u_ptr))
             {
                 goto out_fault;
             }
@@ -119,14 +119,14 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             break;
         case TIOCGPGRP:
             kvo_rdlock(tty);
-            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), u_ptr))
             {
                 goto out_fault;
             }
             break;
         case TIOCGWINSZ:
             kvo_rdlock(tty);
-            if(!syscall_copy_out(sys_task_, sizeof(struct winsize), &(tty->ws), user_ptr))
+            if(!syscall_copy_out(sys_task_, sizeof(struct winsize), &(tty->ws), u_ptr))
             {
                 goto out_fault;
             }

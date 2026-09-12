@@ -134,8 +134,8 @@ out_trigger_unregister:
 DEFINE_SYSCALL_HANDLER(wait4)
 {    
     /* prepare arguments */
-    pid_t pid = (pid_t)args[0];
-    int options = (int)args[2];
+    pid_t u_pid = (pid_t)args[0];
+    int u_options = (int)args[2];
     
     /* need process visibility */
     proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
@@ -151,7 +151,7 @@ DEFINE_SYSCALL_HANDLER(wait4)
          */
         ksurface_proc_t *proc = sys_proc_->children.children[i];
         
-        if(pid < 0 || proc_getpid(proc) == pid)
+        if(u_pid < 0 || proc_getpid(proc) == u_pid)
         {
             kvo_rdlock(proc);
             
@@ -170,8 +170,8 @@ DEFINE_SYSCALL_HANDLER(wait4)
             }
             
             /* looking if state change already happened */
-            if((((options & WSTOPPED) == WSTOPPED) && WIFSTOPPED(proc->nyx.p_status)) ||
-               (((options & WCONTINUED) == WCONTINUED) && WIFCONTINUED(proc->nyx.p_status)))
+            if((((u_options & WSTOPPED) == WSTOPPED) && WIFSTOPPED(proc->nyx.p_status)) ||
+               (((u_options & WCONTINUED) == WCONTINUED) && WIFCONTINUED(proc->nyx.p_status)))
             {
                 goto out_report;
             }
@@ -203,11 +203,11 @@ DEFINE_SYSCALL_HANDLER(wait4)
                  */
                 proc->nyx.p_status = 0;
                 
-                pid = proc_getpid(proc);
+                u_pid = proc_getpid(proc);
                 kvo_unlock(proc);   /* unlock first! releasing it will cause entire process and lock to release */
                 kvo_release(proc);
                 pthread_mutex_unlock(&(sys_proc_->children.mutex));
-                return pid;
+                return u_pid;
             }
             
             kvo_unlock(proc);   /* unlock first! releasing it might cause entire process and lock to release */
@@ -216,7 +216,7 @@ DEFINE_SYSCALL_HANDLER(wait4)
         kvo_unlock(proc);
     }
     
-    if((options & WNOHANG) == WNOHANG)
+    if((u_options & WNOHANG) == WNOHANG)
     {
         pthread_mutex_unlock(&(sys_proc_->children.mutex));
         sys_return;
@@ -224,7 +224,6 @@ DEFINE_SYSCALL_HANDLER(wait4)
     
     /* creating payload */
     wait4_payload_t *payload = malloc(sizeof(wait4_payload_t));
-    
     if(payload == NULL)
     {
         pthread_mutex_unlock(&(sys_proc_->children.mutex));
@@ -241,9 +240,9 @@ DEFINE_SYSCALL_HANDLER(wait4)
     payload->task = sys_task_;
     payload->status_ptr = (userspace_pointer_t)args[1];
     payload->rusage_ptr = (userspace_pointer_t)args[3];
-    payload->options = options;
+    payload->options = u_options;
     payload->buffer = *recv_buffer;
-    payload->waitonpid = pid;
+    payload->waitonpid = u_pid;
     
     /* register event */
     kr = kvo_event_register(sys_proc_, kProcEventTypeWait4, wait4_proc_event_handler, payload, NULL);

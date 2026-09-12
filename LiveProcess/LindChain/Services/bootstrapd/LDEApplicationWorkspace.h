@@ -23,9 +23,9 @@
 #define LDEAPPLICATIONWORKSPACEPROXY_H
 
 #import <Foundation/Foundation.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceObserver.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceService.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspaceObserver.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationObject.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspaceService.h>
 
 @interface LDEApplicationWorkspace : NSObject <LDEApplicationWorkspaceObserver>
 

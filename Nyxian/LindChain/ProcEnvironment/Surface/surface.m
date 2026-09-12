@@ -48,7 +48,7 @@ syscall_list_item_t sys_list[] = {
 #endif /* KSURFACE_SYS_SYSCTL_ENABLED */
     
 #if KSURFACE_SYS_TASK_ENABLED
-    { .name = "SYS_gettask",        .sysnum = SYS_gettask,      .hndl = GET_SYSCALL_HANDLER(gettask)        },
+    { .name = "SYS_task_for_pid",   .sysnum = SYS_task_for_pid, .hndl = GET_SYSCALL_HANDLER(task_for_pid)   },
 #endif /* KSURFACE_SYS_UCRED_ENABLED */
     
 #if KSURFACE_SYS_UCRED_ENABLED

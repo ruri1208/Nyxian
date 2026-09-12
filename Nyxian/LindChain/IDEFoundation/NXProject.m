@@ -147,6 +147,7 @@
         @"SRCROOT": url.path,
         @"SDKROOT": NXBootstrap.shared.sdkURL.path,
         @"BSROOT": NXBootstrap.shared.rootURL.path,
+        @"NXROOT": NXBootstrap.shared.rootfsURL.path,
         @"CACHEROOT": _cacheURL.path,
         @"SHDROOT": [[NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Shared"] path],
     }];
@@ -302,9 +303,6 @@
             (__bridge NSString*)kNXT2EntitlementTaskForPid: @(NO),
             (__bridge NSString*)kNXT2EntitlementSUGID: @(NO),
             (__bridge NSString*)kNXT2EntitlementSystemTaskPorts: @(NO),
-            
-            /* dyld */
-            (__bridge NSString*)kNXT2EntitlementDYLDHideLP: @(NO),
             
             /* process */
             (__bridge NSString*)kNXT2EntitlementProcessEnumeration: @(NO),

@@ -55,7 +55,7 @@ class ManagementViewController: NXUITableViewController {
             case 2:
                 return 2
             default:
-                return 5
+                return 6
         }
     }
     
@@ -88,7 +88,10 @@ class ManagementViewController: NXUITableViewController {
                     tableViewCell.textLabel?.text = "Clear Application Caches"
                     tableViewCell.textLabel?.textColor = .systemRed
                 } else if indexPath.row == 4 {
-                    tableViewCell.textLabel?.text = "Restore"
+                    tableViewCell.textLabel?.text = "Restore Virtual Environment"
+                    tableViewCell.textLabel?.textColor = .systemRed
+                } else if indexPath.row == 5 {
+                    tableViewCell.textLabel?.text = "Restore Everything"
                     tableViewCell.textLabel?.textColor = .systemRed
                 }
         }
@@ -98,146 +101,205 @@ class ManagementViewController: NXUITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch(indexPath.section) {
-            case 0:
-                navigationController?.pushViewController(FileListViewController(isSublink: true, path: NXBootstrap.shared().rootfsURL.path), animated: true)
-            case 1:
-                print("pressed on list RootCAs")
-            case 2:
-                if indexPath.row == 0 {
-                    navigationController?.pushViewController(ApplicationManagementViewController(style: .insetGrouped), animated: true)
-                } else {
-                    navigationController?.pushViewController(KEXTManagementViewController(style: .insetGrouped), animated: true)
+        case 0:
+            navigationController?.pushViewController(FileListViewController(isSublink: true, path: NXBootstrap.shared().rootfsURL.path), animated: true)
+        case 1:
+            print("pressed on list RootCAs")
+        case 2:
+            if indexPath.row == 0 {
+                navigationController?.pushViewController(ApplicationManagementViewController(style: .insetGrouped), animated: true)
+            } else {
+                navigationController?.pushViewController(KEXTManagementViewController(style: .insetGrouped), animated: true)
+            }
+        default:
+            if indexPath.row == 0 {
+                ProjectTableCell.iconCache.removeAllObjects()
+            } else if indexPath.row == 1 {
+                NXManagementUISingleFlight.run {
+                    PEUserspaceManager.shared().rebootUserspace()
                 }
-            default:
-                if indexPath.row == 0 {
-                    ProjectTableCell.iconCache.removeAllObjects()
-                } else if indexPath.row == 1 {
-                    NXManagementUISingleFlight.run {
-                        PEUserspaceManager.shared().rebootUserspace()
-                    }
-                } else if indexPath.row == 2 {
-                    NXManagementUISingleFlight.run {
-                        PEUserspaceManager.shared().reloadDaemons()
-                    }
-                } else if indexPath.row == 3 {
-                    let alert = UIAlertController(
-                        title: "Clear Application Caches",
-                        message: "All application caches will be wiped, this can have consequences, but it will result in less data being in use. (Some people like that for performance reasons)",
-                        preferredStyle: .alert
-                    )
+            } else if indexPath.row == 2 {
+                NXManagementUISingleFlight.run {
+                    PEUserspaceManager.shared().reloadDaemons()
+                }
+            } else if indexPath.row == 3 {
+                let alert = UIAlertController(
+                    title: "Clear Application Caches",
+                    message: "All application caches will be wiped, this can have consequences, but it will result in less data being in use. (Some people like that for performance reasons)",
+                    preferredStyle: .alert
+                )
                 
-                    alert.addAction(UIAlertAction(title: "Proceed", style: .destructive) { [weak self] _ in
-                        DispatchQueue.main.async {
-                            let alert = UIAlertController(title: nil, message: "Clearing Application Caches", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Proceed", style: .destructive) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        let alert = UIAlertController(title: nil, message: "Clearing Application Caches", preferredStyle: .alert)
                         
-                            let activityIndicator = UIActivityIndicatorView(style: .medium)
-                            activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-                            activityIndicator.startAnimating()
+                        let activityIndicator = UIActivityIndicatorView(style: .medium)
+                        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+                        activityIndicator.startAnimating()
                         
-                            alert.view.addSubview(activityIndicator)
+                        alert.view.addSubview(activityIndicator)
                         
-                            NSLayoutConstraint.activate([
-                                activityIndicator.centerYAnchor.constraint(equalTo: alert.view.centerYAnchor),
-                                activityIndicator.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -20)
-                            ])
+                        NSLayoutConstraint.activate([
+                            activityIndicator.centerYAnchor.constraint(equalTo: alert.view.centerYAnchor),
+                            activityIndicator.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -20)
+                        ])
                         
+                        guard let self = self else {
+                            return
+                        }
+                        self.present(alert, animated: true) { [weak self] in
                             guard let self = self else {
                                 return
                             }
-                            self.present(alert, animated: true) { [weak self] in
+                            DispatchQueue.global().async { [weak self] in
                                 guard let self = self else {
                                     return
                                 }
-                                DispatchQueue.global().async { [weak self] in
+                                let success = PEUserspaceManager.shared().clearApplicationCaches()
+                                DispatchQueue.main.async { [weak self] in
                                     guard let self = self else {
                                         return
                                     }
-                                    let success = PEUserspaceManager.shared().clearApplicationCaches()
-                                    DispatchQueue.main.async { [weak self] in
-                                        guard let self = self else {
-                                            return
-                                        }
-                                        alert.dismiss(animated: true)
-                                        if !success {
-                                            let alert = UIAlertController(
-                                                title: "Error",
-                                                message: "Clearing Application Caches failed",
-                                                preferredStyle: .alert
-                                            )
-                                            
-                                            alert.addAction(UIAlertAction(title: "Close", style: .cancel))
-                                            
-                                            self.present(alert, animated: true)
-                                        }
+                                    alert.dismiss(animated: true)
+                                    if !success {
+                                        let alert = UIAlertController(
+                                            title: "Error",
+                                            message: "Clearing Application Caches failed",
+                                            preferredStyle: .alert
+                                        )
+                                        
+                                        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+                                        
+                                        self.present(alert, animated: true)
                                     }
                                 }
                             }
                         }
-                    })
+                    }
+                })
                 
-                    alert.addAction(UIAlertAction(title: "Keep Caches", style: .cancel))
+                alert.addAction(UIAlertAction(title: "Keep Caches", style: .cancel))
                 
-                    self.present(alert, animated: true)
-                } else if indexPath.row == 4 {
-                    let alert = UIAlertController(
-                        title: "Restore",
-                        message: "All apps, binaries and data containers in the virtual environment will be wiped.",
-                        preferredStyle: .alert
-                    )
+                self.present(alert, animated: true)
+            } else if indexPath.row == 4 {
+                let alert = UIAlertController(
+                    title: "Restore Virtual Environment",
+                    message: "All apps, kexts, binaries and data containers in the virtual environment will be wiped.",
+                    preferredStyle: .alert
+                )
                 
-                    alert.addAction(UIAlertAction(title: "Proceed", style: .destructive) { [weak self] _ in
-                        DispatchQueue.main.async {
-                            let alert = UIAlertController(title: nil, message: "Restoring", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Proceed", style: .destructive) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        let alert = UIAlertController(title: nil, message: "Restoring", preferredStyle: .alert)
                         
-                            let activityIndicator = UIActivityIndicatorView(style: .medium)
-                            activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-                            activityIndicator.startAnimating()
+                        let activityIndicator = UIActivityIndicatorView(style: .medium)
+                        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+                        activityIndicator.startAnimating()
                         
-                            alert.view.addSubview(activityIndicator)
+                        alert.view.addSubview(activityIndicator)
                         
-                            NSLayoutConstraint.activate([
-                                activityIndicator.centerYAnchor.constraint(equalTo: alert.view.centerYAnchor),
-                                activityIndicator.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -20)
-                            ])
+                        NSLayoutConstraint.activate([
+                            activityIndicator.centerYAnchor.constraint(equalTo: alert.view.centerYAnchor),
+                            activityIndicator.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -20)
+                        ])
                         
+                        guard let self = self else {
+                            return
+                        }
+                        self.present(alert, animated: true) { [weak self] in
                             guard let self = self else {
                                 return
                             }
-                            self.present(alert, animated: true) { [weak self] in
+                            DispatchQueue.global().async { [weak self] in
                                 guard let self = self else {
                                     return
                                 }
-                                DispatchQueue.global().async { [weak self] in
+                                let success = PEUserspaceManager.shared().restore()
+                                DispatchQueue.main.async { [weak self] in
                                     guard let self = self else {
                                         return
                                     }
-                                    let success = PEUserspaceManager.shared().restore()
-                                    DispatchQueue.main.async { [weak self] in
-                                        guard let self = self else {
-                                            return
-                                        }
-                                        alert.dismiss(animated: true)
-                                        if !success {
-                                            let alert = UIAlertController(
-                                                title: "Error",
-                                                message: "Restore failed",
-                                                preferredStyle: .alert
-                                            )
-                                            
-                                            alert.addAction(UIAlertAction(title: "Close", style: .cancel))
-                                            
-                                            self.present(alert, animated: true)
-                                        }
+                                    alert.dismiss(animated: true)
+                                    if !success {
+                                        let alert = UIAlertController(
+                                            title: "Error",
+                                            message: "Restore failed",
+                                            preferredStyle: .alert
+                                        )
+                                        
+                                        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+                                        
+                                        self.present(alert, animated: true)
                                     }
                                 }
                             }
                         }
-                    })
+                    }
+                })
                 
-                    alert.addAction(UIAlertAction(title: "Keep Data", style: .cancel))
+                alert.addAction(UIAlertAction(title: "Keep Data", style: .cancel))
                 
-                    self.present(alert, animated: true)
-                }
+                self.present(alert, animated: true)
+            } else if indexPath.row == 5 {
+                let alert = UIAlertController(
+                    title: "Restore Everything",
+                    message: "All projects, configurations, kexts, apps, binaries and data containers in the virtual environment will be wiped.",
+                    preferredStyle: .alert
+                )
+                
+                alert.addAction(UIAlertAction(title: "Proceed", style: .destructive) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        let alert = UIAlertController(title: nil, message: "Restoring", preferredStyle: .alert)
+                        
+                        let activityIndicator = UIActivityIndicatorView(style: .medium)
+                        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+                        activityIndicator.startAnimating()
+                        
+                        alert.view.addSubview(activityIndicator)
+                        
+                        NSLayoutConstraint.activate([
+                            activityIndicator.centerYAnchor.constraint(equalTo: alert.view.centerYAnchor),
+                            activityIndicator.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -20)
+                        ])
+                        
+                        guard let self = self else {
+                            return
+                        }
+                        self.present(alert, animated: true) { [weak self] in
+                            guard let self = self else {
+                                return
+                            }
+                            DispatchQueue.global().async { [weak self] in
+                                guard let self = self else {
+                                    return
+                                }
+                                let success = PEUserspaceManager.shared().restoreEverything()
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let self = self else {
+                                        return
+                                    }
+                                    alert.dismiss(animated: true)
+                                    if !success {
+                                        let alert = UIAlertController(
+                                            title: "Error",
+                                            message: "Restore failed",
+                                            preferredStyle: .alert
+                                        )
+                                        
+                                        alert.addAction(UIAlertAction(title: "Close", style: .cancel))
+                                        
+                                        self.present(alert, animated: true)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+                
+                alert.addAction(UIAlertAction(title: "Keep Data", style: .cancel))
+                
+                self.present(alert, animated: true)
+            }
         }
         tableView.deselectRow(at: indexPath, animated: true)
     }

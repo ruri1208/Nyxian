@@ -29,8 +29,8 @@
 #import <LindChain/ProcEnvironment/Shims/posix_spawn.h>
 #import <LindChain/ProcEnvironment/Surface/surface.h>
 #import <LindChain/ProcEnvironment/PEFileTable.h>
-#import <LindChain/ServiceKit/Service.h>
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspaceInternal.h>
+#import <LiveShim/Service.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspaceInternal.h>
 #import <ResecureDecoder.h>
 #import <LiveShim/LiveShimSyscall.h>
 #import <LiveShim/dyld.h>
@@ -140,14 +140,11 @@ int LiveProcessMain(int argc, char *argv[])
     
     NSXPCListenerEndpoint* endpoint = appInfo[@"PEEndpoint"];
     NSString* executablePath = appInfo[@"PEExecutablePath"];
-    NSString *service = appInfo[@"PEIntegratedServiceClass"];
     NSDictionary *environmentDictionary = appInfo[@"PEEnvironment"];
     NSArray *argumentDictionary = appInfo[@"PEArguments"];
     PEFileTable *fileTable = appInfo[@"PEFileTable"];
     PEMachPort *syscallPort = appInfo[@"PESyscallPort"];
     NSString *workingDirectory = appInfo[@"PEWorkingDirectory"];
-    uid_t serviceUserIdentifier = [appInfo[@"PEUserIdentifier"] unsignedIntValue];
-    gid_t serviceGroupIdentifier = [appInfo[@"PEGroupIdentifier"] unsignedIntValue];
     
     /* for the start */
     NSDictionary *filePermissions = appInfo[@"PEFilePermissions"];
@@ -202,67 +199,13 @@ int LiveProcessMain(int argc, char *argv[])
     setenv("DYLD_MMAP_SANDBOX_EXEC_ALLOWED_PATH", dyld_get_mmap_sandbox_map_exec_allowed_path(), 0);
 #endif /* DEBUG */
     
-    /* for integrated launch services */
-    if(service != nil)
-    {
-        if(![service isKindOfClass:[NSString class]])
-        {
-            /* type validation failure */
-            return 1;
-        }
-        
-        Class ServiceClass = NSClassFromString(service);
-        if(ServiceClass == nil ||
-           ![ServiceClass conformsToProtocol:@protocol(PEServiceProtocol)])
-        {
-            /* class protocol validation failure */
-            return 1;
-        }
-        
-        /*
-         * custom execution, because daemons arent dylibified
-         * executables yet but its a TODO already to dylibify
-         * them and separate them more from Nyxians main
-         * codebase.
-         */
-        environment_init(EnvironmentExecCustom, executablePath, argc, argv);
-
-#if KSURFACE_SYS_UCRED_ENABLED
-        /*
-         * first ever step is to elevate their permitives as
-         * they are usually platformized, but they shall also
-         * gain higher permitives.
-         */
-        if(liveshim_syscall(SYS_setgid, serviceGroupIdentifier) != 0 ||
-           liveshim_syscall(SYS_setuid, serviceUserIdentifier) != 0)
-        {
-            return 1;
-        }
-#endif /* KSURFACE_SYS_UCRED_ENABLED */
-        
-#if DEBUG
-        NSLog(@"ping");
-#endif /* DEBUG */
-        
-        /*
-         * we get the class of the daemon, internal Nyxian
-         * daemons name their class within their launch
-         * service file.
-         */
-        return PEServiceMain(argc, argv, ServiceClass);
-    }
-    else
-    {
-        /*
-         * path for normal spawns (they go through LC, thanks to
-         * Duy Tran and his research <3), anyways this goes through
-         * LC and when the main symbol returns then we get its return
-         * value which we redirect to the env.
-         */
-        return environment_init(EnvironmentExecLiveContainer, executablePath, argc, argv);
-    }
-    
-    return 1;
+    /*
+     * path for normal spawns (they go through LC, thanks to
+     * Duy Tran and his research <3), anyways this goes through
+     * LC and when the main symbol returns then we get its return
+     * value which we redirect to the env.
+     */
+    return environment_init(EnvironmentExecLiveContainer, executablePath, argc, argv);
 }
 
 /* this is our fake UIApplicationMain called from _xpc_objc_uimain (xpc_main) */

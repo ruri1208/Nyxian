@@ -19,13 +19,10 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TRUST_PRESENTS_H
-#define TRUST_PRESENTS_H
+#import <Foundation/Foundation.h>
 
-#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
-
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonBootstrap;
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonExec; /* is the proof of concept */
-
-#endif /* TRUST_PRESENTS_H */
+int main(void)
+{
+    /* this is a test! */
+    CFRunLoopRun();
+}

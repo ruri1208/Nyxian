@@ -250,22 +250,60 @@ first:
         klog_log(domain, "rebooting userspace into empty mode");
         [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeEmpty];
         
-        /* getting contents of each */
-        NSURL *root = [[NXBootstrap shared] rootfsURL];
-        NSArray<NSString*> *rootDirectories = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[root path] error:nil];
-        klog_log(domain, "directories to tear down \ninside of %@: %@", [[NXBootstrap shared] rootfsURL], rootDirectories);
+        /* now we have to restore the default hostname */
+        klog_log(domain, "restoring hostname");
+        ksurface_sethostname(@"localhost");
         
-        /* deleting everything */
-        klog_log(domain, "restoring file system");
-        for(NSString *pathComponent in rootDirectories)
+        klog_log(domain, "restoring code signature key pair");
+        uint8_t *new_priv = NULL, *new_pub = NULL;
+        size_t new_priv_len = 0, new_pub_len = 0;
+        
+        if(!get_kernel_ec_key(&new_priv, &new_priv_len, &new_pub, &new_pub_len))
         {
-            NSURL *itemURL = [root URLByAppendingPathComponent:pathComponent];
-            if(![[NSFileManager defaultManager] removeItemAtURL:itemURL error:nil])
-            {
-                klog_log(domain, "tearing down %@ failed", itemURL);
-                goto retry_fail;
-            }
+            goto retry_fail;
         }
+        
+        int ret = store_kernel_key(new_priv, new_priv_len, new_pub, new_pub_len);
+        free(new_priv);
+        free(new_pub);
+        if(ret != 0)
+        {
+            goto retry_fail;
+        }
+        
+        klog_log(domain, "bye bye virt fs");
+        extern dispatch_queue_t pres_queue(void);
+        dispatch_sync(pres_queue(), ^{  /* neutralize the preserver for this tiny moment */
+            [[NSFileManager defaultManager] removeItemAtURL:[[NXBootstrap shared] rootfsURL] error:nil];
+            [[NSFileManager defaultManager] removeItemAtURL:[[[NXBootstrap shared] rootURL] URLByAppendingPathComponent:@"mntfs"] error:nil];
+            
+            PERestartSelf();
+        });
+    }
+    os_unfair_lock_unlock(&_lock);
+    return YES;
+}
+
+- (BOOL)restoreEverything
+{
+    if(!atomic_load_explicit(&_bootSuccessful, memory_order_acquire))
+    {
+        return NO;
+    }
+    
+    const char *domain = "PEUserspaceManager:restore";
+    
+    os_unfair_lock_lock(&_lock);
+    goto first;
+    
+retry_fail: /* a retry shall not happen, happens tho if something goes wrong */
+    klog_log(domain, "failed to restore, reattempt restore");
+    
+first:
+    {
+        /* needs to be in minimal userspace boot mode to safely begin restoring the container through containerd */
+        klog_log(domain, "rebooting userspace into empty mode");
+        [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeEmpty];
         
         /* now we have to restore the default hostname */
         klog_log(domain, "restoring hostname");
@@ -288,14 +326,17 @@ first:
             goto retry_fail;
         }
         
-        /* regather them */
-        ksurface_kinit_get_keys();
+        klog_log(domain, "bye bye everything");
+        /* fuck all defaults */
+        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:NSBundle.mainBundle.bundleIdentifier];
         
-        /* we're done, now rebooting back into default mode */
-        klog_log(domain, "bringing userspace back into normal mode");
-        [self rebootUserspaceWithType_nolock:kPEUserspaceRebootTypeDefault];
-        
-        /* TODO: make the entire reboot timing perfect */
+        extern dispatch_queue_t pres_queue(void);
+        dispatch_sync(pres_queue(), ^{  /* neutralize the preserver for this tiny moment */
+            /* fuck every thing */
+            [[NSFileManager defaultManager] removeItemAtURL:[[NXBootstrap shared] rootURL] error:nil];
+            
+            PERestartSelf();
+        });
     }
     os_unfair_lock_unlock(&_lock);
     return YES;

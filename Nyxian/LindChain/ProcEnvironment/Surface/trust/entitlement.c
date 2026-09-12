@@ -51,9 +51,6 @@ NXT2Entitlement const kNXT2EntitlementTaskForPid = CFSTR("org.emexlabs.nyxian.ta
 NXT2Entitlement const kNXT2EntitlementSUGID = CFSTR("org.emexlabs.nyxian.sugid");
 NXT2Entitlement const kNXT2EntitlementSystemTaskPorts = CFSTR("org.emexlabs.nyxian.system-task-ports");
 
-/* dyld */
-NXT2Entitlement const kNXT2EntitlementDYLDHideLP = CFSTR("org.emexlabs.nyxian.dyld.hide-live-process");
-
 /* process */
 NXT2Entitlement const kNXT2EntitlementProcessEnumeration = CFSTR("org.emexlabs.nyxian.process.enumeration");
 NXT2Entitlement const kNXT2EntitlementProcessKill = CFSTR("org.emexlabs.nyxian.process.kill");

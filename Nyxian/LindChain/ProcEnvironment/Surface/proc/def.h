@@ -87,6 +87,7 @@ struct ksurface_proc {
      * given to a other process we cannot take it back
      * we cannot control the mach kernel!
      */
+    bool in_tfp_handoff;
     task_t task;
     
     /*

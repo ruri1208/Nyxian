@@ -19,18 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LDEAPPLICATIONWORKSPACEOBSERVER_H
-#define LDEAPPLICATIONWORKSPACEOBSERVER_H
+#ifndef SURFACE_SYS_TASK_FOR_PID_H
+#define SURFACE_SYS_TASK_FOR_PID_H
 
-#import <LindChain/Services/applicationmgmtd/LDEApplicationObject.h>
+#include <LindChain/ProcEnvironment/Surface/surface.h>
 
-@protocol LDEApplicationWorkspaceObserver <NSObject>
+DEFINE_SYSCALL_HANDLER(task_for_pid);
 
-@required
-- (void)applicationInitialPopulationDone;
-- (void)applicationWasInstalled:(LDEApplicationObject*)app;
-- (void)applicationWithBundleIdentifierWasUninstalled:(NSString*)bundleIdentifier;
-
-@end
-
-#endif /* LDEAPPLICATIONWORKSPACEOBSERVER_H */
+#endif /* SURFACE_SYS_TASK_FOR_PID_H */

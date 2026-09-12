@@ -24,7 +24,6 @@ import UIKit
 import Runestone
 import MobileDevelopmentKit
 
-// MARK: - COORDINATOR
 class CodeEditorCoordinator: NSObject, TextViewDelegate {
     private(set) weak var parent: CodeEditorViewController?
     private var entries: [CFIndex:(NeoButton?,UIView?)] = [:]
@@ -36,10 +35,10 @@ class CodeEditorCoordinator: NSObject, TextViewDelegate {
     private(set) var debounce: LDEDebouncer?
     private(set) var diag: [MDKDiagnostic] = []
     private let vtkey: [CCDiagnosticLevel:(String,UIColor)] = [
-        .note: ("info.circle.fill", UIColor.blue.withAlphaComponent(0.3)),
-        .warning: ("exclamationmark.triangle.fill", UIColor.orange.withAlphaComponent(0.3)),
-        .error: ("xmark.octagon.fill", UIColor.red.withAlphaComponent(0.3)),
-        .fatal: ("xmark.octagon.fill", UIColor.red.withAlphaComponent(0.3))
+        .note: ("info.circle.fill", UIColor.systemBlue.withAlphaComponent(0.3)),
+        .warning: ("exclamationmark.triangle.fill", UIColor.systemOrange.withAlphaComponent(0.3)),
+        .error: ("xmark.octagon.fill", UIColor.systemRed.withAlphaComponent(0.3)),
+        .fatal: ("xmark.octagon.fill", UIColor.systemRed.withAlphaComponent(0.3))
     ]
     
     init(parent: CodeEditorViewController) {
@@ -171,7 +170,7 @@ class CodeEditorCoordinator: NSObject, TextViewDelegate {
             let configuration: UIImage.SymbolConfiguration = UIImage.SymbolConfiguration(pointSize: parent.textView.theme.lineNumberFont.pointSize)
             let image = UIImage(systemName: properties.0, withConfiguration: configuration)
             button.setImage(image, for: .normal)
-            button.imageView?.tintColor = UIColor.label
+            button.imageView?.tintColor = LDETheme.currentTheme?.gutterBackgroundColor
             
             var widthConstraint: NSLayoutConstraint?
             

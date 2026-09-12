@@ -30,12 +30,7 @@
 @property (nonatomic,strong) NSURL *applicationsURL;
 @property (nonatomic,strong) NSURL *containersURL;
 @property (nonatomic,strong) NSURL *binaryURL;
-@property (nonatomic,strong) NSURL *homeURL;
-@property (nonatomic,strong) NSURL *tmpURL;
-@property (nonatomic,strong) NSURL *bootstrapPlistURL;
 @property (nonatomic,strong) dispatch_queue_t workspaceQueue;
-@property (atomic,readwrite) UInt64 version;
-@property (atomic,readonly) BOOL isInstalled;
 @property (atomic,readwrite) NSMutableDictionary<NSString*,NSBundle*> *bundles;
 
 - (instancetype)init;

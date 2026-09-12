@@ -20,7 +20,7 @@
 */
 
 #import <UIKit/UIKit.h>
-#import <LindChain/Services/applicationmgmtd/ISIcon.h>
+#import <LindChain/Services/bootstrapd/ISIcon.h>
 #import <LindChain/Utils/IconUtils.h>
 #import <LindChain/Private/UIKitPrivate.h>
 

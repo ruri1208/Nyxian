@@ -31,7 +31,7 @@
 /* ----------------------------------------------------------------------
  *  Project Headers
  * -------------------------------------------------------------------- */
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspace.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/Surface/trust/trust.h>
@@ -40,6 +40,7 @@
 #import <LindChain/ProcEnvironment/Utils/vnode.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <LindChain/Utils/CFTools.h>
+#import <LindChain/IDEFoundation/NXBootstrap.h>
 #import <ksurface_config.h>
 
 /* ----------------------------------------------------------------------
@@ -91,9 +92,6 @@ static CFDictionaryRef trust_identity_validate_entitlements(CFStringRef executab
         { kNXT2EntitlementTaskForPid,                   CFBooleanGetTypeID() },
         { kNXT2EntitlementSUGID,                        CFBooleanGetTypeID() },
         { kNXT2EntitlementSystemTaskPorts,              CFBooleanGetTypeID() },
-        
-        /* dyld */
-        { kNXT2EntitlementDYLDHideLP,                   CFBooleanGetTypeID() },
         
         /* process */
         { kNXT2EntitlementProcessEnumeration,           CFBooleanGetTypeID() },
@@ -335,9 +333,6 @@ PEEntitlementFlags trust_identity_entitlement_flags_from_entitlements(CFDictiona
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementSystemTaskPorts)) legacyEntitlements |= kPEEntitlementFlagSystemTaskPorts;
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementSUGID)) legacyEntitlements |= kPEEntitlementFlagProcessElevate;
     
-    /* dyld */
-    if(ENT_IS_TRUE(entitlements, kNXT2EntitlementDYLDHideLP)) legacyEntitlements |= kPEEntitlementFlagDyldHideLiveProcess;
-    
     /* process */
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementProcessEnumeration)) legacyEntitlements |= kPEEntitlementFlagProcessEnumeration;
     if(ENT_IS_TRUE(entitlements, kNXT2EntitlementProcessKill)) legacyEntitlements |= kPEEntitlementFlagProcessKill;
@@ -445,9 +440,13 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     }
     
     /* daemon trustpath validation */
-    const trustDaemonEntry trustDaemonPath[] = {   /* those paths are immutable */
+    trustDaemonEntry trustDaemonPath[] = {  /* those paths are immutable */
         {
-            .path = "/usr/libexec/bootstrapd",
+            .path = [NXBootstrap.shared.rootfsURL URLByAppendingPathComponent:@"boot/libexec/execd"].path.UTF8String,
+            .entitlementPreset = kPEEntitlementsNXT2PresetsDaemonExec,
+        },
+        {
+            .path = [NXBootstrap.shared.rootfsURL URLByAppendingPathComponent:@"boot/libexec/bootstrapd"].path.UTF8String,
             .entitlementPreset = kPEEntitlementsNXT2PresetsDaemonBootstrap,
         }
     };
@@ -462,6 +461,19 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
     {
         if(strncmp(path, trustDaemonPath[index].path, MAXPATHLEN - 1) == 0)
         {
+            LCMachO *machO = LCMapMachO(path, true);
+            if(machO == NULL)
+            {
+                return NULL;
+            }
+            
+            bool isAppleSigned = LCCheckCodeSignature(machO);
+            LCUnmapMachO(machO);
+            if(!isAppleSigned)
+            {
+                return NULL;
+            }
+            
             ksurface_trust_identity_t *identity = calloc(1, sizeof(ksurface_trust_identity_t));
             if(identity == NULL)
             {
@@ -584,7 +596,7 @@ ksurface_trust_identity_t *trust_identity_create_from_path(const char *path)
 #endif /* KSURFACE_CS_ALLOW_NXT2 */
     
     /* fallback */
-    LCMachO *machO = LCMapMachO(path, false);
+    LCMachO *machO = LCMapMachO(path, true);
     if(machO == NULL)
     {
         CFRelease(executableString);

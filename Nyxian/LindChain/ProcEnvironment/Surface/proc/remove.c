@@ -39,7 +39,7 @@ kern_return_t proc_remove_by_pid(pid_t pid)
     if(proc == NULL)
     {
         proc_table_unlock();
-        return KERN_NO_ACCESS;
+        return KERN_NOT_FOUND;
     }
     
     /*

@@ -19,13 +19,14 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TRUST_PRESENTS_H
-#define TRUST_PRESENTS_H
+#import <Foundation/Foundation.h>
+#include <dlfcn.h>
 
-#include <LindChain/ProcEnvironment/Surface/trust/entitlement.h>
-
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonBootstrap;
-CF_EXPORT CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonExec; /* is the proof of concept */
-
-#endif /* TRUST_PRESENTS_H */
+int main(int argc, char **argv)
+{
+    /* TODO: add platformization check like in iOS daemons to just fuck off some devs when they wanna play around /j */
+    
+    /* this is a test! */
+    int (*PEServiceMain)(int argc, char **argv, Class class) = dlsym(RTLD_DEFAULT, "PEServiceMain");
+    return PEServiceMain(argc, argv, NSClassFromString(@"LDEApplicationWorkspaceService"));
+}

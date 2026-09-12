@@ -88,7 +88,18 @@
     
     NSArray<MDKDiagnostic *> *items = [_unit diagnostics];
     os_unfair_lock_unlock(&_lock);
-    return items;
+    
+    NSMutableArray<MDKDiagnostic *> *filteredItems = [NSMutableArray array];
+    for(MDKDiagnostic *diagnostic in items)
+    {
+        if([diagnostic.fileSourceLocation.fileURL isEqual:_file.fileURL])
+        {
+            NSLog(@"%@", diagnostic.message);
+            [filteredItems addObject:diagnostic];
+        }
+    }
+    
+    return filteredItems;
 }
 
 #pragma mark - Memory management

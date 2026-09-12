@@ -48,6 +48,7 @@ typedef enum: UInt8 {
 - (void)bootWithKextLoadingEnabled:(BOOL)enabled;
 - (BOOL)rebootUserspace;
 - (BOOL)restore;
+- (BOOL)restoreEverything;
 - (BOOL)reloadDaemons;
 - (BOOL)clearApplicationCaches;
 

@@ -85,9 +85,6 @@ typedef CF_OPTIONS(uint64_t, PEEntitlementFlags) {
     /*! Grants process to set endpoint of launch services. */
     kPEEntitlementFlagLaunchServicesSetEndpoint     = 1ull << 15,
     
-    /*! Hides LiveProcess in DYLD Api. (recommended) */
-    kPEEntitlementFlagDyldHideLiveProcess           = 1ull << 18,   /* TODO: this is the opposite of a capability, better rename to PEEntitlementDyldDontHideEnvironment */
-    
     /*! Makes a process retain entitlements across processes, made for sandboxed applications and such. Its a security feature. */
     kPEEntitlementFlagProcessSpawnInheriteEntitlements  = 1ull << 19,
     
@@ -103,7 +100,7 @@ typedef CF_OPTIONS(uint64_t, PEEntitlementFlags) {
     /*! Grants a process to load a kernel extension */
     kPEEntitlementFlagLoadKEXT                      = 1ull << 23,
     
-    kPEEntitlementFlagAll                           = kPEEntitlementFlagGetTaskAllowed | kPEEntitlementFlagTaskForPid | kPEEntitlementFlagProcessEnumeration | kPEEntitlementFlagProcessKill | kPEEntitlementFlagProcessSpawn | kPEEntitlementFlagProcessSpawnSignedOnly | kPEEntitlementFlagProcessElevate | kPEEntitlementFlagHostManager | kPEEntitlementFlagCredentialsManager | kPEEntitlementFlagLaunchServicesStart | kPEEntitlementFlagLaunchServicesStop | kPEEntitlementFlagLaunchServicesToggle | kPEEntitlementFlagLaunchServicesGetEndpoint | kPEEntitlementFlagLaunchServicesSetEndpoint | kPEEntitlementFlagDyldHideLiveProcess | kPEEntitlementFlagProcessSpawnInheriteEntitlements | kPEEntitlementFlagPlatform | kPEEntitlementFlagPlatformRoot | kPEEntitlementFlagSystemTaskPorts,
+    kPEEntitlementFlagAll                           = kPEEntitlementFlagGetTaskAllowed | kPEEntitlementFlagTaskForPid | kPEEntitlementFlagProcessEnumeration | kPEEntitlementFlagProcessKill | kPEEntitlementFlagProcessSpawn | kPEEntitlementFlagProcessSpawnSignedOnly | kPEEntitlementFlagProcessElevate | kPEEntitlementFlagHostManager | kPEEntitlementFlagCredentialsManager | kPEEntitlementFlagLaunchServicesStart | kPEEntitlementFlagLaunchServicesStop | kPEEntitlementFlagLaunchServicesToggle | kPEEntitlementFlagLaunchServicesGetEndpoint | kPEEntitlementFlagLaunchServicesSetEndpoint | kPEEntitlementFlagProcessSpawnInheriteEntitlements | kPEEntitlementFlagPlatform | kPEEntitlementFlagPlatformRoot | kPEEntitlementFlagSystemTaskPorts,
 };
 
 /* new NXT2 entitlements */
@@ -118,9 +115,6 @@ extern NXT2Entitlement const kNXT2EntitlementGetTaskAllow;
 extern NXT2Entitlement const kNXT2EntitlementTaskForPid;
 extern NXT2Entitlement const kNXT2EntitlementSUGID;
 extern NXT2Entitlement const kNXT2EntitlementSystemTaskPorts;
-
-/* dyld */
-extern NXT2Entitlement const kNXT2EntitlementDYLDHideLP;
 
 /* process */
 extern NXT2Entitlement const kNXT2EntitlementProcessEnumeration;

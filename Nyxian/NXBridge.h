@@ -70,7 +70,7 @@
 #import <LindChain/ProcEnvironment/Utils/misc.h>
 
 /* Daemon Interfaces Headers */
-#import <LindChain/Services/applicationmgmtd/LDEApplicationWorkspace.h>
+#import <LindChain/Services/bootstrapd/LDEApplicationWorkspace.h>
 
 void refreshFile(const char* path);
 
