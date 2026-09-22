@@ -40,7 +40,7 @@
     self.applicationsURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/containers/Bundle/Application"]];
     self.containersURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile/Containers/Data/Application"]];
     self.binaryURL = [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/usr/bin"]];
-    setenv("TMPDIR", [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/root/tmp/bootstrapd"]].path.UTF8String, 1);
+    setenv("TMPDIR", [NSURL fileURLWithPath:[homeDir stringByAppendingPathComponent:@"/var/mobile/tmp/bootstrapd"]].path.UTF8String, 1);
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     

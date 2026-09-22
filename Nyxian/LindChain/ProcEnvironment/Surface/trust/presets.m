@@ -20,6 +20,7 @@
 */
 
 #import <Foundation/Foundation.h>
+#import <LindChain/ProcEnvironment/Surface/libkern/kpanic.h>
 #import <LindChain/ProcEnvironment/Surface/trust/presets.h>
 
 CFDictionaryRef kPEEntitlementsNXT2PresetsKernel;
@@ -58,7 +59,7 @@ static void TrustPresetsInit(void)
             @"$(NXROOT)/usr/bin",               /* needs access to fastpath binaries */
             @"$(NXROOT)/var/containers",        /* needs access to application bundles */
             @"$(NXROOT)/var/mobile/Containers", /* needs access to application data containers */
-            @"$(NXROOT)/var/root",              /* needs access to tmp of root home */
+            @"$(NXROOT)/var/mobile/tmp",        /* needs access to tmp of root home */
         ],
     };
     

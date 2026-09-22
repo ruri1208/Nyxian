@@ -1154,7 +1154,7 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
     
     for(NXRecoveryLogLine *line in self.logLines)
     {
-        NXRecoveryGlyphView *v = [self makeGlyphViewWrapping:NO color:[self logColorForLevel:line.level] bold:NO];
+        NXRecoveryGlyphView *v = [self makeGlyphViewWrapping:YES color:[self logColorForLevel:line.level] bold:NO];
         v.text = line.text;
         
         [self.footerStack addArrangedSubview:v];

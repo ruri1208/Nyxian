@@ -183,6 +183,11 @@ kern_return_t ksurface_fs_init(void)
             [[NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/Containers", home] UTF8String],
         },
         {
+            kFSMountAttrRead | kFSMountAttrWrite,
+            "/dev/nounlink",
+            [[NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/tmp", home] UTF8String],
+        },
+        {
             kFSMountAttrRead | kFSMountAttrWrite | kFSMountAttrClear,
             "/dev/nounlink",
             [[NSString stringWithFormat:@"%s/Documents/rootfs/var/root", home] UTF8String],

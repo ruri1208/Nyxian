@@ -21,6 +21,46 @@
 
 import UIKit
 import UIOnboarding
+import UniformTypeIdentifiers
+
+final class ROMImporter: NSObject, UIDocumentPickerDelegate {
+
+    private var completion: ((URL?) -> Void)?
+
+    func present(
+        from viewController: UIViewController,
+        completion: @escaping (URL?) -> Void
+    ) {
+        self.completion = completion
+
+        let picker = UIDocumentPickerViewController(
+            forOpeningContentTypes: [.item],
+            asCopy: true
+        )
+
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+
+        viewController.present(picker, animated: true)
+    }
+
+    func documentPicker(
+        _ controller: UIDocumentPickerViewController,
+        didPickDocumentsAt urls: [URL]
+    ) {
+        let url = urls.first
+
+        completion?(url)
+        completion = nil
+    }
+
+    func documentPickerWasCancelled(
+        _ controller: UIDocumentPickerViewController
+    ) {
+        completion?(nil)
+        completion = nil
+    }
+}
 
 func getTopViewController(base: UIViewController? = UIApplication.shared.connectedScenes
     .compactMap { $0 as? UIWindowScene }
@@ -621,6 +661,9 @@ func recoveryConfirmWipe(recoveryController c: NXRecoveryViewController) {
     )
 }
 
+// Cuz it is weak
+let romImporter: ROMImporter = ROMImporter()
+
 func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
     recoveryController.enterRecovery(
         withHeader: "Nyxian Recovery\n\(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "UNKNOWN") \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") ?? "0.0.0") \"Scriptura\" Beta (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "UNKNOWN"))",
@@ -643,6 +686,54 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
             NXRecoveryItem(title: "Wipe cache") { c in
                 if let c = c {
                     recoveryWipeCache(c)
+                }
+            },
+            NXRecoveryItem(title: "Flash ROM") { c in
+                if let c = c {
+                    romImporter.present(from: c) { url in
+                        if let url = url {
+                            do {
+                                let slot: URL = URL(fileURLWithPath: "\(NSHomeDirectory())").appendingPathComponent("/Library/Boot/Slot/A")
+                                c.recoveryLog("\n-- Flashing rom...")
+                                c.recoveryLog("selected rom: \(url.lastPathComponent)")
+                                try? FileManager.default.removeItem(at: slot)
+                                try FileManager.default.createDirectory(at: slot, withIntermediateDirectories: true, attributes: [:])
+                                
+                                if !unzipArchiveAtPathWithoutParentDirectory(url.path, slot.path) {
+                                    c.recoveryLogError("ERROR: failed to extract ROM")
+                                    try? FileManager.default.removeItem(at: slot)
+                                    return
+                                }
+                                
+                                c.recoveryLog("extracted rom")
+                                
+                                let contents = try String(contentsOfFile: slot.appendingPathComponent("manifest.sign").path, encoding: .utf8)
+                                let signFiles = contents.split(separator: "\n")
+                                
+                                for file in signFiles {
+                                    if !LCUtils.signMachOWithoutPatch(at: slot.appendingPathComponent(String(file))) {
+                                        c.recoveryLogError("ERROR: failed to sign \(file)")
+                                        try? FileManager.default.removeItem(at: slot)
+                                        return
+                                    } else {
+                                        c.recoveryLog("signed \(file)")
+                                    }
+                                }
+                                
+                                for file in signFiles {
+                                    if !vnode_refresh_with_path(slot.appendingPathComponent(String(file)).path) {
+                                        c.recoveryLogError("ERROR: failed to refresh \(file)")
+                                        try? FileManager.default.removeItem(at: slot)
+                                        return
+                                    } else {
+                                        c.recoveryLog("refreshed \(file)")
+                                    }
+                                }
+                            } catch {
+                                c.recoveryLogError("ERROR: \(error.localizedDescription)")
+                            }
+                        }
+                    }
                 }
             },
             NXRecoveryItem(title: "Nyxian Files") { c in
@@ -717,6 +808,21 @@ class BootViewController: UIViewController, UITabBarControllerDelegate, UIOnboar
                     recoveryShowMenu(recoveryController: recoveryController)
                     self.transition(to: recoveryController, style: .crossfade)
                     return
+                }
+                
+                let slot: URL = URL(fileURLWithPath: "\(NSHomeDirectory())").appendingPathComponent("/Library/Boot/Slot/A")
+                if FileManager.default.fileExists(atPath: slot.path) {
+                    let handle = dlopen(slot.appendingPathComponent("main").path, RTLD_NOW | RTLD_NODELETE | RTLD_GLOBAL)
+                    
+                    if handle == nil {
+                        let recoveryController = NXRecoveryViewController()
+                        recoveryController.recoveryLogError("ERROR: Couldnt load ROM: \(String(cString: dlerror()))")
+                        recoveryShowMenu(recoveryController: recoveryController)
+                        self.transition(to: recoveryController, style: .crossfade)
+                        return
+                    } else {
+                        return
+                    }
                 }
                 
                 self.changableStatusBarHidden = false

@@ -25,6 +25,7 @@
 #import <Foundation/Foundation.h>
 
 BOOL unzipArchiveAtPath(NSString *zipPath, NSString *destinationPath);
+BOOL unzipArchiveAtPathWithoutParentDirectory(NSString *zipPath, NSString *destinationPath);
 BOOL unzipArchiveFromFileDescriptor(int fd, NSString *destinationPath);
 BOOL unzipArchiveFromFileHandle(NSFileHandle *zipFileHandle, NSString *destinationPath);
 BOOL zipDirectoryAtPath(NSString *directoryPath, NSString *zipPath, BOOL keepParent);

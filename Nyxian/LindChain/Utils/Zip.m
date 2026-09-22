@@ -40,7 +40,8 @@ struct archive_entry {};
 #define ARCHIVE_EXTRACT_ACL     4
 #define ARCHIVE_EXTRACT_FFLAGS  8
 
-#define ARCHIVE_OK 0
+#define ARCHIVE_OK  0
+#define ARCHIVE_EOF 1
 
 // Reader functions
 archive* archive_read_new(void);
@@ -52,6 +53,7 @@ int archive_read_next_header(archive *a, archive_entry **entry);
 int archive_read_data_block(archive *a, const void **buff, size_t *size, long long *offset);
 int archive_read_close(archive *a);
 int archive_read_free(archive *a);
+int archive_write_finish_entry(struct archive *);
 
 // Writer functions
 archive* archive_write_disk_new(void);
@@ -129,43 +131,152 @@ BOOL unzipArchiveAtPath(NSString *zipPath, NSString *destinationPath) {
     return YES;
 }
 
-BOOL unzipArchiveFromFileDescriptor(int fd, NSString *destinationPath) {
+BOOL unzipArchiveAtPathWithoutParentDirectory(NSString *zipPath,
+                                              NSString *destinationPath)
+{
+    struct archive *a = archive_read_new();
+    struct archive *ext = archive_write_disk_new();
+    struct archive_entry *entry;
+    int r;
+    
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+    
+    archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS);
+    r = archive_read_open_filename(a, [zipPath fileSystemRepresentation], 10240);
+    if(r != ARCHIVE_OK)
+    {
+        NSLog(@"archive_read_open_filename() failed: %s", archive_error_string(a));
+        archive_read_free(a);
+        archive_write_free(ext);
+        return NO;
+    }
+    
+    BOOL success = YES;
+    
+    while((r = archive_read_next_header(a, &entry)) == ARCHIVE_OK)
+    {
+        const char *entryPath = archive_entry_pathname(entry);
+        if(!entryPath)
+        {
+            continue;
+        }
+        
+        NSString *relativePath = [NSString stringWithUTF8String:entryPath];
+        NSArray<NSString *> *components = [relativePath pathComponents];
+        
+        if(components.count <= 1)
+        {
+            continue;
+        }
+        
+        NSArray<NSString *> *remainingComponents = [components subarrayWithRange:NSMakeRange(1, components.count - 1)];
+        
+        NSString *strippedPath = [NSString pathWithComponents:remainingComponents];
+        NSString *standardDestination = [destinationPath stringByStandardizingPath];
+        NSString *fullPath = [[destinationPath stringByAppendingPathComponent:strippedPath] stringByStandardizingPath];
+        NSString *destinationPrefix = [standardDestination stringByAppendingString:@"/"];
+        
+        if(![fullPath isEqualToString:standardDestination] &&
+           ![fullPath hasPrefix:destinationPrefix])
+        {
+            NSLog(@"Skipping unsafe archive path: %@", relativePath);
+            success = NO;
+            continue;
+        }
+        
+        archive_entry_set_pathname(entry, [fullPath fileSystemRepresentation]);
+        archive_entry_set_perm(entry, 0777);
+        
+        r = archive_write_header(ext, entry);
+        
+        if(r < ARCHIVE_OK)
+        {
+            NSLog(@"archive_write_header() warning: %s", archive_error_string(ext));
+        }
+        
+        if(r == ARCHIVE_OK)
+        {
+            const void *buff;
+            size_t size;
+            la_int64_t offset;
+            while((r = archive_read_data_block(a, &buff, &size, &offset)) == ARCHIVE_OK)
+            {
+                int writeResult = archive_write_data_block(ext, buff, size, offset);
+                if(writeResult != ARCHIVE_OK)
+                {
+                    NSLog(@"archive_write_data_block() failed: %s", archive_error_string(ext));
+                    success = NO;
+                    break;
+                }
+            }
+            
+            if(r != ARCHIVE_EOF && r != ARCHIVE_OK)
+            {
+                NSLog(@"archive_read_data_block() failed: %s", archive_error_string(a));
+                success = NO;
+            }
+        }
+        
+        archive_write_finish_entry(ext);
+    }
+    
+    if(r != ARCHIVE_EOF)
+    {
+        NSLog(@"archive_read_next_header() failed: %s", archive_error_string(a));
+        success = NO;
+    }
+    
+    archive_read_close(a);
+    archive_read_free(a);
+    
+    archive_write_close(ext);
+    archive_write_free(ext);
+    
+    return success;
+}
+
+BOOL unzipArchiveFromFileDescriptor(int fd,
+                                    NSString *destinationPath)
+{
     struct archive *a;
     struct archive *ext;
     struct archive_entry *entry;
     int r;
-
+    
     a = archive_read_new();
     archive_read_support_format_all(a);
     archive_read_support_filter_all(a);
-
+    
     ext = archive_write_disk_new();
     archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS);
-
-    // Open archive from file descriptor
-    if ((r = archive_read_open_fd(a, fd, 10240))) { // block size = 10240
+    
+    if((r = archive_read_open_fd(a, fd, 10240)))
+    {
         NSLog(@"archive_read_open_fd() failed: %s", archive_error_string(a));
         archive_read_free(a);
         archive_write_free(ext);
         return NO;
     }
-
-    while ((r = archive_read_next_header(a, &entry)) == ARCHIVE_OK) {
-        NSString *fullPath = [destinationPath stringByAppendingPathComponent:
-                              [NSString stringWithUTF8String:archive_entry_pathname(entry)]];
+    
+    while((r = archive_read_next_header(a, &entry)) == ARCHIVE_OK)
+    {
+        NSString *fullPath = [destinationPath stringByAppendingPathComponent:[NSString stringWithUTF8String:archive_entry_pathname(entry)]];
         archive_entry_set_pathname(entry, [fullPath fileSystemRepresentation]);
         archive_entry_set_perm(entry, 0777);
         r = archive_write_header(ext, entry);
-        if (r == ARCHIVE_OK) {
+        if(r == ARCHIVE_OK)
+        {
             const void *buff;
             size_t size;
             la_int64_t offset;
-            while (archive_read_data_block(a, &buff, &size, &offset) == ARCHIVE_OK) {
+            while(archive_read_data_block(a, &buff, &size, &offset) == ARCHIVE_OK)
+            {
                 archive_write_data_block(ext, buff, size, offset);
             }
         }
     }
-
+    
     archive_read_close(a);
     archive_read_free(a);
     archive_write_close(ext);
