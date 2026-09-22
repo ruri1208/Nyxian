@@ -24,6 +24,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Modify Device Family to iPhone Only
+        run: |
+          
+          find . -name "project.pbxproj" -exec sed -i '' 's/TARGETED_DEVICE_FAMILY = "1,2";/TARGETED_DEVICE_FAMILY = 1;/g' {} +
+          find . -name "project.pbxproj" -exec sed -i '' 's/TARGETED_DEVICE_FAMILY = "1";/TARGETED_DEVICE_FAMILY = 1;/g' {} +
+          
+          
+          echo "=== Verified TARGETED_DEVICE_FAMILY ==="
+          grep "TARGETED_DEVICE_FAMILY" $(find . -name "project.pbxproj") || true
+
       - name: Extract version
         run: |
           VERSION=$(awk -F'=' '/^[[:space:]]*VERSION[[:space:]]*=/ {gsub(/[[:space:]]/,"",$2); print $2; exit}' Config.xcconfig)
