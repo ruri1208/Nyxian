@@ -106,12 +106,15 @@ all: SCHEME := Nyxian
 all: FILE := Nyxian.ipa
 all: clean check compile package-app clean
 
+
 # Dependencies
-Frameworks/CoreCompiler/CoreCompilerSupportLibs:
-	cd LLVM-On-iOS; $(MAKE)
-	rm -rf Frameworks/CoreCompiler/CoreCompilerSupportLibs/
-	cp -r LLVM-On-iOS/CoreCompilerSupportLibs Frameworks/CoreCompiler/CoreCompilerSupportLibs/
-	cp -r LLVM-On-iOS/LLVM.xcframework Frameworks/CoreCompiler/CoreCompilerSupportLibs/LLVM.xcframework
+CoreCompiler/CoreCompilerSupportLibs:
+	mkdir -p CoreCompiler/CoreCompilerSupportLibs
+	@if [ -d "Shared/SwiftToolchain" ]; then \
+		cp -a Shared/SwiftToolchain/* CoreCompiler/CoreCompilerSupportLibs/ 2>/dev/null || true; \
+	fi
+	
+
 
 # Helper
 update-config:
@@ -119,7 +122,7 @@ update-config:
 	./version.sh
 
 # Methods
-compile: Frameworks/CoreCompiler/CoreCompilerSupportLibs
+compile: CoreCompiler/CoreCompilerSupportLibs
 	chmod +x version.sh
 	./version.sh
 	xcodebuild \
