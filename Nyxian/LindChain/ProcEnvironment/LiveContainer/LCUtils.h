@@ -28,6 +28,9 @@
 
 int dyld_get_program_sdk_version(void);
 
+#if defined(BOOT)
+__attribute__((objc_runtime_name("NXBootLCUtils")))
+#endif
 @interface LCUtils : NSObject
 
 @property (class, nonatomic, readwrite, strong) NSData *certificateData;
@@ -41,5 +44,7 @@ int dyld_get_program_sdk_version(void);
 + (int)validateCertificateWithCertificateData:(NSData*)data withPassword:(NSString*)password WithCompletionHandler:(void(^)(int status, NSString *error))completionHandler;
 
 @end
+
+BOOL NXBootSignMachOWithoutPatch(NSURL *url);
 
 #endif /* LIVECONTAINER_LCUTILS_H */

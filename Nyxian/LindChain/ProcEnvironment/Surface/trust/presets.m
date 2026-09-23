@@ -30,7 +30,7 @@ CFDictionaryRef kPEEntitlementsNXT2PresetsDaemonCompiler;
 __attribute__((constructor))
 static void TrustPresetsInit(void)
 {
-    kPEEntitlementsNXT2PresetsKernel = (__bridge CFDictionaryRef)@{
+    kPEEntitlementsNXT2PresetsKernel = (__bridge_retained CFDictionaryRef)@{
         /* platformization */
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),   /* needed so trust layer allows creation of other platform identities */
         
@@ -38,7 +38,7 @@ static void TrustPresetsInit(void)
         (__bridge NSString*)kNXT2EntitlementGetTaskAllow: @(NO),
     };
     
-    kPEEntitlementsNXT2PresetsDaemonBootstrap = (__bridge CFDictionaryRef)@{
+    kPEEntitlementsNXT2PresetsDaemonBootstrap = (__bridge_retained CFDictionaryRef)@{
         /* platformization */
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
         (__bridge NSString*)kNXT2EntitlementPlatformRoot: @(YES),
@@ -63,7 +63,7 @@ static void TrustPresetsInit(void)
         ],
     };
     
-    kPEEntitlementsNXT2PresetsDaemonCompiler = (__bridge CFDictionaryRef)@{
+    kPEEntitlementsNXT2PresetsDaemonCompiler = (__bridge_retained CFDictionaryRef)@{
         /* platformization */
         (__bridge NSString*)kNXT2EntitlementPlatform: @(YES),
         (__bridge NSString*)kNXT2EntitlementPlatformRoot: @(YES),

@@ -20,257 +20,36 @@
 */
 
 import UIKit
-import UIOnboarding
 import UniformTypeIdentifiers
 
 final class ROMImporter: NSObject, UIDocumentPickerDelegate {
-
     private var completion: ((URL?) -> Void)?
-
-    func present(
-        from viewController: UIViewController,
-        completion: @escaping (URL?) -> Void
-    ) {
+    
+    func present(from viewController: UIViewController, completion: @escaping (URL?) -> Void) {
         self.completion = completion
-
+        
         let picker = UIDocumentPickerViewController(
             forOpeningContentTypes: [.item],
             asCopy: true
         )
-
+        
         picker.delegate = self
         picker.allowsMultipleSelection = false
-
+        
         viewController.present(picker, animated: true)
     }
-
-    func documentPicker(
-        _ controller: UIDocumentPickerViewController,
-        didPickDocumentsAt urls: [URL]
+    
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]
     ) {
         let url = urls.first
-
+        
         completion?(url)
         completion = nil
     }
-
-    func documentPickerWasCancelled(
-        _ controller: UIDocumentPickerViewController
-    ) {
+    
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         completion?(nil)
         completion = nil
-    }
-}
-
-func getTopViewController(base: UIViewController? = UIApplication.shared.connectedScenes
-    .compactMap { $0 as? UIWindowScene }
-    .flatMap { $0.windows }
-    .first(where: { $0.isKeyWindow })?.rootViewController) -> UIViewController? {
-    
-    if let nav = base as? UINavigationController {
-        return getTopViewController(base: nav.visibleViewController)
-    }
-    
-    if let tab = base as? UITabBarController {
-        return getTopViewController(base: tab.selectedViewController)
-    }
-    
-    if let presented = base?.presentedViewController {
-        return getTopViewController(base: presented)
-    }
-    
-    return base
-}
-
-fileprivate func errorFallback(title: String, message: String) {
-    let alert = UIAlertController(
-        title: title,
-        message: message,
-        preferredStyle: .alert
-    )
-    
-    alert.addAction(UIAlertAction(title: "Close", style: .default))
-
-    DispatchQueue.main.async {
-        NXWindowServer.shared().rootViewController?.present(
-            alert,
-            animated: true
-        )
-    }
-}
-
-@objc class NXApplicationState: NSObject {
-    @objc static var extensionExists: Bool = {
-        return PEGetLiveProcessBundle() != nil
-    }()
-    
-    @objc static var extensionCorrectlyEntitled: Bool = {
-        return PEExtensionHasGetTaskAllowed()
-    }()
-    
-    @objc static var extensionLessMode: Bool = {
-        return !extensionExists || !extensionCorrectlyEntitled;
-    }()
-    
-    private static var actualLoadKernelExtensions: Bool = false
-    @objc static var loadKernelExtensions: Bool {
-        get {
-            if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
-                UserDefaults.standard.removeObject(forKey: "LDEDisableKernelExtensionsForce")
-                return false
-            }
-            return self.actualLoadKernelExtensions;
-        }
-        set {
-            if UserDefaults.standard.bool(forKey: "LDEDisableKernelExtensionsForce") {
-                return
-            }
-            actualLoadKernelExtensions = newValue
-        }
-    }
-    
-    @objc static var fileListRequiresToSendRequests: Bool = false
-    
-    @objc static func restartAppWithoutKEXTLoadingEnabled() {
-        UserDefaults.standard.set(true, forKey: "LDEDisableKernelExtensionsForce")
-        PERestartSelf()
-    }
-}
-
-func checkSigningSetup(completionHandler: @escaping (Bool) -> Void = { _ in }, showAlert: Bool = true) {
-    if !NXApplicationState.extensionExists {
-        if showAlert {
-            errorFallback(title: "Extension Not Found", message: """
-The required NSExtension could not be found.
-
-Make sure the app was installed with its extension intact and that it wasn't removed during signing or installation.
-
-App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
-""")
-        }
-        completionHandler(false)
-        return
-    }
-    
-    if !NXApplicationState.extensionCorrectlyEntitled {
-        if showAlert {
-            errorFallback(title: "Unsupported Provisioning Profile", message: """
-Extension doesn't have the "get-task-allow" entitlement.
-
-Distribution certificates are not supported. You must use a Developer certificate issued by Apple.
-
-The 7 day certificate is a Developer certificate.
-
-App is now in extension-less mode, meaning apps cannot run within Nyxian until the problem has been resolved.
-""")
-        }
-        completionHandler(false)
-        return
-    }
-    
-    LCUtils.validateCertificate { status, someWords in
-        completionHandler(status == 0)
-        if status == 0 || !showAlert {
-            return
-        }
-        
-        DispatchQueue.main.async {
-            let alert = UIAlertController(
-                title: {
-                    switch status {
-                    default:
-                        return "Signing Isn't Set Up"
-                    }
-                }(),
-                message: {
-                    switch status {
-                    default:
-                        return "Nyxian needs a signing certificate to install and launch the apps you build. Without one you can still write and compile code, but you won't be able to run it on this device."
-                    }
-                }(), preferredStyle: .alert)
-            
-            alert.addAction(UIAlertAction(title: "Not Now", style: .cancel))
-            alert.addAction(UIAlertAction(title: "Set Up Signing", style: .default) { _ in
-                let importPopup: CertificateImporter = CertificateImporter(style: .insetGrouped)
-                let importSettings: UINavigationController = UINavigationController(rootViewController: importPopup)
-                importSettings.modalPresentationStyle = .formSheet
-                
-                // dynamic size
-                if UIDevice.current.userInterfaceIdiom == .phone {
-                    if let sheet = importSettings.sheetPresentationController {
-                        sheet.animateChanges {
-                            sheet.detents = [
-                                .custom { _ in
-                                    return 200
-                                }
-                            ]
-                        }
-                        
-                        sheet.prefersGrabberVisible = true
-                    }
-                }
-                
-                getTopViewController()?.present(importSettings, animated: true)
-            })
-            
-            getTopViewController()?.present(alert, animated: true)
-        }
-    }
-}
-
-struct UIOnboardingHelper {
-    static func setUpIcon() -> UIImage {
-        if #unavailable(iOS 26.0) {
-            return .init(named: "IconPreviewDefaultOld")!
-        } else {
-            let object = LDEApplicationObject(nsBundle: Bundle.main)!
-            return Gib26Icon(object.icon, object.darkIcon, CGSize(width: 1024, height: 1024), UIScreen.main.scale)
-        }
-    }
-    
-    static func setUpFirstTitleLine() -> NSMutableAttributedString {
-        .init(string: "Welcome to", attributes: [.foregroundColor: UIColor.label])
-    }
-    
-    static func setUpSecondTitleLine() -> NSMutableAttributedString {
-        .init(string: Bundle.main.displayName ?? "Nyxian", attributes: [
-            .foregroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) }
-        ])
-    }
-    
-    static func setUpFeatures() -> Array<UIOnboardingFeature> {
-        return .init([
-            .init(icon: UIImage(systemName: "hammer.fill")!,
-                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.55, green: 0.78, blue: 0.98, alpha: 1.0) : UIColor(red: 0.30, green: 0.58, blue: 0.88, alpha: 1.0) },
-                title: "Development",
-                description: "A full development environment supporting Swift, C, C++, Objective-C and Objective-C++ that runs on any iOS 18.0+ iPhone or iPad."),
-            .init(icon: UIImage(systemName: "wrench.and.screwdriver.fill")!,
-                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.78, green: 0.71, blue: 0.95, alpha: 1.0) : UIColor(red: 0.55, green: 0.45, blue: 0.85, alpha: 1.0) },
-                title: "MobileDevelopmentKit",
-                description: "A completely FOSS LLVM, Swift, Clang, and LLD toolchain running natively on iOS, powering compilation and linkage completely on-device without any overpriced cloud services or subscriptions."),
-            .init(icon: UIImage(systemName: "cpu.fill")!,
-                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.60, green: 0.88, blue: 0.80, alpha: 1.0) : UIColor(red: 0.30, green: 0.68, blue: 0.58, alpha: 1.0) },
-                title: "Native Performance",
-                description: "A custom micro kernel called ksurface providing real process management, mach IPC(task ports through task_for_pid() for example), POSIX semantics, custom kernel extensions so you can extend ksurface your self and even a shimcache so you can add more rebinds in the userspace to syscalls you or someone else fixed and that directly on your restricted iOS device for your projects."),
-            .init(icon: UIImage(systemName: "exclamationmark.triangle.fill")!,
-                iconTint: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.98, green: 0.82, blue: 0.45, alpha: 1.0) : UIColor(red: 0.85, green: 0.60, blue: 0.12, alpha: 1.0) },
-                title: "Warning",
-                description: "This is a beta version of Nyxian, so don't expect a product without bugs, please be kind and respectful, it is very hard to develop this kind of software. Please report any kinds of issues and ask any question over at our github we have a lot of time and passion answering your questions and making Nyxian better."),
-        ])
-    }
-    
-    static func setUpNotice() -> UIOnboardingTextViewConfiguration {
-        return .init(icon: UIImage(systemName: "heart.fill")!,
-                     text: "Contributions, feedback, and stars keep the project alive.",
-                     linkTitle: "Contribute on GitHub",
-                     link: "https://github.com/emexlab/Nyxian",
-                     linkColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
-    }
-    
-    static func setUpButton() -> UIOnboardingButtonConfiguration {
-        let lightBackground = LDETheme.currentTheme!.backgroundColor.resolvedColor(with: .init(userInterfaceStyle: .light))
-        
-        return .init(title: "Continue", titleColor: lightBackground, backgroundColor: UIColor { trait in trait.userInterfaceStyle == .dark ? UIColor(red: 0.79, green: 0.66, blue: 0.89, alpha: 1.0) : UIColor(red: 0.62, green: 0.48, blue: 0.78, alpha: 1.0) })
     }
 }
 
@@ -346,14 +125,79 @@ enum EnforcementMode: String, CaseIterable {
         let i = all.firstIndex(of: self) ?? 0
         return all[(i + 1) % all.count]
     }
-    
-    var kernelMode: PEEnforcementMode {
-        switch self {
-            case .enforcing: return .enforcing
-            case .permissive: return .permissive
-            case .disabled: return .disabled
-        }
+}
+
+private typealias NXSlotMainFn = @convention(c) () -> UnsafeMutableRawPointer?
+private typealias NXSlotDidAppearFn = @convention(c) () -> Void
+private typealias NXSlotCreateWindowFn = @convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?
+
+private enum SlotLoadResult {
+    case loaded(name: String, main: NXSlotMainFn, didAppear: NXSlotDidAppearFn?, createWindow: NXSlotCreateWindowFn?)
+    case failed(String)
+}
+
+private typealias RestartSelfFn = @convention(c) () -> Void
+
+private func restartSelf() {
+    let RTLD_DEFAULT = UnsafeMutableRawPointer(bitPattern: -2)
+    guard let sym = dlsym(RTLD_DEFAULT, "PERestartSelf") else {
+        exit(0)
     }
+    unsafeBitCast(sym, to: RestartSelfFn.self)()
+}
+
+private func refreshVnode(atPath path: String) -> Bool {
+    let fd = open(path, O_RDWR)
+    guard fd >= 0 else { return false }
+    defer { close(fd) }
+    guard unlink(path) == 0 else { return false }
+    if fclonefileat(fd, AT_FDCWD, path, 0) == 0 {
+        return true
+    }
+    let copyfd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0o777)
+    guard copyfd >= 0 else { return false }
+    defer { close(copyfd) }
+    lseek(fd, 0, SEEK_SET)
+    return fcopyfile(fd, copyfd, nil, copyfile_flags_t(COPYFILE_DATA)) == 0
+}
+
+private func flashedSlotURL() -> URL {
+    URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Boot/Slot/A")
+}
+
+private func lastDlError() -> String {
+    if let err = dlerror() { return String(cString: err) }
+    return "unknown dyld error"
+}
+
+private func loadSlot() -> SlotLoadResult {
+    let fm = FileManager.default
+    let flashed = flashedSlotURL().appendingPathComponent("main")
+    let bundled = Bundle.main.privateFrameworksURL?.appendingPathComponent("SuperSlot.dylib")
+    
+    let image: URL
+    if fm.fileExists(atPath: flashed.path) {
+        image = flashed
+    } else if let bundled, fm.fileExists(atPath: bundled.path) {
+        image = bundled
+    } else {
+        return .failed("No slot found (no flashed ROM and no bundled SuperSlot.dylib)")
+    }
+    
+    let name = image.path.hasPrefix(Bundle.main.bundlePath) ? "SuperSlot.dylib" : "Slot A"
+    
+    guard let handle = dlopen(image.path, RTLD_NOW | RTLD_NODELETE | RTLD_GLOBAL) else {
+        return .failed("Couldnt load \(name): \(lastDlError())")
+    }
+    
+    guard let mainSym = dlsym(handle, "NXSlotMain") else {
+        return .failed("\(name) has no NXSlotMain entry point")
+    }
+    
+    let main = unsafeBitCast(mainSym, to: NXSlotMainFn.self)
+    let didAppear = dlsym(handle, "NXSlotDidAppear").map { unsafeBitCast($0, to: NXSlotDidAppearFn.self) }
+    let createWindow = dlsym(handle, "NXSlotCreateWindow").map { unsafeBitCast($0, to: NXSlotCreateWindowFn.self) }
+    return .loaded(name: name, main: main, didAppear: didAppear, createWindow: createWindow)
 }
 
 private func bootConfigItems(returningTo parent: @escaping (NXRecoveryViewController) -> Void) -> [NXRecoveryItem] {
@@ -671,7 +515,7 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
         footer: nil,
         items: [
             NXRecoveryItem(title: "Reboot system now") { c in
-                PERestartSelf()
+                restartSelf()
             },
             NXRecoveryItem(title: "Boot Configuration") { c in
                 if let c = c {
@@ -693,7 +537,7 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
                     romImporter.present(from: c) { url in
                         if let url = url {
                             do {
-                                let slot: URL = URL(fileURLWithPath: "\(NSHomeDirectory())").appendingPathComponent("/Library/Boot/Slot/A")
+                                let slot: URL = flashedSlotURL()
                                 c.recoveryLog("\n-- Flashing rom...")
                                 c.recoveryLog("selected rom: \(url.lastPathComponent)")
                                 try? FileManager.default.removeItem(at: slot)
@@ -711,7 +555,7 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
                                 let signFiles = contents.split(separator: "\n")
                                 
                                 for file in signFiles {
-                                    if !LCUtils.signMachOWithoutPatch(at: slot.appendingPathComponent(String(file))) {
+                                    if !NXBootSignMachOWithoutPatch(slot.appendingPathComponent(String(file))) {
                                         c.recoveryLogError("ERROR: failed to sign \(file)")
                                         try? FileManager.default.removeItem(at: slot)
                                         return
@@ -721,7 +565,7 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
                                 }
                                 
                                 for file in signFiles {
-                                    if !vnode_refresh_with_path(slot.appendingPathComponent(String(file)).path) {
+                                    if !refreshVnode(atPath: slot.appendingPathComponent(String(file)).path) {
                                         c.recoveryLogError("ERROR: failed to refresh \(file)")
                                         try? FileManager.default.removeItem(at: slot)
                                         return
@@ -734,6 +578,15 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
                             }
                         }
                     }
+                }
+            },
+            NXRecoveryItem(title: "Remove flashed ROM (boot SuperSlot)") { c in
+                guard let c = c else { return }
+                do {
+                    try FileManager.default.removeItem(at: flashedSlotURL())
+                    c.recoveryLog("flashed ROM removed, next boot uses SuperSlot.dylib")
+                } catch {
+                    c.recoveryLogError("ERROR: \(errnoDescription(error))")
                 }
             },
             NXRecoveryItem(title: "Nyxian Files") { c in
@@ -762,7 +615,7 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
     )
 }
 
-class BootViewController: UIViewController, UITabBarControllerDelegate, UIOnboardingViewControllerDelegate {
+class BootViewController: UIViewController {
     private let splashView = UIView()
     private let logoView = UIImageView()
     
@@ -800,96 +653,111 @@ class BootViewController: UIViewController, UITabBarControllerDelegate, UIOnboar
             let mode = NXVolumeButtonMonitor.scan(for: 1.0)
             NXVolumeButtonMonitor.disarm()
             
-            NXApplicationState.loadKernelExtensions = BootConfig.isEnabled(.kextLoading)
+            if mode == 2 {
+                DispatchQueue.main.async { self.enterRecovery(error: nil) }
+                return
+            }
+            
+            let slot = loadSlot()
             
             DispatchQueue.main.async {
-                if mode == 2 {
-                    let recoveryController = NXRecoveryViewController()
-                    recoveryShowMenu(recoveryController: recoveryController)
-                    self.transition(to: recoveryController, style: .crossfade)
+                guard case let .loaded(name, slotMain, slotDidAppear, slotCreateWindow) = slot else {
+                    if case let .failed(message) = slot {
+                        self.enterRecovery(error: "ERROR: \(message)")
+                    }
                     return
                 }
                 
-                let slot: URL = URL(fileURLWithPath: "\(NSHomeDirectory())").appendingPathComponent("/Library/Boot/Slot/A")
-                if FileManager.default.fileExists(atPath: slot.path) {
-                    let handle = dlopen(slot.appendingPathComponent("main").path, RTLD_NOW | RTLD_NODELETE | RTLD_GLOBAL)
-                    
-                    if handle == nil {
-                        let recoveryController = NXRecoveryViewController()
-                        recoveryController.recoveryLogError("ERROR: Couldnt load ROM: \(String(cString: dlerror()))")
-                        recoveryShowMenu(recoveryController: recoveryController)
-                        self.transition(to: recoveryController, style: .crossfade)
-                        return
-                    } else {
-                        return
-                    }
+                guard let raw = slotMain() else {
+                    self.enterRecovery(error: "ERROR: \(name) NXSlotMain returned no view controller")
+                    return
                 }
+                let slotRoot = Unmanaged<UIViewController>.fromOpaque(raw).takeRetainedValue()
                 
                 self.changableStatusBarHidden = false
                 UIView.animate(withDuration: 0.3) {
                     self.setNeedsStatusBarAppearanceUpdate()
                 }
                 
-                if !trust_enforcement_set_mode(BootConfig.entitlementMode.kernelMode) {
-                    assertionFailure("trust_enforcement_mode() was read before trust_enforcement_set_mode()")
-                }
-                
-                if !klog_set_obfuscation(BootConfig.isEnabled(.logObfucation)) {
-                    assertionFailure("klog_obfuscation_enabled() was read before klog_set_obfuscation()")
-                }
-                
-                PEUserspaceManager.shared().boot(withKextLoadingEnabled: NXApplicationState.loadKernelExtensions)
-                NXBootstrap.shared().bootstrap()
-                
-                // swizzle swizzle swizzle :3
-                UIViewController.swizzlePresentAndDismissOnce
-                UIBarButtonItem.swizzleBarButtonitem
-                RevertUI()
-                
-                let themedTabViewController: NXUITabBarController = NXUITabBarController()
-                
-                let contentViewController: ContentViewController = ContentViewController()
-                let settingsViewController: NXSettingsTableViewController = NXSettingsTableViewController()
-                
-                let contentNavigationController: UINavigationController = UINavigationController(rootViewController: contentViewController)
-                let settingsNavigationController: UINavigationController = UINavigationController(rootViewController: settingsViewController)
-                
-                contentNavigationController.tabBarItem = UITabBarItem(title: "Projects", image: UIImage(systemName: "square.grid.2x2.fill"), tag: 0)
-                settingsNavigationController.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gear"), tag: 1)
-                
-                var viewControllers: [UIViewController] = [contentNavigationController, settingsNavigationController]
-                
-                if UIDevice.current.userInterfaceIdiom == .phone {
-                    if #available(iOS 26.0, *) {
-                        if !NXApplicationState.extensionLessMode {
-                            let fakeViewController: UIViewController = UIViewController()
-                            fakeViewController.tabBarItem = UITabBarItem(tabBarSystemItem: .search, tag: 2)
-                            fakeViewController.tabBarItem.title = "Switcher"
-                            fakeViewController.tabBarItem.image = UIImage(systemName: "iphone.app.switcher")
-                            viewControllers.append(fakeViewController)
-                        }
+                if let slotCreateWindow, let slotWindow = self.makeSlotWindow(slotCreateWindow) {
+                    self.transition(into: slotWindow, root: slotRoot) {
+                        slotDidAppear?()
                     }
-                }
-                
-                themedTabViewController.viewControllers = viewControllers
-                themedTabViewController.delegate = self
-                
-                self.transition(to: themedTabViewController) {
-                    if let _: NSNumber = UserDefaults.standard.object(forKey: "NXOnboardingSentinel") as? NSNumber {
-                        checkSigningSetup()
-                        return
+                } else {
+                    self.transition(to: slotRoot) {
+                        slotDidAppear?()
                     }
-                    
-                    let onboardingConfiguration = UIOnboardingViewConfiguration(appIcon: UIOnboardingHelper.setUpIcon(), firstTitleLine: UIOnboardingHelper.setUpFirstTitleLine(), secondTitleLine: UIOnboardingHelper.setUpSecondTitleLine(), features: UIOnboardingHelper.setUpFeatures(), textViewConfiguration: UIOnboardingHelper.setUpNotice(), buttonConfiguration: UIOnboardingHelper.setUpButton())
-                    let onboardingController: UIOnboardingViewController = UIOnboardingViewController(withConfiguration: onboardingConfiguration)
-                    onboardingController.delegate = self
-                    onboardingController.backgroundColor = LDETheme.currentTheme!.backgroundColor
-                    onboardingController.modalTransitionStyle = .crossDissolve
-                    
-                    themedTabViewController.present(onboardingController, animated: true)
                 }
             }
         }
+    }
+    
+    private func makeSlotWindow(_ create: NXSlotCreateWindowFn) -> UIWindow? {
+        guard let scene = view.window?.windowScene else { return nil }
+        guard let raw = create(Unmanaged.passUnretained(scene).toOpaque()) else { return nil }
+        return Unmanaged<UIWindow>.fromOpaque(raw).takeRetainedValue()
+    }
+    
+    private func transition(into slotWindow: UIWindow,
+                            root: UIViewController,
+                            completion: (() -> Void)? = nil) {
+        let hostWindow = view.window
+        
+        slotWindow.rootViewController = root
+        slotWindow.alpha = 0
+        slotWindow.makeKeyAndVisible()
+        root.view.layoutIfNeeded()
+        
+        if let presentation = logoView.layer.presentation() {
+            logoView.layer.transform = presentation.transform
+        }
+        logoView.layer.removeAnimation(forKey: "breathe")
+        
+        let finish = {
+            hostWindow?.isHidden = true
+            hostWindow?.rootViewController = nil
+            if let scene = slotWindow.windowScene {
+                (scene.delegate as? SceneDelegate)?.window = slotWindow
+            }
+            completion?()
+        }
+        
+        if UIAccessibility.isReduceMotionEnabled {
+            UIView.animate(withDuration: 0.3, animations: {
+                slotWindow.alpha = 1
+            }, completion: { _ in
+                finish()
+            })
+            return
+        }
+        
+        root.view.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
+        
+        let splashOut = UIViewPropertyAnimator(duration: 0.4, curve: .easeOut) {
+            self.logoView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
+            self.splashView.alpha = 0
+            slotWindow.alpha = 1
+        }
+        
+        let appIn = UIViewPropertyAnimator(duration: 0.55, dampingRatio: 1.0) {
+            root.view.transform = .identity
+        }
+        
+        appIn.addCompletion { _ in
+            finish()
+        }
+        
+        splashOut.startAnimation()
+        appIn.startAnimation()
+    }
+    
+    private func enterRecovery(error: String?) {
+        let recoveryController = NXRecoveryViewController()
+        if let error {
+            recoveryController.recoveryLogError(error)
+        }
+        recoveryShowMenu(recoveryController: recoveryController)
+        self.transition(to: recoveryController, style: .crossfade)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -969,44 +837,27 @@ class BootViewController: UIViewController, UITabBarControllerDelegate, UIOnboar
         return .fade
     }
     
-    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
-        if tabBarController.selectedViewController === viewController && NXBuilder.builds {
-            return false
-        }
-        if viewController.tabBarItem.tag == 2 {
-            NXWindowServer.shared().showAppSwitcherExternal()
-            return false
-        }
-        return true
+    override var childForStatusBarStyle: UIViewController? {
+        splashView.superview == nil ? children.last : nil
     }
-    
-    func didFinishOnboarding(onboardingViewController: UIOnboarding.UIOnboardingViewController) {
-        onboardingViewController.modalTransitionStyle = .crossDissolve
-        onboardingViewController.dismiss(animated: true, completion: nil)
-        
-        UserDefaults.standard.set(NSNumber(booleanLiteral: true), forKey: "NXOnboardingSentinel")
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            checkSigningSetup()
-        }
+}
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        return true
     }
 }
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    var window: NXWindowServer?
+    var window: UIWindow?
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
         
-        self.window = NXWindowServer.shared(with: windowScene)
-        if self.window == nil {
-            return;
-        }
-        
-        self.window?.rootViewController = BootViewController()
-        
-        self.window?.makeKeyAndVisible()
-        
-        return
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = BootViewController()
+        window.makeKeyAndVisible()
+        self.window = window
     }
 }

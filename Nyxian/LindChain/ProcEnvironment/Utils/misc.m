@@ -59,3 +59,20 @@ void PERestartSelf(void)
         }];
     }
 }
+
+BOOL PEURLIsContainedIn(NSURL *candidate,
+                        NSURL *root)
+{
+    NSURL *candidateSatnderized = candidate.URLByResolvingSymlinksInPath.URLByStandardizingPath;
+    NSURL *rootSatnderized = root.URLByResolvingSymlinksInPath.URLByStandardizingPath;
+    
+    NSString *candidatePath = candidateSatnderized.path;
+    NSString *rootPath = rootSatnderized.path;
+    
+    if(![rootPath hasSuffix:@"/"])
+    {
+        rootPath = [rootPath stringByAppendingString:@"/"];
+    }
+    NSString *canditateSlash = [candidatePath hasSuffix:@"/"] ? candidatePath : [candidatePath stringByAppendingString:@"/"];
+    return [canditateSlash isEqualToString:rootPath] || [canditateSlash hasPrefix:rootPath];
+}

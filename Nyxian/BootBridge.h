@@ -19,11 +19,18 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import UIKit
+#ifndef BOOTBRIDGE_H
+#define BOOTBRIDGE_H
 
-@main
-class AppDelegate: UIResponder, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        return true
-    }
-}
+#import <UI/NXVolumeButtonMonitor.h>
+#import <UI/NXRecoveryViewController.h>
+
+#import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
+#import <LindChain/ProcEnvironment/PEExtension.h>
+#import <LindChain/ProcEnvironment/Surface/trust/trust.h>
+#import <LindChain/ProcEnvironment/Utils/vnode.h>
+#import <LindChain/ProcEnvironment/Utils/misc.h>
+
+#import <LindChain/Utils/Zip.h>
+
+#endif /* BOOTBRIDGE_H */

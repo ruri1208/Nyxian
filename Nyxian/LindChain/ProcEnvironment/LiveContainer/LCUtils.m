@@ -175,3 +175,7 @@ extern BOOL PEURLIsContainedIn(NSURL *candidate, NSURL *root);
 
 @end
 
+BOOL NXBootSignMachOWithoutPatch(NSURL *url)
+{
+    return [LCUtils signMachOWithoutPatchAtURL:url];
+}

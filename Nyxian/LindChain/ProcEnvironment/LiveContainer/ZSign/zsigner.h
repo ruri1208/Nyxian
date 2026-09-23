@@ -6,7 +6,9 @@
 //
 #import <Foundation/Foundation.h>
 
-
+#if defined(BOOT)
+#define ZSigner NXBootZSigner
+#endif
 @interface ZSigner : NSObject
 + (NSProgress*)signWithAppPath:(NSString *)appPath prov:(NSData *)prov key:(NSData *)key pass:(NSString *)pass completionHandler:(void (^)(BOOL success, NSError *error))completionHandler;
 + (BOOL)adhocSignMachOAtPath:(NSString *)path bundleId:(NSString*)bundleId entitlementData:(NSData *)entitlementData;

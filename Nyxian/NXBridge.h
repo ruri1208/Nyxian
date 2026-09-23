@@ -29,8 +29,6 @@
 #import <UI/UIInit/NXUITabBarController.h>
 #import <UI/UIInit/NXUISwitch.h>
 #import <UI/Settings/NXSettingsTableViewController.h>
-#import <UI/NXVolumeButtonMonitor.h>
-#import <UI/NXRecoveryViewController.h>
 
 /* Apple Private API Headers */
 #import <LindChain/Private/UIKitPrivate.h>

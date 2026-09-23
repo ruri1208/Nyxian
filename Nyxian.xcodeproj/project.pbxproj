@@ -7,65 +7,43 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		791C96052F8726B0006AF674 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 791C96042F8726B0006AF674 /* Runestone */; };
-		793A4E3B2F84FE1D003B609A /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 793A4E3A2F84FE1D003B609A /* Runestone */; };
-		793A7E502EB5996A0044418E /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 793A7E4F2EB5996A0044418E /* SwiftTerm */; };
 		793FCD242E6730740011B3F5 /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
-		79B708BC2F73157F000F38E7 /* TreeSitterCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 79B708BB2F73157F000F38E7 /* TreeSitterCPP */; };
-		79B70C1C2F73223A000F38E7 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 79B70C1B2F73223A000F38E7 /* Runestone */; };
-		79B70C1F2F732364000F38E7 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 79B70C1E2F732364000F38E7 /* Runestone */; };
 		79BF9A8F2E62BA8700C60D4C /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
-		79D1DA672F92A6CE0020518A /* TreeSitterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 79D1DA662F92A6CE0020518A /* TreeSitterSwift */; };
-		860D917D2FAE1F95000D321B /* MobileDevelopmentKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; };
-		860D917E2FAE1F95000D321B /* MobileDevelopmentKit.framework in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		860D91832FAE1F9C000D321B /* CoreCompiler.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; platformFilter = ios; };
-		860D91E02FAE2E4C000D321B /* CoreCompiler.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; };
-		860D91E12FAE2E4C000D321B /* CoreCompiler.framework in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		86DCC30A2FA521A600973169 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC3082FA5219900973169 /* libz.tbd */; };
-		86E4D4F72FB8CF63008BFE4D /* TreeSitterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 86E4D4F62FB8CF63008BFE4D /* TreeSitterSwift */; };
-		8F4D96E62FFBF8FB006CAF3C /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8F4D96E52FFBF8FB006CAF3C /* Runestone */; };
-		8F60051D3033DD2F0028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051C3033DD2F0028EDFD /* UIOnboarding */; };
-		8F6005203033EB920028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60051F3033EB920028EDFD /* UIOnboarding */; };
 		8F6008783033F9200028EDFD /* LiveProcess.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 79BF97F72E6291EE00C60D4C /* LiveProcess.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		8F60FE5A3032DB610028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE593032DB610028EDFD /* UIOnboarding */; };
-		8F60FE5D3032DC260028EDFD /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F60FE5C3032DC260028EDFD /* UIOnboarding */; };
+		8F75DDC23063448D004D9A49 /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
+		8F75DDC8306344C3004D9A49 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDC7306344C3004D9A49 /* Runestone */; };
+		8F75DDCC306344DC004D9A49 /* TreeSitterObjc in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDCB306344DC004D9A49 /* TreeSitterObjc */; };
+		8F75DDCE306344DC004D9A49 /* TreeSitterC in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDCD306344DC004D9A49 /* TreeSitterC */; };
+		8F75DDD0306344DC004D9A49 /* TreeSitterXML in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDCF306344DC004D9A49 /* TreeSitterXML */; };
+		8F75DDD2306344DC004D9A49 /* TreeSitterCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDD1306344DC004D9A49 /* TreeSitterCPP */; };
+		8F75DDD4306344DC004D9A49 /* TreeSitterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDD3306344DC004D9A49 /* TreeSitterSwift */; };
+		8F75DDD6306344EB004D9A49 /* UIOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDD5306344EB004D9A49 /* UIOnboarding */; };
+		8F75DE9D30634E66004D9A49 /* TreeSitter in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DE9C30634E66004D9A49 /* TreeSitter */; };
+		8F75E838306351E6004D9A49 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75E837306351E6004D9A49 /* SwiftTerm */; };
+		8F75F22130635AF8004D9A49 /* MobileDevelopmentKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; };
+		8F75F22230635AF8004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8F75F71830635D9A004D9A49 /* SuperSlot.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8F75DDAE306343D6004D9A49 /* SuperSlot.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		8F75F72E30636046004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8F75F72F3063609D004D9A49 /* CoreCompiler.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; platformFilter = ios; };
+		8F75F7303063609D004D9A49 /* CoreCompiler.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8FB3BB043030089000DB3ABC /* LiveShim.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; };
 		8FB3BB053030089000DB3ABC /* LiveShim.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8FD30F253044E7390059AE9A /* libHWHook.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */; };
 		8FDD846D305C4EE900949118 /* libBroadpatch.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8FDD845C305C4E9200949118 /* libBroadpatch.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8FDD846E305C4EF200949118 /* libBroadpatch.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDD845C305C4E9200949118 /* libBroadpatch.dylib */; };
 		8FDD8D2D305CE45100949118 /* libBroadpatch.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDD845C305C4E9200949118 /* libBroadpatch.dylib */; };
 		8FDD96FB3060B4FB00949118 /* recovery_font_18x32.png in Resources */ = {isa = PBXBuildFile; fileRef = 8FDD96FA3060B4FB00949118 /* recovery_font_18x32.png */; };
-		8FECB2472FFD34D500049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB2462FFD34D500049BB0 /* Runestone */; };
-		8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8FECB24C2FFD367A00049BB0 /* Runestone */; };
 		8FF32E2D3036F8DC00C46FE4 /* libHWHook.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FF32DED3036F59E00C46FE4 /* libHWHook.a */; };
 		8FF647CB3054E68400E1E610 /* bootstrapd.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8FF647C63054E61900E1E610 /* bootstrapd.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8FF64813305678ED00E1E610 /* MobileDevelopmentService.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8FF6480E3056786A00E1E610 /* MobileDevelopmentService.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8FF648243056934700E1E610 /* MobileDevelopmentKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; };
 		8FF64C243056A46000E1E610 /* LiveShim.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; };
 		8FF6611C3058418A00E1E610 /* LiveShim.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */; };
-		AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */ = {isa = PBXBuildFile; productRef = AF9919572DC9175A00DDF895 /* TreeSitterObjc */; };
-		AF99195B2DC9176900DDF895 /* TreeSitterC in Frameworks */ = {isa = PBXBuildFile; productRef = AF99195A2DC9176900DDF895 /* TreeSitterC */; };
 		AFF4D5D92DC9390B00B1B5F9 /* Shared in Resources */ = {isa = PBXBuildFile; fileRef = AF99171F2DC8EA3C00DDF895 /* Shared */; };
-		AFF4E3492DCCCE0F00B1B5F9 /* TreeSitterXML in Frameworks */ = {isa = PBXBuildFile; productRef = AFF4E3482DCCCE0F00B1B5F9 /* TreeSitterXML */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		860D917B2FAE1F95000D321B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 860D91742FAE1F95000D321B;
-			remoteInfo = MobileDevelopmentKit;
-		};
 		860D91852FAE1F9C000D321B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 86DCC2592FA5209600973169;
-			remoteInfo = CoreCompiler;
-		};
-		860D91E22FAE2E4C000D321B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
 			proxyType = 1;
@@ -78,6 +56,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
 			remoteInfo = LiveProcess;
+		};
+		8F75DDC5306344B5004D9A49 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 860D91742FAE1F95000D321B;
+			remoteInfo = MobileDevelopmentKit;
+		};
+		8F75F71A30635DBB004D9A49 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8F75DDA4306343D6004D9A49;
+			remoteInfo = SuperSlot;
 		};
 		8FB3BB063030089000DB3ABC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -92,13 +84,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
 			remoteInfo = LiveProcess;
-		};
-		8FD30F263044E7390059AE9A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8FF32DEC3036F59E00C46FE4;
-			remoteInfo = HWHook;
 		};
 		8FDD846F305C4EF200949118 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -175,6 +160,48 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8F75DDAA306343D6004D9A49 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F75F21530635AEF004D9A49 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8F75F22230635AF8004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F75F24030635D23004D9A49 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8F75F72E30636046004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F75F7313063609D004D9A49 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8F75F7303063609D004D9A49 /* CoreCompiler.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FB3BB083030089000DB3ABC /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -210,6 +237,7 @@
 			dstPath = Frameworks;
 			dstSubfolderSpec = 7;
 			files = (
+				8F75F71830635D9A004D9A49 /* SuperSlot.dylib in CopyFiles */,
 				8FDD846D305C4EE900949118 /* libBroadpatch.dylib in CopyFiles */,
 				8FF647CB3054E68400E1E610 /* bootstrapd.dylib in CopyFiles */,
 				8FF64813305678ED00E1E610 /* MobileDevelopmentService.dylib in CopyFiles */,
@@ -234,18 +262,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				860D917E2FAE1F95000D321B /* MobileDevelopmentKit.framework in Embed Libraries */,
-				860D91E12FAE2E4C000D321B /* CoreCompiler.framework in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -262,6 +278,7 @@
 		86DCC25A2FA5209600973169 /* CoreCompiler.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CoreCompiler.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		86DCC3082FA5219900973169 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		86DCC3092FA521A100973169 /* libz.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.tbd; path = usr/lib/libz.1.tbd; sourceTree = SDKROOT; };
+		8F75DDAE306343D6004D9A49 /* SuperSlot.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = SuperSlot.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FB3BADB302FFBAA00DB3ABC /* LiveShim.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiveShim.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FB3C1EA3031450500DB3ABC /* ksurface_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ksurface_config.h; sourceTree = "<group>"; };
 		8FDD845C305C4E9200949118 /* libBroadpatch.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBroadpatch.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -277,6 +294,40 @@
 		798BBD332F1D265200CBB23F /* Exceptions for "Nyxian" folder in "Nyxian" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				LindChain/Downloader/fdownload.m,
+				LindChain/IDEBuilder/LDEFilesFinder.m,
+				LindChain/IDEBuilder/NXBuilder.swift,
+				"LindChain/IDEBuilder/NXBuilder+MDKDriver.swift",
+				"LindChain/IDEBuilder/NXBuilder+MDKPhaseRunner.swift",
+				LindChain/IDEBuilder/NXPhaseEngine.m,
+				LindChain/IDEBuilder/NXPhaseRunner.m,
+				LindChain/IDEConsole/NXConsoleView.m,
+				LindChain/IDEConsole/Utils.c,
+				LindChain/IDEFoundation/NXAlertDiagnosticPresenter.m,
+				LindChain/IDEFoundation/NXBootstrap.m,
+				LindChain/IDEFoundation/NXCodeTemplate.m,
+				LindChain/IDEFoundation/NXDocument.m,
+				LindChain/IDEFoundation/NXDocumentManager.m,
+				LindChain/IDEFoundation/NXPlist.m,
+				LindChain/IDEFoundation/NXProject.m,
+				LindChain/IDEFoundation/NXRemoteCompiler.m,
+				LindChain/IDEFoundation/NXType.m,
+				LindChain/IDEFoundation/NXUser.m,
+				LindChain/IDEFoundation/NXUtils.m,
+				"LindChain/IDEFoundation/Project+Debug.swift",
+				LindChain/IDELanguageServer/NXLanguageServer.m,
+				LindChain/Private/Frameworks/AssertionServices.framework,
+				LindChain/Private/Frameworks/BackBoardServices.framework,
+				LindChain/Private/Frameworks/BaseBoard.framework,
+				LindChain/Private/Frameworks/BoardServices.framework,
+				LindChain/Private/Frameworks/FrontBoard.framework,
+				LindChain/Private/Frameworks/FrontBoardServices.framework,
+				LindChain/Private/Frameworks/RunningBoardServices.framework,
+				LindChain/Private/mach/fileport.m,
+				LindChain/Private/UIKitPrivate.m,
+				LindChain/ProcEnvironment/KextLoader/PEDependency.m,
+				LindChain/ProcEnvironment/KextLoader/PEKext.m,
+				LindChain/ProcEnvironment/KextLoader/PEKextLoader.m,
 				LindChain/ProcEnvironment/LiveContainer/LCBootstrap.m,
 				LindChain/ProcEnvironment/LiveContainer/Tweaks/Dead10ccFix.m,
 				LindChain/ProcEnvironment/LiveContainer/Tweaks/Dyld.m,
@@ -284,12 +335,156 @@
 				"LindChain/ProcEnvironment/LiveContainer/Tweaks/NSFileManager+GuestHooks.m",
 				LindChain/ProcEnvironment/LiveContainer/Tweaks/NSUserDefaults.m,
 				"LindChain/ProcEnvironment/LiveContainer/Tweaks/UIKit+GuestHooksInit.m",
+				LindChain/ProcEnvironment/LiveContainer/utils.m,
+				LindChain/ProcEnvironment/PEArchiveHandle.m,
+				LindChain/ProcEnvironment/PEBootstrapRegistry.m,
+				LindChain/ProcEnvironment/PEExtension.m,
+				LindChain/ProcEnvironment/PEFileHandle.m,
+				LindChain/ProcEnvironment/PEFileTable.m,
+				LindChain/ProcEnvironment/PELaunchService.m,
+				LindChain/ProcEnvironment/PELaunchServiceInstance.m,
+				LindChain/ProcEnvironment/PELaunchServiceManager.m,
+				LindChain/ProcEnvironment/PEMachPort.m,
+				LindChain/ProcEnvironment/PEProcess.m,
+				LindChain/ProcEnvironment/PEProcessManager.m,
+				LindChain/ProcEnvironment/PEUserspaceManager.m,
+				LindChain/ProcEnvironment/Server/Server.m,
+				LindChain/ProcEnvironment/Server/ServerSession.m,
 				LindChain/ProcEnvironment/Shims/application.m,
+				LindChain/ProcEnvironment/Shims/attrstrnilfix.m,
+				LindChain/ProcEnvironment/Shims/environment.m,
 				LindChain/ProcEnvironment/Shims/LSApplicationWorkspace.m,
 				LindChain/ProcEnvironment/Shims/posix_spawn.m,
 				LindChain/ProcEnvironment/Shims/proxy.m,
 				LindChain/ProcEnvironment/Shims/README.txt,
 				LindChain/ProcEnvironment/Shims/vfork.m,
+				LindChain/ProcEnvironment/Surface/cache/patchcache.m,
+				LindChain/ProcEnvironment/Surface/cache/shimcache.m,
+				LindChain/ProcEnvironment/Surface/fs/fs.m,
+				LindChain/ProcEnvironment/Surface/fs/mount.c,
+				LindChain/ProcEnvironment/Surface/fs/preserver.c,
+				LindChain/ProcEnvironment/Surface/fs/sandbox.m,
+				LindChain/ProcEnvironment/Surface/key.c,
+				LindChain/ProcEnvironment/Surface/libkern/klog.m,
+				LindChain/ProcEnvironment/Surface/libkern/kpanic.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/export.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/fixup.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/image.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/init.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/kmod.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/kxopen.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/mapper.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/objc.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/pseudo.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/reseal.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/resolve.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/validation.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/alloc.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/event.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/reference.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/core.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/systm.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/worker.c,
+				LindChain/ProcEnvironment/Surface/libkern/task_handoff.c,
+				LindChain/ProcEnvironment/Surface/proc/insert.c,
+				LindChain/ProcEnvironment/Surface/proc/list.c,
+				LindChain/ProcEnvironment/Surface/proc/lookup.c,
+				LindChain/ProcEnvironment/Surface/proc/permit.c,
+				LindChain/ProcEnvironment/Surface/proc/proc.c,
+				LindChain/ProcEnvironment/Surface/proc/proctil.c,
+				LindChain/ProcEnvironment/Surface/proc/remove.c,
+				LindChain/ProcEnvironment/Surface/proc/spawn.m,
+				LindChain/ProcEnvironment/Surface/surface.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/handoffep.c,
+				LindChain/ProcEnvironment/Surface/sys/compat/pectl.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/sign.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/task_for_pid.c,
+				LindChain/ProcEnvironment/Surface/sys/compat/waittask.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getgid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getppid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getsid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getuid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setgid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setsid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setuid.c,
+				LindChain/ProcEnvironment/Surface/sys/host/ioctl.c,
+				LindChain/ProcEnvironment/Surface/sys/host/sysctl.m,
+				LindChain/ProcEnvironment/Surface/sys/proc/kill.c,
+				LindChain/ProcEnvironment/Surface/sys/proc/proc_info.c,
+				LindChain/ProcEnvironment/Surface/sys/proc/wait4.c,
+				LindChain/ProcEnvironment/Surface/trust/apple.c,
+				LindChain/ProcEnvironment/Surface/trust/cdhash.c,
+				LindChain/ProcEnvironment/Surface/trust/entitlement.c,
+				LindChain/ProcEnvironment/Surface/trust/keychain.m,
+				LindChain/ProcEnvironment/Surface/trust/presets.m,
+				LindChain/ProcEnvironment/Surface/trust/signing.c,
+				LindChain/ProcEnvironment/Surface/trust/summary.m,
+				LindChain/ProcEnvironment/Surface/trust/trust.m,
+				LindChain/ProcEnvironment/Surface/tty/attach.c,
+				LindChain/ProcEnvironment/Surface/tty/lookup.c,
+				LindChain/ProcEnvironment/Surface/tty/tty.c,
+				LindChain/ProcEnvironment/Utils/fd.c,
+				LindChain/ProcEnvironment/Utils/PEMachOUtils.m,
+				LindChain/Utils/CFTools.c,
+				LindChain/Utils/DynaMod.m,
+				LindChain/Utils/IconUtils.m,
+				LindChain/Utils/LDEDebouncer.m,
+				LindChain/Utils/Swizzle.c,
+				LindChain/WindowServer/NXAppTile.m,
+				LindChain/WindowServer/NXWindowServer.m,
+				LindChain/WindowServer/Session/NXWindowSessionApplication.m,
+				LindChain/WindowServer/Session/NXWindowSessionTerminal.m,
+				LindChain/WindowServer/Window/NXHitSurfaceButton.m,
+				LindChain/WindowServer/Window/NXResizeHandle.m,
+				LindChain/WindowServer/Window/NXWindow.m,
+				LindChain/WindowServer/Window/NXWindowBar.m,
+				LindChain/WindowServer/Window/NXWindowSession.m,
+				UI/CodeEditor/CodeEditor.swift,
+				"UI/CodeEditor/CodeEditor+Button.swift",
+				"UI/CodeEditor/CodeEditor+Theme.swift",
+				UI/CodeEditor/CodeEditorCoordinator.swift,
+				"UI/CodeEditor/CodeEditorCoordinator+Autoindent.swift",
+				UI/CodeSigCheck.swift,
+				UI/ContentView.swift,
+				UI/FileList/FileInfoViewController.swift,
+				UI/FileList/FileList.swift,
+				"UI/FileList/FileList+iPad.swift",
+				UI/FileList/FileListEntry.swift,
+				UI/FileList/FileTabBar.swift,
+				UI/FileList/iOSVersionPickerView.swift,
+				UI/FileList/PasteBoardServices.swift,
+				UI/FileList/ProjectConfigViewController.swift,
+				UI/ProjectCreationSheetView.swift,
+				UI/ProjectTemplatePicker.swift,
+				UI/ProjectTemplateSelectionView.swift,
+				UI/Settings/ApplicationManagement.swift,
+				"UI/Settings/Bundle+IconUtils.swift",
+				UI/Settings/CertificateViewController.swift,
+				UI/Settings/CreditsViewController.swift,
+				UI/Settings/CustomizationViewController.swift,
+				UI/Settings/KEXTManagement.swift,
+				UI/Settings/ManagementViewController.swift,
+				UI/Settings/NXSettingsTableViewController.m,
+				UI/Settings/ToolChainViewController.swift,
+				UI/SlotEntry.swift,
+				UI/TableCells/ComplexImportTableCell.swift,
+				UI/TableCells/CreditCell.swift,
+				UI/TableCells/FileListCell.swift,
+				UI/TableCells/ImportCell.swift,
+				UI/TableCells/PickerCell.swift,
+				UI/TableCells/ProjectTableCell.swift,
+				UI/TableCells/StepperCell.swift,
+				UI/TableCells/TextFieldCell.swift,
+				UI/TableCells/ThemePickerPreviewCell.swift,
+				UI/TableCells/ToggleCell.swift,
+				UI/UIInit/NXUISwitch.m,
+				UI/UIInit/NXUITabBarController.m,
+				UI/UIInit/NXUITableViewController.m,
+				UI/UIInit/NXUIViewController.m,
+				UI/UIInit/Terminal.swift,
+				UI/UIInit/UIInit.swift,
+				UI/UIInit/UIThemed.swift,
+				UI/XCodeButton.m,
 			);
 			target = AF9916D82DC8C42200DDF895 /* Nyxian */;
 		};
@@ -316,14 +511,6 @@
 				ResecureDecoder.m,
 			);
 			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
-		};
-		79BF98402E62931E00C60D4C /* Exceptions for "LiveProcess" folder in "Nyxian" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				LindChain/Services/bootstrapd/LDEApplicationObject.m,
-				LindChain/Services/bootstrapd/LDEApplicationWorkspace.m,
-			);
-			target = AF9916D82DC8C42200DDF895 /* Nyxian */;
 		};
 		79BF9A972E62BB6900C60D4C /* Exceptions for "Nyxian" folder in "LiveProcess" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -371,6 +558,219 @@
 				LindChain/ProcEnvironment/Surface/trust/cdhash.c,
 			);
 			target = 8FB3BADA302FFBAA00DB3ABC /* LiveShim */;
+		};
+		8F75DDB33063446F004D9A49 /* Exceptions for "Nyxian" folder in "SuperSlot" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LindChain/Downloader/fdownload.m,
+				LindChain/IDEBuilder/LDEFilesFinder.m,
+				LindChain/IDEBuilder/NXBuilder.swift,
+				"LindChain/IDEBuilder/NXBuilder+MDKDriver.swift",
+				"LindChain/IDEBuilder/NXBuilder+MDKPhaseRunner.swift",
+				LindChain/IDEBuilder/NXPhaseEngine.m,
+				LindChain/IDEBuilder/NXPhaseRunner.m,
+				LindChain/IDEConsole/NXConsoleView.m,
+				LindChain/IDEConsole/Utils.c,
+				LindChain/IDEFoundation/NXAlertDiagnosticPresenter.m,
+				LindChain/IDEFoundation/NXBootstrap.m,
+				LindChain/IDEFoundation/NXCodeTemplate.m,
+				LindChain/IDEFoundation/NXDocument.m,
+				LindChain/IDEFoundation/NXDocumentManager.m,
+				LindChain/IDEFoundation/NXPlist.m,
+				LindChain/IDEFoundation/NXProject.m,
+				LindChain/IDEFoundation/NXRemoteCompiler.m,
+				LindChain/IDEFoundation/NXType.m,
+				LindChain/IDEFoundation/NXUser.m,
+				LindChain/IDEFoundation/NXUtils.m,
+				"LindChain/IDEFoundation/Project+Debug.swift",
+				LindChain/IDELanguageServer/NXLanguageServer.m,
+				LindChain/OpenSSL.xcframework,
+				LindChain/Private/Frameworks/AssertionServices.framework,
+				LindChain/Private/Frameworks/BackBoardServices.framework,
+				LindChain/Private/Frameworks/BaseBoard.framework,
+				LindChain/Private/Frameworks/BoardServices.framework,
+				LindChain/Private/Frameworks/FrontBoard.framework,
+				LindChain/Private/Frameworks/FrontBoardServices.framework,
+				LindChain/Private/Frameworks/RunningBoardServices.framework,
+				LindChain/Private/mach/fileport.m,
+				LindChain/Private/UIKitPrivate.m,
+				LindChain/ProcEnvironment/KextLoader/PEDependency.m,
+				LindChain/ProcEnvironment/KextLoader/PEKext.m,
+				LindChain/ProcEnvironment/KextLoader/PEKextLoader.m,
+				LindChain/ProcEnvironment/litehook/litehook.c,
+				LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.m,
+				LindChain/ProcEnvironment/LiveContainer/LCUtils.m,
+				LindChain/ProcEnvironment/LiveContainer/utils.m,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/archo.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/bundle.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/base64.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/fs.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/json.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/log.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/sha.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/timer.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/common/util.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/macho.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/openssl.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/signing.cpp,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/Utils.mm,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/zsign.mm,
+				LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.m,
+				LindChain/ProcEnvironment/PEArchiveHandle.m,
+				LindChain/ProcEnvironment/PEBootstrapRegistry.m,
+				LindChain/ProcEnvironment/PEExtension.m,
+				LindChain/ProcEnvironment/PEFileHandle.m,
+				LindChain/ProcEnvironment/PEFileTable.m,
+				LindChain/ProcEnvironment/PELaunchService.m,
+				LindChain/ProcEnvironment/PELaunchServiceInstance.m,
+				LindChain/ProcEnvironment/PELaunchServiceManager.m,
+				LindChain/ProcEnvironment/PEMachPort.m,
+				LindChain/ProcEnvironment/PEProcess.m,
+				LindChain/ProcEnvironment/PEProcessManager.m,
+				LindChain/ProcEnvironment/PEUserspaceManager.m,
+				LindChain/ProcEnvironment/Server/Server.m,
+				LindChain/ProcEnvironment/Server/ServerSession.m,
+				LindChain/ProcEnvironment/Surface/cache/patchcache.m,
+				LindChain/ProcEnvironment/Surface/cache/shimcache.m,
+				LindChain/ProcEnvironment/Surface/fs/fs.m,
+				LindChain/ProcEnvironment/Surface/fs/mount.c,
+				LindChain/ProcEnvironment/Surface/fs/preserver.c,
+				LindChain/ProcEnvironment/Surface/fs/sandbox.m,
+				LindChain/ProcEnvironment/Surface/key.c,
+				LindChain/ProcEnvironment/Surface/libkern/klog.m,
+				LindChain/ProcEnvironment/Surface/libkern/kpanic.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/export.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/fixup.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/image.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/init.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/kmod.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/kxopen.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/mapper.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/objc.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/pseudo.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/reseal.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/resolve.c,
+				LindChain/ProcEnvironment/Surface/libkern/kxld/validation.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/alloc.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/event.c,
+				LindChain/ProcEnvironment/Surface/libkern/obj/reference.c,
+				LindChain/ProcEnvironment/Surface/libkern/radix/radix.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/core.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/systm.c,
+				LindChain/ProcEnvironment/Surface/libkern/sys/worker.c,
+				LindChain/ProcEnvironment/Surface/libkern/task_handoff.c,
+				LindChain/ProcEnvironment/Surface/proc/insert.c,
+				LindChain/ProcEnvironment/Surface/proc/list.c,
+				LindChain/ProcEnvironment/Surface/proc/lookup.c,
+				LindChain/ProcEnvironment/Surface/proc/permit.c,
+				LindChain/ProcEnvironment/Surface/proc/proc.c,
+				LindChain/ProcEnvironment/Surface/proc/proctil.c,
+				LindChain/ProcEnvironment/Surface/proc/remove.c,
+				LindChain/ProcEnvironment/Surface/proc/spawn.m,
+				LindChain/ProcEnvironment/Surface/surface.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/handoffep.c,
+				LindChain/ProcEnvironment/Surface/sys/compat/pectl.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/sign.m,
+				LindChain/ProcEnvironment/Surface/sys/compat/task_for_pid.c,
+				LindChain/ProcEnvironment/Surface/sys/compat/waittask.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getgid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getppid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getsid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/getuid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setgid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setsid.c,
+				LindChain/ProcEnvironment/Surface/sys/cred/setuid.c,
+				LindChain/ProcEnvironment/Surface/sys/host/ioctl.c,
+				LindChain/ProcEnvironment/Surface/sys/host/sysctl.m,
+				LindChain/ProcEnvironment/Surface/sys/proc/kill.c,
+				LindChain/ProcEnvironment/Surface/sys/proc/proc_info.c,
+				LindChain/ProcEnvironment/Surface/sys/proc/wait4.c,
+				LindChain/ProcEnvironment/Surface/trust/apple.c,
+				LindChain/ProcEnvironment/Surface/trust/cdhash.c,
+				LindChain/ProcEnvironment/Surface/trust/entitlement.c,
+				LindChain/ProcEnvironment/Surface/trust/keychain.m,
+				LindChain/ProcEnvironment/Surface/trust/presets.m,
+				LindChain/ProcEnvironment/Surface/trust/signing.c,
+				LindChain/ProcEnvironment/Surface/trust/summary.m,
+				LindChain/ProcEnvironment/Surface/trust/trust.m,
+				LindChain/ProcEnvironment/Surface/tty/attach.c,
+				LindChain/ProcEnvironment/Surface/tty/lookup.c,
+				LindChain/ProcEnvironment/Surface/tty/tty.c,
+				LindChain/ProcEnvironment/Utils/fd.c,
+				LindChain/ProcEnvironment/Utils/misc.m,
+				LindChain/ProcEnvironment/Utils/PEMachOUtils.m,
+				LindChain/ProcEnvironment/Utils/vnode.c,
+				LindChain/Utils/CFTools.c,
+				LindChain/Utils/DynaMod.m,
+				LindChain/Utils/IconUtils.m,
+				LindChain/Utils/LDEDebouncer.m,
+				LindChain/Utils/Swizzle.c,
+				LindChain/Utils/Zip.m,
+				LindChain/WindowServer/NXAppTile.m,
+				LindChain/WindowServer/NXWindowServer.m,
+				LindChain/WindowServer/Session/NXWindowSessionApplication.m,
+				LindChain/WindowServer/Session/NXWindowSessionTerminal.m,
+				LindChain/WindowServer/Window/NXHitSurfaceButton.m,
+				LindChain/WindowServer/Window/NXResizeHandle.m,
+				LindChain/WindowServer/Window/NXWindow.m,
+				LindChain/WindowServer/Window/NXWindowBar.m,
+				LindChain/WindowServer/Window/NXWindowSession.m,
+				UI/CodeEditor/CodeEditor.swift,
+				"UI/CodeEditor/CodeEditor+Button.swift",
+				"UI/CodeEditor/CodeEditor+Theme.swift",
+				UI/CodeEditor/CodeEditorCoordinator.swift,
+				"UI/CodeEditor/CodeEditorCoordinator+Autoindent.swift",
+				UI/CodeSigCheck.swift,
+				UI/ContentView.swift,
+				UI/FileList/FileInfoViewController.swift,
+				UI/FileList/FileList.swift,
+				"UI/FileList/FileList+iPad.swift",
+				UI/FileList/FileListEntry.swift,
+				UI/FileList/FileTabBar.swift,
+				UI/FileList/iOSVersionPickerView.swift,
+				UI/FileList/PasteBoardServices.swift,
+				UI/FileList/ProjectConfigViewController.swift,
+				UI/ProjectCreationSheetView.swift,
+				UI/ProjectTemplatePicker.swift,
+				UI/ProjectTemplateSelectionView.swift,
+				UI/Settings/ApplicationManagement.swift,
+				"UI/Settings/Bundle+IconUtils.swift",
+				UI/Settings/CertificateViewController.swift,
+				UI/Settings/CreditsViewController.swift,
+				UI/Settings/CustomizationViewController.swift,
+				UI/Settings/KEXTManagement.swift,
+				UI/Settings/ManagementViewController.swift,
+				UI/Settings/NXSettingsTableViewController.m,
+				UI/Settings/ToolChainViewController.swift,
+				UI/SlotEntry.swift,
+				UI/TableCells/ComplexImportTableCell.swift,
+				UI/TableCells/CreditCell.swift,
+				UI/TableCells/FileListCell.swift,
+				UI/TableCells/ImportCell.swift,
+				UI/TableCells/PickerCell.swift,
+				UI/TableCells/ProjectTableCell.swift,
+				UI/TableCells/StepperCell.swift,
+				UI/TableCells/TextFieldCell.swift,
+				UI/TableCells/ThemePickerPreviewCell.swift,
+				UI/TableCells/ToggleCell.swift,
+				UI/UIInit/NXUISwitch.m,
+				UI/UIInit/NXUITabBarController.m,
+				UI/UIInit/NXUITableViewController.m,
+				UI/UIInit/NXUIViewController.m,
+				UI/UIInit/Terminal.swift,
+				UI/UIInit/UIInit.swift,
+				UI/UIInit/UIThemed.swift,
+				UI/XCodeButton.m,
+			);
+			target = 8F75DDA4306343D6004D9A49 /* SuperSlot */;
+		};
+		8F75DE99306347FE004D9A49 /* Exceptions for "LiveProcess" folder in "SuperSlot" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LindChain/Services/bootstrapd/LDEApplicationObject.m,
+				LindChain/Services/bootstrapd/LDEApplicationWorkspace.m,
+			);
+			target = 8F75DDA4306343D6004D9A49 /* SuperSlot */;
 		};
 		8FB3C25E303145F100DB3ABC /* Exceptions for "Frameworks" folder in "CoreCompiler" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -608,6 +1008,16 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		8F75F24130635D24004D9A49 /* Exceptions for "Nyxian" folder in "Embed Frameworks" phase from "Nyxian" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				LindChain/OpenSSL.xcframework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
+			};
+			buildPhase = 8F75F24030635D23004D9A49 /* Embed Frameworks */;
+			membershipExceptions = (
+				LindChain/OpenSSL.xcframework,
+			);
+		};
 		8FB3C25F303145F100DB3ABC /* Exceptions for "Frameworks" folder in "Embed Libraries" phase from "CoreCompiler" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			attributesByRelativePath = {
@@ -651,23 +1061,13 @@
 				Broadpatch/Broadpatch.h,
 			);
 		};
-		AFF4DBDB2DCA5DEA00B1B5F9 /* Exceptions for "Nyxian" folder in "Embed Libraries" phase from "Nyxian" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			attributesByRelativePath = {
-				LindChain/OpenSSL.xcframework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
-			};
-			buildPhase = AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */;
-			membershipExceptions = (
-				LindChain/OpenSSL.xcframework,
-			);
-		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		798692F02E627A3B00390D7E /* LiveProcess */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				79BF98402E62931E00C60D4C /* Exceptions for "LiveProcess" folder in "Nyxian" target */,
+				8F75DE99306347FE004D9A49 /* Exceptions for "LiveProcess" folder in "SuperSlot" target */,
 				79BF983D2E62930600C60D4C /* Exceptions for "LiveProcess" folder in "LiveProcess" target */,
 			);
 			path = LiveProcess;
@@ -705,7 +1105,8 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				798BBD332F1D265200CBB23F /* Exceptions for "Nyxian" folder in "Nyxian" target */,
-				AFF4DBDB2DCA5DEA00B1B5F9 /* Exceptions for "Nyxian" folder in "Embed Libraries" phase from "Nyxian" target */,
+				8F75F24130635D24004D9A49 /* Exceptions for "Nyxian" folder in "Embed Frameworks" phase from "Nyxian" target */,
+				8F75DDB33063446F004D9A49 /* Exceptions for "Nyxian" folder in "SuperSlot" target */,
 				79BF9A972E62BB6900C60D4C /* Exceptions for "Nyxian" folder in "LiveProcess" target */,
 				8F412B0330488853004E63DF /* Exceptions for "Nyxian" folder in "LiveShim" target */,
 				79AA11C62F7FFF12002FEAF2 /* Exceptions for "Nyxian" folder in "nxtool" target */,
@@ -736,7 +1137,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				860D91832FAE1F9C000D321B /* CoreCompiler.framework in Frameworks */,
+				8F75F72F3063609D004D9A49 /* CoreCompiler.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -745,6 +1146,24 @@
 			buildActionMask = 2147483647;
 			files = (
 				86DCC30A2FA521A600973169 /* libz.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F75DDA8306343D6004D9A49 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8F75DDC23063448D004D9A49 /* libarchive.tbd in Frameworks */,
+				8F75DDCC306344DC004D9A49 /* TreeSitterObjc in Frameworks */,
+				8F75DDD4306344DC004D9A49 /* TreeSitterSwift in Frameworks */,
+				8F75DDCE306344DC004D9A49 /* TreeSitterC in Frameworks */,
+				8F75F22130635AF8004D9A49 /* MobileDevelopmentKit.framework in Frameworks */,
+				8F75DE9D30634E66004D9A49 /* TreeSitter in Frameworks */,
+				8F75DDD0306344DC004D9A49 /* TreeSitterXML in Frameworks */,
+				8F75E838306351E6004D9A49 /* SwiftTerm in Frameworks */,
+				8F75DDC8306344C3004D9A49 /* Runestone in Frameworks */,
+				8F75DDD2306344DC004D9A49 /* TreeSitterCPP in Frameworks */,
+				8F75DDD6306344EB004D9A49 /* UIOnboarding in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -792,29 +1211,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				86E4D4F72FB8CF63008BFE4D /* TreeSitterSwift in Frameworks */,
-				860D917D2FAE1F95000D321B /* MobileDevelopmentKit.framework in Frameworks */,
-				79B708BC2F73157F000F38E7 /* TreeSitterCPP in Frameworks */,
 				8FDD846E305C4EF200949118 /* libBroadpatch.dylib in Frameworks */,
-				79B70C1C2F73223A000F38E7 /* Runestone in Frameworks */,
-				79B70C1F2F732364000F38E7 /* Runestone in Frameworks */,
-				8F4D96E62FFBF8FB006CAF3C /* Runestone in Frameworks */,
-				8FECB2472FFD34D500049BB0 /* Runestone in Frameworks */,
-				8F60FE5A3032DB610028EDFD /* UIOnboarding in Frameworks */,
-				AF9919582DC9175A00DDF895 /* TreeSitterObjc in Frameworks */,
-				793A4E3B2F84FE1D003B609A /* Runestone in Frameworks */,
-				791C96052F8726B0006AF674 /* Runestone in Frameworks */,
-				8FD30F253044E7390059AE9A /* libHWHook.a in Frameworks */,
 				793FCD242E6730740011B3F5 /* libarchive.tbd in Frameworks */,
-				860D91E02FAE2E4C000D321B /* CoreCompiler.framework in Frameworks */,
-				79D1DA672F92A6CE0020518A /* TreeSitterSwift in Frameworks */,
-				8F60FE5D3032DC260028EDFD /* UIOnboarding in Frameworks */,
-				8F6005203033EB920028EDFD /* UIOnboarding in Frameworks */,
-				8FECB24D2FFD367A00049BB0 /* Runestone in Frameworks */,
-				AF99195B2DC9176900DDF895 /* TreeSitterC in Frameworks */,
-				8F60051D3033DD2F0028EDFD /* UIOnboarding in Frameworks */,
-				AFF4E3492DCCCE0F00B1B5F9 /* TreeSitterXML in Frameworks */,
-				793A7E502EB5996A0044418E /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -859,6 +1257,7 @@
 				8FF6480E3056786A00E1E610 /* MobileDevelopmentService.dylib */,
 				8FDD845C305C4E9200949118 /* libBroadpatch.dylib */,
 				8FDD96FA3060B4FB00949118 /* recovery_font_18x32.png */,
+				8F75DDAE306343D6004D9A49 /* SuperSlot.dylib */,
 			);
 			sourceTree = "<group>";
 		};
@@ -940,6 +1339,7 @@
 				860D91712FAE1F95000D321B /* Sources */,
 				860D91722FAE1F95000D321B /* Frameworks */,
 				860D91732FAE1F95000D321B /* Resources */,
+				8F75F7313063609D004D9A49 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -973,6 +1373,36 @@
 			productName = CoreCompiler;
 			productReference = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */;
 			productType = "com.apple.product-type.framework";
+		};
+		8F75DDA4306343D6004D9A49 /* SuperSlot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8F75DDAB306343D6004D9A49 /* Build configuration list for PBXNativeTarget "SuperSlot" */;
+			buildPhases = (
+				8F75DDA7306343D6004D9A49 /* Sources */,
+				8F75DDA8306343D6004D9A49 /* Frameworks */,
+				8F75DDAA306343D6004D9A49 /* CopyFiles */,
+				8F75F21530635AEF004D9A49 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8F75DDC6306344B5004D9A49 /* PBXTargetDependency */,
+			);
+			name = SuperSlot;
+			packageProductDependencies = (
+				8F75DDC7306344C3004D9A49 /* Runestone */,
+				8F75DDCB306344DC004D9A49 /* TreeSitterObjc */,
+				8F75DDCD306344DC004D9A49 /* TreeSitterC */,
+				8F75DDCF306344DC004D9A49 /* TreeSitterXML */,
+				8F75DDD1306344DC004D9A49 /* TreeSitterCPP */,
+				8F75DDD3306344DC004D9A49 /* TreeSitterSwift */,
+				8F75DDD5306344EB004D9A49 /* UIOnboarding */,
+				8F75DE9C30634E66004D9A49 /* TreeSitter */,
+				8F75E837306351E6004D9A49 /* SwiftTerm */,
+			);
+			productName = execd;
+			productReference = 8F75DDAE306343D6004D9A49 /* SuperSlot.dylib */;
+			productType = "com.apple.product-type.library.static";
 		};
 		8FB3BADA302FFBAA00DB3ABC /* LiveShim */ = {
 			isa = PBXNativeTarget;
@@ -1082,43 +1512,23 @@
 				AF9916D52DC8C42200DDF895 /* Sources */,
 				AF9916D62DC8C42200DDF895 /* Frameworks */,
 				AF9916D72DC8C42200DDF895 /* Resources */,
-				AFF4DB332DCA57EC00B1B5F9 /* Embed Libraries */,
 				8F60087B3033F9200028EDFD /* Embed Foundation Extensions */,
 				8FF647BA3054D5EE00E1E610 /* CopyFiles */,
+				8F75F24030635D23004D9A49 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				860D917C2FAE1F95000D321B /* PBXTargetDependency */,
-				860D91E32FAE2E4C000D321B /* PBXTargetDependency */,
 				8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */,
 				8F60087A3033F9200028EDFD /* PBXTargetDependency */,
-				8FD30F273044E7390059AE9A /* PBXTargetDependency */,
 				8FDD8470305C4EF200949118 /* PBXTargetDependency */,
+				8F75F71B30635DBB004D9A49 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AF9916DB2DC8C42200DDF895 /* Nyxian */,
 			);
 			name = Nyxian;
 			packageProductDependencies = (
-				AF9919572DC9175A00DDF895 /* TreeSitterObjc */,
-				AF99195A2DC9176900DDF895 /* TreeSitterC */,
-				AFF4E3482DCCCE0F00B1B5F9 /* TreeSitterXML */,
-				793A7E4F2EB5996A0044418E /* SwiftTerm */,
-				79B708BB2F73157F000F38E7 /* TreeSitterCPP */,
-				79B70C1B2F73223A000F38E7 /* Runestone */,
-				79B70C1E2F732364000F38E7 /* Runestone */,
-				793A4E3A2F84FE1D003B609A /* Runestone */,
-				791C96042F8726B0006AF674 /* Runestone */,
-				79D1DA662F92A6CE0020518A /* TreeSitterSwift */,
-				86E4D4F62FB8CF63008BFE4D /* TreeSitterSwift */,
-				8F4D96E52FFBF8FB006CAF3C /* Runestone */,
-				8FECB2462FFD34D500049BB0 /* Runestone */,
-				8FECB24C2FFD367A00049BB0 /* Runestone */,
-				8F60FE593032DB610028EDFD /* UIOnboarding */,
-				8F60FE5C3032DC260028EDFD /* UIOnboarding */,
-				8F60051C3033DD2F0028EDFD /* UIOnboarding */,
-				8F60051F3033EB920028EDFD /* UIOnboarding */,
 			);
 			productName = LindDE;
 			productReference = 7944B5652DEC74EA00834134 /* Nyxian.app */;
@@ -1180,6 +1590,7 @@
 				86E4D4F52FB8CF63008BFE4D /* XCRemoteSwiftPackageReference "tree-sitter-swift" */,
 				8FECB24B2FFD367A00049BB0 /* XCRemoteSwiftPackageReference "Runestone" */,
 				8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */,
+				8F75DE9B30634E66004D9A49 /* XCRemoteSwiftPackageReference "tree-sitter" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AF9916D02DC8C42200DDF895;
@@ -1187,6 +1598,7 @@
 			projectRoot = "";
 			targets = (
 				AF9916D82DC8C42200DDF895 /* Nyxian */,
+				8F75DDA4306343D6004D9A49 /* SuperSlot */,
 				79BF97F62E6291EE00C60D4C /* LiveProcess */,
 				8FF647BF3054E61900E1E610 /* bootstrapd */,
 				8FF648073056786A00E1E610 /* MobileDevelopmentService */,
@@ -1269,6 +1681,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8F75DDA7306343D6004D9A49 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FB3BAD7302FFBAA00DB3ABC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1314,26 +1733,26 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		860D917C2FAE1F95000D321B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 860D91742FAE1F95000D321B /* MobileDevelopmentKit */;
-			targetProxy = 860D917B2FAE1F95000D321B /* PBXContainerItemProxy */;
-		};
 		860D91862FAE1F9C000D321B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilter = ios;
 			target = 86DCC2592FA5209600973169 /* CoreCompiler */;
 			targetProxy = 860D91852FAE1F9C000D321B /* PBXContainerItemProxy */;
 		};
-		860D91E32FAE2E4C000D321B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 86DCC2592FA5209600973169 /* CoreCompiler */;
-			targetProxy = 860D91E22FAE2E4C000D321B /* PBXContainerItemProxy */;
-		};
 		8F60087A3033F9200028EDFD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
 			targetProxy = 8F6008793033F9200028EDFD /* PBXContainerItemProxy */;
+		};
+		8F75DDC6306344B5004D9A49 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 860D91742FAE1F95000D321B /* MobileDevelopmentKit */;
+			targetProxy = 8F75DDC5306344B5004D9A49 /* PBXContainerItemProxy */;
+		};
+		8F75F71B30635DBB004D9A49 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8F75DDA4306343D6004D9A49 /* SuperSlot */;
+			targetProxy = 8F75F71A30635DBB004D9A49 /* PBXContainerItemProxy */;
 		};
 		8FB3BB073030089000DB3ABC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1344,11 +1763,6 @@
 			isa = PBXTargetDependency;
 			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
 			targetProxy = 8FB3BE8B303131D800DB3ABC /* PBXContainerItemProxy */;
-		};
-		8FD30F273044E7390059AE9A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8FF32DEC3036F59E00C46FE4 /* HWHook */;
-			targetProxy = 8FD30F263044E7390059AE9A /* PBXContainerItemProxy */;
 		};
 		8FDD8470305C4EF200949118 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1716,6 +2130,137 @@
 					"-Wno-documentation-deprecated-sync",
 					"-Wno-comma",
 				);
+			};
+			name = Release;
+		};
+		8F75DDAC306343D6004D9A49 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_MODULE_DEBUGGING = YES;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = L4A6CKH3TV;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				ENABLE_SECURITY_COMPILER_WARNINGS = YES;
+				EXECUTABLE_NAME = SuperSlot.dylib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Nyxian/LindChain",
+					"$(PROJECT_DIR)/Nyxian/LindChain/Private/Frameworks",
+				);
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_VERSION = "";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+					LiveProcess/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/Frameworks/MobileDevelopmentKit.framework/Frameworks",
+					"@loader_path",
+				);
+				MACH_O_TYPE = mh_dylib;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHOST_ENV",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/SwiftTerm.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/Runestone.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/UIOnboarding.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitter.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterC.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterCPP.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterObjc.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterSwift.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterXML.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterDTD.modulemap",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitter.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterC.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterCPP.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterObjc.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterSwift.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterXML.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterDTD.modulemap";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = None;
+				STRIP_SWIFT_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = "$(SWIFT_USE_INTEGRATED_DRIVER)";
+				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/NXBridge.h;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "Nyxian-Swift.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8F75DDAD306343D6004D9A49 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_ENABLE_MODULE_DEBUGGING = YES;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = L4A6CKH3TV;
+				ENABLE_ON_DEMAND_RESOURCES = NO;
+				ENABLE_SECURITY_COMPILER_WARNINGS = YES;
+				EXECUTABLE_NAME = SuperSlot.dylib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Nyxian/LindChain",
+					"$(PROJECT_DIR)/Nyxian/LindChain/Private/Frameworks",
+				);
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_VERSION = "";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+					LiveProcess/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/Frameworks/MobileDevelopmentKit.framework/Frameworks",
+					"@loader_path",
+				);
+				MACH_O_TYPE = mh_dylib;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DHOST_ENV",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/SwiftTerm.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/Runestone.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/UIOnboarding.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitter.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterC.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterCPP.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterObjc.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterSwift.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterXML.modulemap",
+					"-fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterDTD.modulemap",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitter.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterC.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterCPP.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterObjc.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterSwift.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterXML.modulemap -Xcc -fmodule-map-file=$(OBJROOT)/GeneratedModuleMaps-$(PLATFORM_NAME)/TreeSitterDTD.modulemap";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				STRIP_STYLE = None;
+				STRIP_SWIFT_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_ENABLE_EXPLICIT_MODULES = "$(SWIFT_USE_INTEGRATED_DRIVER)";
+				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/NXBridge.h;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "Nyxian-Swift.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -2124,6 +2669,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_MODULES_AUTOLINK = YES;
 				CODE_SIGN_ENTITLEMENTS = "$(NYXIAN_CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -2213,7 +2759,10 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MARKETING_VERSION = "$(VERSION)";
-				OTHER_CFLAGS = "-DHOST_ENV";
+				OTHER_CFLAGS = (
+					"-DHOST_ENV",
+					"-DBOOT",
+				);
 				OTHER_LDFLAGS = (
 					"-Wl,-U,_IOHIDEventGetIntegerValue",
 					"-Wl,-U,_IOHIDEventGetType",
@@ -2233,7 +2782,9 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/NXBridge.h;
+				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/BootBridge.h;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -2247,6 +2798,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_MODULES_AUTOLINK = YES;
 				CODE_SIGN_ENTITLEMENTS = "$(NYXIAN_CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -2337,7 +2889,10 @@
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MARKETING_VERSION = "$(VERSION)";
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "-DHOST_ENV";
+				OTHER_CFLAGS = (
+					"-DHOST_ENV",
+					"-DBOOT",
+				);
 				OTHER_LDFLAGS = (
 					"-Wl,-U,_IOHIDEventGetIntegerValue",
 					"-Wl,-U,_IOHIDEventGetType",
@@ -2357,7 +2912,9 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/NXBridge.h;
+				SWIFT_OBJC_BRIDGING_HEADER = Nyxian/BootBridge.h;
+				SWIFT_OBJC_INTERFACE_HEADER_NAME = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = NO;
@@ -2399,6 +2956,15 @@
 			buildConfigurations = (
 				86DCC2652FA5209600973169 /* Debug */,
 				86DCC2662FA5209600973169 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8F75DDAB306343D6004D9A49 /* Build configuration list for PBXNativeTarget "SuperSlot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8F75DDAC306343D6004D9A49 /* Debug */,
+				8F75DDAD306343D6004D9A49 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -2501,6 +3067,14 @@
 				kind = branch;
 			};
 		};
+		8F75DE9B30634E66004D9A49 /* XCRemoteSwiftPackageReference "tree-sitter" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/tree-sitter";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.18.0;
+			};
+		};
 		8FECB24B2FFD367A00049BB0 /* XCRemoteSwiftPackageReference "Runestone" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/emexlab/Runestone";
@@ -2536,85 +3110,50 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		791C96042F8726B0006AF674 /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		793A4E3A2F84FE1D003B609A /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		793A7E4F2EB5996A0044418E /* SwiftTerm */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 793A7E4E2EB599690044418E /* XCRemoteSwiftPackageReference "SwiftTerm" */;
-			productName = SwiftTerm;
-		};
-		79B708BB2F73157F000F38E7 /* TreeSitterCPP */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 79B708BA2F73157F000F38E7 /* XCRemoteSwiftPackageReference "tree-sitter-cpp" */;
-			productName = TreeSitterCPP;
-		};
-		79B70C1B2F73223A000F38E7 /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		79B70C1E2F732364000F38E7 /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		79D1DA662F92A6CE0020518A /* TreeSitterSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TreeSitterSwift;
-		};
-		86E4D4F62FB8CF63008BFE4D /* TreeSitterSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 86E4D4F52FB8CF63008BFE4D /* XCRemoteSwiftPackageReference "tree-sitter-swift" */;
-			productName = TreeSitterSwift;
-		};
-		8F4D96E52FFBF8FB006CAF3C /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		8F60051C3033DD2F0028EDFD /* UIOnboarding */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = UIOnboarding;
-		};
-		8F60051F3033EB920028EDFD /* UIOnboarding */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */;
-			productName = UIOnboarding;
-		};
-		8F60FE593032DB610028EDFD /* UIOnboarding */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = UIOnboarding;
-		};
-		8F60FE5C3032DC260028EDFD /* UIOnboarding */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = UIOnboarding;
-		};
-		8FECB2462FFD34D500049BB0 /* Runestone */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Runestone;
-		};
-		8FECB24C2FFD367A00049BB0 /* Runestone */ = {
+		8F75DDC7306344C3004D9A49 /* Runestone */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8FECB24B2FFD367A00049BB0 /* XCRemoteSwiftPackageReference "Runestone" */;
 			productName = Runestone;
 		};
-		AF9919572DC9175A00DDF895 /* TreeSitterObjc */ = {
+		8F75DDCB306344DC004D9A49 /* TreeSitterObjc */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF9919562DC9175A00DDF895 /* XCRemoteSwiftPackageReference "tree-sitter-objc" */;
 			productName = TreeSitterObjc;
 		};
-		AF99195A2DC9176900DDF895 /* TreeSitterC */ = {
+		8F75DDCD306344DC004D9A49 /* TreeSitterC */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF9919592DC9176900DDF895 /* XCRemoteSwiftPackageReference "tree-sitter-c" */;
 			productName = TreeSitterC;
 		};
-		AFF4E3482DCCCE0F00B1B5F9 /* TreeSitterXML */ = {
+		8F75DDCF306344DC004D9A49 /* TreeSitterXML */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AFF4E3472DCCCE0F00B1B5F9 /* XCRemoteSwiftPackageReference "tree-sitter-xml" */;
 			productName = TreeSitterXML;
+		};
+		8F75DDD1306344DC004D9A49 /* TreeSitterCPP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 79B708BA2F73157F000F38E7 /* XCRemoteSwiftPackageReference "tree-sitter-cpp" */;
+			productName = TreeSitterCPP;
+		};
+		8F75DDD3306344DC004D9A49 /* TreeSitterSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 86E4D4F52FB8CF63008BFE4D /* XCRemoteSwiftPackageReference "tree-sitter-swift" */;
+			productName = TreeSitterSwift;
+		};
+		8F75DDD5306344EB004D9A49 /* UIOnboarding */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F60051E3033EB920028EDFD /* XCRemoteSwiftPackageReference "UIOnboarding" */;
+			productName = UIOnboarding;
+		};
+		8F75DE9C30634E66004D9A49 /* TreeSitter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F75DE9B30634E66004D9A49 /* XCRemoteSwiftPackageReference "tree-sitter" */;
+			productName = TreeSitter;
+		};
+		8F75E837306351E6004D9A49 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 793A7E4E2EB599690044418E /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
