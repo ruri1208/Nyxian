@@ -93,6 +93,8 @@
 			</array>
 		</dict>
 	</dict>
+    <key>UILaunchScreen</key>
+		<dict/>
 	<key>UIFileSharingEnabled</key>
 	<false/>
 	<key>UTImportedTypeDeclarations</key>
