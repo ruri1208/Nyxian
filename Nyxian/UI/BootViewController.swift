@@ -497,14 +497,14 @@ func recoveryWipeCache(_ c: NXRecoveryViewController) {
 
 func recoveryConfirmWipe(recoveryController c: NXRecoveryViewController) {
     c.enterRecovery(
-        withHeader: "Wipe all user data?\n THIS CAN NOT BE UNDONE!",
+        withHeader: "Wipe all user data?\nTHIS CAN NOT BE UNDONE!",
         instructions: nil,
         footer: nil,
         items: [
-            NXRecoveryItem(title: " Cancel") { c in
+            NXRecoveryItem(title: "Cancel") { c in
                 if let c = c { recoveryShowMenu(recoveryController: c) }
             },
-            NXRecoveryItem(title: " Factory data reset") { c in
+            NXRecoveryItem(title: "Factory data reset") { c in
                 guard let c = c else { return }
                 recoveryShowMenu(recoveryController: c)
                 recoveryWipeData(c)
