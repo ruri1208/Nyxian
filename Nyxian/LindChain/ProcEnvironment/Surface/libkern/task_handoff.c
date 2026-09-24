@@ -23,6 +23,7 @@
 #include <LindChain/ProcEnvironment/Surface/libkern/task_handoff.h>
 #include <ksurface_abi.h>
 #include <assert.h>
+#include <mach/exc.h>
 
 int64_t liveshim_syscall(uint32_t syscall_num, ...);
 

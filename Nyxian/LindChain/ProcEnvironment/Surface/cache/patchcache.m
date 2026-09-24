@@ -255,7 +255,9 @@ static kern_return_t findDyldFunctionPointers(uint64_t out[kDyldPtrCount])
         if(vtableLibSystemHelpers[0] == lockFunc)
         {
             lockUnlockPtr = vtableLibSystemHelpers;
+#if DEBUG
             NSCAssert(vtableLibSystemHelpers[1] == unlockFunc, @"dyld has changed: lock and unlock functions are not next to each other");
+#endif /* DEBUG */
             break;
         }
         vtableLibSystemHelpers++;

@@ -22,6 +22,28 @@
 #import <LindChain/IDEFoundation/NXAlertDiagnosticPresenter.h>
 #import <LindChain/WindowServer/NXWindowServer.h>
 
+static UIViewController *NXTopViewController(UIViewController *viewController)
+{
+    if(viewController.presentedViewController)
+    {
+        return NXTopViewController(viewController.presentedViewController);
+    }
+    
+    if([viewController isKindOfClass:[UINavigationController class]])
+    {
+        UINavigationController *nav = (UINavigationController *)viewController;
+        return NXTopViewController(nav.visibleViewController ?: nav);
+    }
+    
+    if([viewController isKindOfClass:[UITabBarController class]])
+    {
+        UITabBarController *tab = (UITabBarController *)viewController;
+        return NXTopViewController(tab.selectedViewController ?: tab);
+    }
+    
+    return viewController;
+}
+
 static NSString *NXStringForNXAlertDiagnosticPresenterLevel(NXAlertDiagnosticPresenterLevel level)
 {
     switch(level)
@@ -44,7 +66,7 @@ static NSString *NXStringForNXAlertDiagnosticPresenterLevel(NXAlertDiagnosticPre
 {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, delay), dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         dispatch_async(dispatch_get_main_queue(), ^{
-            UIViewController *viewController = NXWindowServer.shared.rootViewController;
+            UIViewController *viewController = NXTopViewController(NXWindowServer.shared.rootViewController);
             UIAlertController *alertController = [UIAlertController alertControllerWithTitle:NXStringForNXAlertDiagnosticPresenterLevel(level) message:message preferredStyle:UIAlertControllerStyleAlert];
             [alertController addAction:[UIAlertAction actionWithTitle:@"Close" style:UIAlertActionStyleCancel handler:nil]];
             [viewController presentViewController:alertController animated:YES completion:nil];

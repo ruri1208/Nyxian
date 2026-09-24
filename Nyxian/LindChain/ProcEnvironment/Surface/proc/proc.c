@@ -22,6 +22,7 @@
 #include <LindChain/ProcEnvironment/Surface/libkern/klog.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <ksurface_config.h>
+#include <mach/mach_time.h>
 
 DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
 {

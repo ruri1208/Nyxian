@@ -370,13 +370,23 @@ func recoveryWipeData(_ c: NXRecoveryViewController) {
     
     var prefsOK = true
     if let id = Bundle.main.bundleIdentifier {
+        let savedData = UserDefaults.standard.object(forKey: "LCCertificateData")
+        let savedPassword = UserDefaults.standard.object(forKey: "LCCertificatePassword")
+        
         let before = UserDefaults.standard.persistentDomain(forName: id)?.count ?? 0
         c.recoveryLog("Clearing preferences (\(before) keys)...")
         
         UserDefaults.standard.removePersistentDomain(forName: id)
         
+        if let savedData = savedData {
+            UserDefaults.standard.set(savedData, forKey: "LCCertificateData")
+        }
+        if let savedPassword = savedPassword {
+            UserDefaults.standard.set(savedPassword, forKey: "LCCertificatePassword")
+        }
+        
         let after = UserDefaults.standard.persistentDomain(forName: id)?.count ?? 0
-        if after != 0 {
+        if after != 2 {
             c.recoveryLogError("  failed: \(after) keys remain")
             prefsOK = false
         }

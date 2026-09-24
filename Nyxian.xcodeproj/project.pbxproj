@@ -287,6 +287,7 @@
 		8FF346DD3039AA7000C46FE4 /* ksurface_abi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ksurface_abi.h; sourceTree = "<group>"; };
 		8FF647C63054E61900E1E610 /* bootstrapd.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = bootstrapd.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FF6480E3056786A00E1E610 /* MobileDevelopmentService.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = MobileDevelopmentService.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FFF7C113064D8B9002612E7 /* superslotfix.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = superslotfix.sh; sourceTree = "<group>"; };
 		AF99171F2DC8EA3C00DDF895 /* Shared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Shared; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1238,6 +1239,7 @@
 				8FF346DD3039AA7000C46FE4 /* ksurface_abi.h */,
 				8FB3C1EA3031450500DB3ABC /* ksurface_config.h */,
 				79277DC62EE8761000F18B30 /* version.sh */,
+				8FFF7C113064D8B9002612E7 /* superslotfix.sh */,
 				79277DC02EE8752800F18B30 /* Config.xcconfig */,
 				AF99171F2DC8EA3C00DDF895 /* Shared */,
 				AF9916DB2DC8C42200DDF895 /* Nyxian */,

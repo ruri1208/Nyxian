@@ -27,7 +27,6 @@
 #import <LindChain/ProcEnvironment/PEMachPort.h>
 #import <LindChain/ProcEnvironment/Server/Server.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proctil.h>
-#import <MobileDevelopmentKit/MDKThreadPool.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
 
 @implementation PEProcess {

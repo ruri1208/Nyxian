@@ -22,6 +22,7 @@
 #ifndef SURFACE_KEY_H
 #define SURFACE_KEY_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
