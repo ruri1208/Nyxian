@@ -22,7 +22,6 @@
 		8F75DE9D30634E66004D9A49 /* TreeSitter in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DE9C30634E66004D9A49 /* TreeSitter */; };
 		8F75E838306351E6004D9A49 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75E837306351E6004D9A49 /* SwiftTerm */; };
 		8F75F22130635AF8004D9A49 /* MobileDevelopmentKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; };
-		8F75F22230635AF8004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8F75F71830635D9A004D9A49 /* SuperSlot.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8F75DDAE306343D6004D9A49 /* SuperSlot.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8F75F72E30636046004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 860D91752FAE1F95000D321B /* MobileDevelopmentKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8F75F72F3063609D004D9A49 /* CoreCompiler.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC25A2FA5209600973169 /* CoreCompiler.framework */; platformFilter = ios; };
@@ -49,13 +48,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 86DCC2592FA5209600973169;
 			remoteInfo = CoreCompiler;
-		};
-		8F6008793033F9200028EDFD /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 79BF97F62E6291EE00C60D4C;
-			remoteInfo = LiveProcess;
 		};
 		8F75DDC5306344B5004D9A49 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -175,7 +167,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				8F75F22230635AF8004D9A49 /* MobileDevelopmentKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1522,7 +1513,6 @@
 			);
 			dependencies = (
 				8FB3BE8C303131D800DB3ABC /* PBXTargetDependency */,
-				8F60087A3033F9200028EDFD /* PBXTargetDependency */,
 				8FDD8470305C4EF200949118 /* PBXTargetDependency */,
 				8F75F71B30635DBB004D9A49 /* PBXTargetDependency */,
 			);
@@ -1740,11 +1730,6 @@
 			platformFilter = ios;
 			target = 86DCC2592FA5209600973169 /* CoreCompiler */;
 			targetProxy = 860D91852FAE1F9C000D321B /* PBXContainerItemProxy */;
-		};
-		8F60087A3033F9200028EDFD /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 79BF97F62E6291EE00C60D4C /* LiveProcess */;
-			targetProxy = 8F6008793033F9200028EDFD /* PBXContainerItemProxy */;
 		};
 		8F75DDC6306344B5004D9A49 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
