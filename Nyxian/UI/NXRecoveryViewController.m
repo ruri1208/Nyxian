@@ -605,7 +605,7 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
         _logLines = [NSMutableArray array];
         _logRows = [NSMutableArray array];
         _recoveryIndex = 0;
-        _recoveryLogMax = 8;
+        _recoveryLogMax = 30;
         _recoveryActive = NO;
         _menuOffset = 0;
         _visibleWindow = 0;
