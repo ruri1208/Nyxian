@@ -22,6 +22,7 @@
 
 #import <Foundation/Foundation.h>
 #import <sys/sysctl.h>
+#import <sys/stat.h>
 #import <regex.h>
 #import <LindChain/ProcEnvironment/Surface/libkern/klog.h>
 #import <LindChain/ProcEnvironment/Surface/sys/host/sysctl.h>
@@ -502,10 +503,77 @@ int sysctl_kernboottime(sysctl_req_t *req)
     return 0;
 }
 
+extern int kfd;
+int sysctl_kernmsgbuf(sysctl_req_t *req)
+{
+    size_t needed = sizeof(int);
+    size_t user_outlen = 0;
+    if(req->newp != NULL || req->newlen != 0)
+    {
+        req->err = EPERM;
+        return -1;
+    }
+    
+    struct stat st;
+    if(fstat(kfd, &st) != 0)
+    {
+        req->err = errno;
+        return -1;
+    }
+    
+    if(st.st_size > INT_MAX)
+    {
+        req->err = EOVERFLOW;
+        return -1;
+    }
+    
+    int msgbufsize = (int)st.st_size;
+    
+    if(req->oldlenp != NULL)
+    {
+        if(!syscall_copy_in(req->task, sizeof(size_t), &user_outlen, req->oldlenp))
+        {
+            req->err = EFAULT;
+            return -1;
+        }
+    }
+    
+    if(req->oldp != NULL)
+    {
+        if(req->oldlenp == NULL)
+        {
+            req->err = EFAULT;
+            return -1;
+        }
+        
+        if(user_outlen < needed)
+        {
+            syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp);
+            req->err = ENOMEM;
+            return -1;
+        }
+        
+        if(!syscall_copy_out(req->task, sizeof(msgbufsize), &msgbufsize, req->oldp))
+        {
+            req->err = EFAULT;
+            return -1;
+        }
+    }
+    
+    if(req->oldlenp != NULL && !syscall_copy_out(req->task, sizeof(size_t), &needed, req->oldlenp))
+    {
+        req->err = EFAULT;
+        return -1;
+    }
+    
+    return 0;
+}
+
 /* sysctl map entries */
 static const sysctl_map_entry_t sysctl_map[] = {
     { { CTL_KERN, KERN_HOSTNAME                 }, 2, sysctl_kernhostname },
     { { CTL_KERN, KERN_BOOTTIME                 }, 2, sysctl_kernboottime },
+    { { CTL_KERN, 9999                          }, 2, sysctl_kernmsgbuf },      /* got no solid identifier in XNU's BSD */
 #if KSURFACE_SYS_PROC_ENABLED
     { { CTL_KERN, KERN_MAXPROC                  }, 2, sysctl_kernmaxproc },
     { { CTL_KERN, KERN_PROC, KERN_PROC_ALL      }, 3, sysctl_kernproc },
@@ -521,10 +589,11 @@ static const sysctl_map_entry_t sysctl_map[] = {
 static const sysctl_name_map_entry_t sysctl_name_map[] = {
     { "kern.hostname",          &sysctl_map[0] },
     { "kern.boottime",          &sysctl_map[1] },
+    { "kern.msgbuf",            &sysctl_map[2] },
 #if KSURFACE_SYS_PROC_ENABLED
-    { "kern.maxproc",           &sysctl_map[2] },
-    { "kern.proc.all",          &sysctl_map[3] },
-    { "kern.argmax",            &sysctl_map[4] },
+    { "kern.maxproc",           &sysctl_map[3] },
+    { "kern.proc.all",          &sysctl_map[4] },
+    { "kern.argmax",            &sysctl_map[5] },
 #endif /* KSURFACE_SYS_PROC_ENABLED */
 };
 
