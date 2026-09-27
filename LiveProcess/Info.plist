@@ -4,17 +4,6 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.kdt.livecontainer.extensionurlscheme</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>liveprocess</string>
-			</array>
-		</dict>
-	</array>
 	<key>GCSupportedGameControllers</key>
 	<array>
 		<dict>

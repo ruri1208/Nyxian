@@ -132,8 +132,7 @@ create_home:
             tempBundle = [archiveHandle extractArchive];
             if(tempBundle != NULL)
             {
-                didInstall = [[LDEApplicationWorkspaceInternal shared]
-                              installApplicationWithPayloadPath:tempBundle];
+                didInstall = [[LDEApplicationWorkspaceInternal shared] installApplicationWithPayloadPath:tempBundle];
             }
         } @catch (NSException *exception) {
             NSLog(@"[installd] Exception during install: %@", exception);
@@ -228,17 +227,17 @@ create_home:
     return @protocol(LDEApplicationWorkspaceObserver);
 }
 
-- (void)clientDidConnectWithConnection:(NSXPCConnection*)client
+- (void)clientDidConnectWithConnection:(NSXPCConnection *)client
 {
     id<LDEApplicationWorkspaceObserver> clientObject = client.remoteObjectProxy;
     LDEApplicationWorkspaceInternal *workspace = [LDEApplicationWorkspaceInternal shared];
-    for(NSString *bundleID in workspace.bundles)
+    __block NSArray<NSBundle *> *snapshot;
+    dispatch_sync(workspace.workspaceQueue, ^{
+        snapshot = workspace.bundles.allValues;
+    });
+    for(NSBundle *bundle in snapshot)
     {
-        NSBundle *bundle = workspace.bundles[bundleID];
-        if(bundle)
-        {
-            [clientObject applicationWasInstalled:[[LDEApplicationObject alloc] initWithNSBundle:bundle]];
-        }
+        [clientObject applicationWasInstalled:[[LDEApplicationObject alloc] initWithNSBundle:bundle]];
     }
     [clientObject applicationInitialPopulationDone];
 }

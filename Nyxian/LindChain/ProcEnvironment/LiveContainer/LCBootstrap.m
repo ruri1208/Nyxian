@@ -130,7 +130,7 @@ int LCBootstrapMain(NSString *executablePath,
     appExecutableHandle = guestHandle;
     if(!guestHandle || (uint64_t)guestHandle > 0xf00000000000)
     {
-        printf("%s\n", dlerror());
+        fprintf(stderr, "%s\n", dlerror());
         return 1;
     }
     
@@ -140,6 +140,12 @@ int LCBootstrapMain(NSString *executablePath,
     {
         entry = dlsym(guestHandle, "main");
     }
+    if(entry == NULL)
+    {
+        fprintf(stderr, "failed to find entry in executable\n");
+        return 1;
+    }
+    fprintf(stderr, "passed tests\n");
     assert(entry);
     
     /*

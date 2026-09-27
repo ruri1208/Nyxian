@@ -19,15 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TTY_TTY_H
-#define TTY_TTY_H
+#ifndef SURFACE_SYS_OPENPTY_H
+#define SURFACE_SYS_OPENPTY_H
 
-#import <LindChain/ProcEnvironment/Surface/tty/def.h>
-#import <LindChain/ProcEnvironment/Surface/tty/attach.h>
-#import <LindChain/ProcEnvironment/Surface/tty/lookup.h>
+#include <LindChain/ProcEnvironment/Surface/surface.h>
 
-void tty_kill(ksurface_tty_t *tty, int sig);
+DEFINE_SYSCALL_HANDLER(openpty);
 
-DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(tty);
-
-#endif /* TTY_TTY_H */
+#endif /* SURFACE_SYS_OPENPTY_H */

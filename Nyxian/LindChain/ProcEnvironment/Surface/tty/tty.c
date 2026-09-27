@@ -31,8 +31,8 @@
 #include <LindChain/ProcEnvironment/Surface/proc/spawn.h>
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 
-static void tty_kill(ksurface_tty_t *tty,
-                     int sig)
+void tty_kill(ksurface_tty_t *tty,
+              int sig)
 {
     kinfo_proc_t *kp  = NULL;
     size_t len = 0;

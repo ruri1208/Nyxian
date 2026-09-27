@@ -281,6 +281,7 @@ env_sys_entry_t sys_env_entries[] = {
     SYS_ENTRY(SYS_ioctl,        T_FIN,  T_NUM,  T_NUM,  T_NUM,  T_NUM,  T_NUM),
     SYS_ENTRY(SYS_open,         T_NUM,  T_NUM,  T_NUM,  T_POUT, T_NUM,  T_NUM),
     SYS_ENTRY(SYS_faccessat,    T_FIN,  T_NUM,  T_NUM,  T_NUM,  T_NUM,  T_NUM),
+    SYS_ENTRY(SYS_openpty,      T_POUT, T_POUT, T_NUM,  T_NUM,  T_NUM,  T_NUM),
 };
 
 /* also making our lives easier */

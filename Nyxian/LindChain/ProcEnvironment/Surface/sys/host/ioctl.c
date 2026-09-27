@@ -41,6 +41,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
         case TIOCSPGRP:
         case TIOCGPGRP:
         case TIOCGWINSZ:
+        case TIOCSWINSZ:
             break;
         default:
             sys_return_failure_with_errno(ENOSYS);
@@ -60,6 +61,7 @@ DEFINE_SYSCALL_HANDLER(ioctl)
     switch(u_flag)
     {
         case TIOCGETA:
+        {
             kvo_rdlock(tty);
             
             if(!syscall_copy_out(sys_task_, sizeof(struct termios), &(tty->t), u_ptr))
@@ -68,7 +70,9 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             }
             
             break;
+        }
         case TIOCSETA:
+        {
             kvo_wrlock(tty);
             
             /* there is no rollback from a failed copy-in */
@@ -90,7 +94,9 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             pthread_resume(tty->pump_thread);
             
             break;
+        }
         case TIOCSPGRP:
+        {
             kvo_wrlock(tty);
             pid_t user_pgrp = 0;
             
@@ -116,20 +122,43 @@ DEFINE_SYSCALL_HANDLER(ioctl)
             }
             
             break;
+        }
         case TIOCGPGRP:
+        {
             kvo_rdlock(tty);
             if(!syscall_copy_out(sys_task_, sizeof(pid_t), &(tty->pgrp), u_ptr))
             {
                 goto out_fault;
             }
             break;
+        }
         case TIOCGWINSZ:
+        {
             kvo_rdlock(tty);
             if(!syscall_copy_out(sys_task_, sizeof(struct winsize), &(tty->ws), u_ptr))
             {
                 goto out_fault;
             }
             break;
+        }
+        case TIOCSWINSZ:
+        {
+            kvo_wrlock(tty);
+            struct winsize temp;
+            if(!syscall_copy_in(sys_task_, sizeof(struct winsize), &temp, u_ptr))
+            {
+                goto out_fault;
+            }
+            bool changed = tty->ws.ws_row != temp.ws_row || tty->ws.ws_col != temp.ws_col || tty->ws.ws_xpixel != temp.ws_xpixel || tty->ws.ws_ypixel != temp.ws_ypixel;
+            tty->ws = temp;
+            kvo_unlock(tty);
+            if(changed)
+            {
+                tty_kill(tty, SIGWINCH);
+            }
+            kvo_release(tty);
+            sys_return;
+        }
     }
     
     /* mutual deinit */
