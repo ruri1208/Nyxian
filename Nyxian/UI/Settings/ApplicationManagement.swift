@@ -149,31 +149,28 @@ class ApplicationManagementViewController: NXUITableViewController, UITextFieldD
         self.present(documentPicker, animated: true)
     }
     private func updateSimulatorBarButtonItem() {
-        
-        let isSimulator = objcView.simulator
-        
-        
+        let isSimulator = UserDefaults.standard.bool(forKey: "simulator")
         let symbolName = isSimulator ? "rectangle.ratio.9.to.16" : "ipad.and.iphone"
         let buttonImage = UIImage(systemName: symbolName)
-        
+    
         let toggleItem = UIBarButtonItem(
             image: buttonImage,
             style: .plain,
             target: self,
             action: #selector(toggleSimulatorMode)
         )
-        
+    
         navigationItem.leftBarButtonItem = toggleItem
     }
-    
+
     @objc private func toggleSimulatorMode() {
-        
-        objcView.simulator = !objcView.simulator
- 
+        let current = UserDefaults.standard.bool(forKey: "simulator")
+        UserDefaults.standard.set(!current, forKey: "simulator")
+
         updateSimulatorBarButtonItem()
-    
         view.setNeedsLayout()
     }
+
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         let alert = UIAlertController(title: nil, message: "Validating", preferredStyle: .alert)
         
