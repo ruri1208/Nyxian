@@ -25,6 +25,8 @@
 #import <LindChain/ProcEnvironment/PEProcessManager.h>
 #import <LindChain/WindowServer/Window/NXFloatingBallWindow.h>
 
+static NSString * const kNXSimulatorEnabledKey = @"simulator";
+
 @interface NXWindowLayerView : UIView
 @end
 
@@ -1068,6 +1070,19 @@
         return;
     }
 }
+- (BOOL)simulator
+{
+    if ([[NSUserDefaults standardUserDefaults] objectIsForReturnedKey:kNXSimulatorEnabledKey] == nil) {
+        return NO;
+    }
+    return [[NSUserDefaults standardUserDefaults] boolForKey:kNXSimulatorEnabledKey];
+}
+
+- (void)setSimulator:(BOOL)simulator
+{
+    [[NSUserDefaults standardUserDefaults] setBool:simulator forKey:kNXSimulatorEnabledKey];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
 - (void)layoutSimulatorWindow:(NXWindow *)window
 {
     if (!window || !window.view) return;
@@ -1075,7 +1090,19 @@
     window.view.frame = self.bounds;
     window.view.backgroundColor = [UIColor blackColor];
     
-
+    if (!self.Simulator) {
+        CGRect fullScreenFrame = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
+        
+        for (UIView *subview in window.view.subviews) {
+            subview.frame = fullScreenFrame;
+            subview.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        }
+        
+        [window.view setNeedsLayout];
+        [window.view layoutIfNeeded];
+        return;
+    }
+    
     UIEdgeInsets safeArea = self.safeAreaInsets;
     CGFloat availableW = self.bounds.size.width - safeArea.left - safeArea.right;
     CGFloat availableH = self.bounds.size.height - safeArea.top - safeArea.bottom;
