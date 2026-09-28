@@ -48,6 +48,7 @@ class ApplicationManagementViewController: NXUITableViewController, UITextFieldD
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        updateSimulatorBarButtonItem()
         self.tableView.register(ProjectTableCell.self, forCellReuseIdentifier: ProjectTableCell.reuseIdentifier)
         LDEApplicationWorkspace.shared().ping()
         self.title = "Apps"
@@ -147,7 +148,32 @@ class ApplicationManagementViewController: NXUITableViewController, UITextFieldD
         documentPicker.modalPresentationStyle = .formSheet
         self.present(documentPicker, animated: true)
     }
+    private func updateSimulatorBarButtonItem() {
+        
+        let isSimulator = objcView.simulator
+        
+        
+        let symbolName = isSimulator ? "rectangle.ratio.9.to.16" : "ipad.and.iphone"
+        let buttonImage = UIImage(systemName: symbolName)
+        
+        let toggleItem = UIBarButtonItem(
+            image: buttonImage,
+            style: .plain,
+            target: self,
+            action: #selector(toggleSimulatorMode)
+        )
+        
+        navigationItem.leftBarButtonItem = toggleItem
+    }
     
+    @objc private func toggleSimulatorMode() {
+        
+        objcView.simulator = !objcView.simulator
+ 
+        updateSimulatorBarButtonItem()
+    
+        view.setNeedsLayout()
+    }
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         let alert = UIAlertController(title: nil, message: "Validating", preferredStyle: .alert)
         
