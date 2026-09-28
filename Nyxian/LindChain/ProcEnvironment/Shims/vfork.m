@@ -194,6 +194,70 @@ DEFINE_HOOK(vfork, pid_t, (void)) __attribute__((optnone))
     return pid;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+DEFINE_HOOK(fork, pid_t, (void)) __attribute__((optnone))
+#pragma GCC diagnostic pop
+{
+    /*
+     * allocating local thread snapshot, which
+     * is used to snapshot the current stack
+     * memory of the caller thread to later
+     * restore it so it looks as if its returning
+     * from fork but in reality it did a time
+     * travel.
+     */
+    local_fork_thread_snapshot = malloc(sizeof(fork_thread_snapshot_t));
+    
+    /* sanity check */
+    if(local_fork_thread_snapshot == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+    
+    /* preparing for thread handoff */
+    local_fork_thread_snapshot->cwd = getcwd(NULL, 0);
+    if(local_fork_thread_snapshot->cwd == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+    local_fork_thread_snapshot->ret_pid = 0;
+    local_fork_thread_snapshot->thread = mach_thread_self();
+    
+    /* handing off */
+    bool success = fork_helper_thread_trap();
+    
+    /* checking for succession */
+    if(!success)
+    {
+        if(local_fork_thread_snapshot != NULL)
+        {
+            free(local_fork_thread_snapshot);
+            local_fork_thread_snapshot = NULL;
+        }
+        
+        errno = EBADEXEC;
+        return -1;
+    }
+    
+    /* we will go here twice! */
+    pid_t pid = local_fork_thread_snapshot->ret_pid;
+    
+    if(pid != 0)
+    {
+        /* restore cwd */
+        posix_spawn_file_actions_destroy(&(local_fork_thread_snapshot->fa));
+        chdir(local_fork_thread_snapshot->cwd);
+        free(local_fork_thread_snapshot->cwd);
+        free(local_fork_thread_snapshot);
+        local_fork_thread_snapshot = NULL;
+    }
+    
+    return pid;
+}
+
 #pragma mark - exec*() symbol family helpers
 
 // MARK: Helper for all use cases
@@ -211,8 +275,8 @@ int environment_execvpa(const char * __path,
     }
     
     /* commiting the posix spawn */
-    int retval = find_binary ? environment_posix_spawnp(&(local_fork_thread_snapshot->ret_pid), __path, &(local_fork_thread_snapshot->fa), NULL, __argv, __envp) :
-                               environment_posix_spawn(&(local_fork_thread_snapshot->ret_pid), __path, &(local_fork_thread_snapshot->fa), NULL, __argv, __envp);
+    int retval = find_binary ? posix_spawnp(&(local_fork_thread_snapshot->ret_pid), __path, &(local_fork_thread_snapshot->fa), NULL, __argv, __envp) :
+                               posix_spawn(&(local_fork_thread_snapshot->ret_pid), __path, &(local_fork_thread_snapshot->fa), NULL, __argv, __envp);
     
     /* evaluating return */
     if(retval != 0)
@@ -414,6 +478,7 @@ void environment_vfork_init(void)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DO_HOOK_GLOBAL(vfork);
+    DO_HOOK_GLOBAL(fork);
 #pragma GCC diagnostic pop
     DO_HOOK_GLOBAL(execl);
     DO_HOOK_GLOBAL(execle);

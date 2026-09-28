@@ -68,9 +68,6 @@ typedef struct _posix_spawn_file_actions {
     _psfa_action_t  psfa_act_acts[];        /* actions array (uses c99) */
 } *_posix_spawn_file_actions_t;
 
-int environment_posix_spawn(pid_t *process_identifier, const char *path, const posix_spawn_file_actions_t *fa, const posix_spawnattr_t *spawn_attr, char *const argv[], char *const envp[]);
-int environment_posix_spawnp(pid_t *process_identifier, const char *path, const posix_spawn_file_actions_t *fa, const posix_spawnattr_t *spawn_attr, char *const argv[], char *const envp[]);
-
 void environment_posix_spawn_init(void);
 
 #endif /* PROCENVIRONMENT_POSIXSPAWN_H */

@@ -10,6 +10,7 @@
 		793FCD242E6730740011B3F5 /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
 		79BF9A8F2E62BA8700C60D4C /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
 		86DCC30A2FA521A600973169 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 86DCC3082FA5219900973169 /* libz.tbd */; };
+		8F1B780F3069AA2D00484251 /* libBroadpatch.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDD845C305C4E9200949118 /* libBroadpatch.dylib */; };
 		8F6008783033F9200028EDFD /* LiveProcess.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 79BF97F72E6291EE00C60D4C /* LiveProcess.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8F75DDC23063448D004D9A49 /* libarchive.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 79BF9A8E2E62BA7D00C60D4C /* libarchive.tbd */; };
 		8F75DDC8306344C3004D9A49 /* Runestone in Frameworks */ = {isa = PBXBuildFile; productRef = 8F75DDC7306344C3004D9A49 /* Runestone */; };
@@ -48,6 +49,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 86DCC2592FA5209600973169;
 			remoteInfo = CoreCompiler;
+		};
+		8F1B78103069AA2D00484251 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF9916D12DC8C42200DDF895 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8FDD845B305C4E9200949118;
+			remoteInfo = Broadpatch;
 		};
 		8F75DDC5306344B5004D9A49 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1125,6 +1133,7 @@
 			files = (
 				79BF9A8F2E62BA8700C60D4C /* libarchive.tbd in Frameworks */,
 				8FB3BB043030089000DB3ABC /* LiveShim.framework in Frameworks */,
+				8F1B780F3069AA2D00484251 /* libBroadpatch.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1319,6 +1328,7 @@
 			);
 			dependencies = (
 				8FB3BB073030089000DB3ABC /* PBXTargetDependency */,
+				8F1B78113069AA2D00484251 /* PBXTargetDependency */,
 			);
 			name = LiveProcess;
 			packageProductDependencies = (
@@ -1733,6 +1743,11 @@
 			platformFilter = ios;
 			target = 86DCC2592FA5209600973169 /* CoreCompiler */;
 			targetProxy = 860D91852FAE1F9C000D321B /* PBXContainerItemProxy */;
+		};
+		8F1B78113069AA2D00484251 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8FDD845B305C4E9200949118 /* Broadpatch */;
+			targetProxy = 8F1B78103069AA2D00484251 /* PBXContainerItemProxy */;
 		};
 		8F75DDC6306344B5004D9A49 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

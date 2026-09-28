@@ -28,6 +28,7 @@
 #import <LindChain/ProcEnvironment/LiveContainer/LCUtils.h>
 #import <LindChain/ProcEnvironment/LiveContainer/ZSign/zsigner.h>
 #import <LiveShim/LiveShimSyscall.h>
+#import <Broadpatch/Broadpatch.h>
 #import <fcntl.h>
 #import <ksurface_config.h>
 #include <ksurface_abi.h>
@@ -131,18 +132,12 @@ NSDictionary<NSString*,NSString*> *NSDictionaryFromCDictionary(char *const envp[
 
 #pragma mark - posix_spawn implementation
 
-int environment_posix_spawn(pid_t *process_identifier,
-                            const char *path,
-                            const posix_spawn_file_actions_t *fa,
-                            const posix_spawnattr_t *spawn_attr,
-                            char *const argv[],
-                            char *const envp[])
-{
-    for(uint64_t i = 0; argv[i] != NULL; i++)
-    {
-        printf("%s\n", argv[i]);
-    }
-    
+LIBKERN_PATCH(int, posix_spawn, (pid_t *process_identifier,
+                                 const char *path,
+                                 const posix_spawn_file_actions_t *fa,
+                                 const posix_spawnattr_t *spawn_attr,
+                                 char *const argv[],
+                                 char *const envp[]),{
     /*
      * resolving realpath of the executable, to prevent
      * weird file bugs to happen, this is standard
@@ -308,20 +303,19 @@ skip_fileactions:
     
     free(resolved);
     return 0;
-}
+});
 
 /*
  * https://github.com/Apple-FOSS-Mirror/Libc/blob/2ca2ae74647714acfc18674c3114b1a5d3325d7d/sys/posix_spawn.c#L1358
  *
  * skidded from apple them selves..
  */
-int environment_posix_spawnp(pid_t * __restrict pid,
-                             const char * __restrict file,
-                             const posix_spawn_file_actions_t *file_actions,
-                             const posix_spawnattr_t * __restrict attrp,
-                             char *const argv[ __restrict],
-                             char *const envp[ __restrict])
-{
+LIBKERN_PATCH(int, posix_spawnp, (pid_t * __restrict pid,
+                                  const char * __restrict file,
+                                  const posix_spawn_file_actions_t *file_actions,
+                                  const posix_spawnattr_t * __restrict attrp,
+                                  char *const argv[ __restrict],
+                                  char *const envp[ __restrict]),{
     const char *env_path;
     char *bp;
     char *cur;
@@ -395,7 +389,7 @@ int environment_posix_spawnp(pid_t * __restrict pid,
         path_buf[lp + ln + 1] = '\0';
         
     retry:
-        err = environment_posix_spawn(pid, bp, file_actions, attrp, argv, envp);
+        err = posix_spawn(pid, bp, file_actions, attrp, argv, envp);
         switch(err)
         {
             case E2BIG:
@@ -436,14 +430,14 @@ int environment_posix_spawnp(pid_t * __restrict pid,
     
 done:
     return err;
-}
+});
 
 #pragma mark - Initilizer
 
 void environment_posix_spawn_init(void)
 {
-    litehook_rebind_symbol(LITEHOOK_REBIND_GLOBAL, posix_spawn, environment_posix_spawn, nil);
-    litehook_rebind_symbol(LITEHOOK_REBIND_GLOBAL, posix_spawnp, environment_posix_spawnp, nil);
+    LIBKERN_INSTALL_PATCH(posix_spawn);
+    LIBKERN_INSTALL_PATCH(posix_spawnp);
 }
 
 #endif /* KSURFACE_SYS_PROC_ENABLED */
