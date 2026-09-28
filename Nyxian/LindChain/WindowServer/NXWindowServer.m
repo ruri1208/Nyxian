@@ -1090,23 +1090,27 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
     
     window.view.frame = self.bounds;
     window.view.backgroundColor = [UIColor blackColor];
-
+    
+    UIEdgeInsets safeArea = self.safeAreaInsets;
+    CGFloat availableW = self.bounds.size.width - safeArea.left - safeArea.right;
+    CGFloat availableH = self.bounds.size.height - safeArea.top - safeArea.bottom;
+    
     if (!self.simulator) {
-        CGRect fullScreenFrame = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
-        
+        CGFloat x = safeArea.left;
+        CGFloat y = safeArea.top;
+        CGRect contentFrame = CGRectMake(x, y, availableW, availableH);
         for (UIView *subview in window.view.subviews) {
             subview.frame = fullScreenFrame;
-            subview.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            subview.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | 
+                                   UIViewAutoresizingFlexibleRightMargin | 
+                                   UIViewAutoresizingFlexibleTopMargin | 
+                                   UIViewAutoresizingFlexibleBottomMargin;
         }
         
         [window.view setNeedsLayout];
         [window.view layoutIfNeeded];
         return;
     }
-    
-    UIEdgeInsets safeArea = self.safeAreaInsets;
-    CGFloat availableW = self.bounds.size.width - safeArea.left - safeArea.right;
-    CGFloat availableH = self.bounds.size.height - safeArea.top - safeArea.bottom;
 
     if (availableW <= 0 || availableH <= 0) return;
 
