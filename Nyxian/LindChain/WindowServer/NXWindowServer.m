@@ -1072,7 +1072,7 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
 }
 - (BOOL)simulator
 {
-    if ([[NSUserDefaults standardUserDefaults] objectIsForReturnedKey:kNXSimulatorEnabledKey] == nil) {
+    if ([[NSUserDefaults standardUserDefaults] objectForKey:kNXSimulatorEnabledKey] == nil) {
         return NO;
     }
     return [[NSUserDefaults standardUserDefaults] boolForKey:kNXSimulatorEnabledKey];
@@ -1083,14 +1083,15 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
     [[NSUserDefaults standardUserDefaults] setBool:simulator forKey:kNXSimulatorEnabledKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
+
 - (void)layoutSimulatorWindow:(NXWindow *)window
 {
     if (!window || !window.view) return;
     
     window.view.frame = self.bounds;
     window.view.backgroundColor = [UIColor blackColor];
-    
-    if (!self.Simulator) {
+
+    if (!self.simulator) {
         CGRect fullScreenFrame = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
         
         for (UIView *subview in window.view.subviews) {
@@ -1158,4 +1159,5 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
     [window.view setNeedsLayout];
     [window.view layoutIfNeeded];
 }
+
 @end
