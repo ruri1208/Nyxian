@@ -62,6 +62,9 @@ static NXWindowServerPresentationState const NXWindowServerPresentationStateOutO
 
 - (void)showAppSwitcherExternal;
 
+@property (nonatomic, assign) BOOL simulator;
+- (void)layoutSimulatorWindow:(NXWindow *)window;
+
 @end
 
 #endif /* NXWINDOWSERVER_H */
