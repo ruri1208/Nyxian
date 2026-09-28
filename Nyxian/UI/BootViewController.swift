@@ -976,15 +976,15 @@ class BootViewController: UIViewController {
                     self.setNeedsStatusBarAppearanceUpdate()
                 }
                 
-                //if let slotCreateWindow, let slotWindow = self.makeSlotWindow(slotCreateWindow) {
-                    //self.transition(into: slotWindow, root: slotRoot) {
-                        //slotDidAppear?()
-                    //}
-                //} else {
+                if let slotCreateWindow, let slotWindow = self.makeSlotWindow(slotCreateWindow) {
+                    self.transition(into: slotWindow, root: slotRoot) {
+                        slotDidAppear?()
+                    }
+                } else {
                     self.transition(to: slotRoot) {
                         slotDidAppear?()
                     }
-                //}
+                }
             }
         }
     }
@@ -992,12 +992,7 @@ class BootViewController: UIViewController {
     private func makeSlotWindow(_ create: NXSlotCreateWindowFn) -> UIWindow? {
         guard let scene = view.window?.windowScene else { return nil }
         guard let raw = create(Unmanaged.passUnretained(scene).toOpaque()) else { return nil }
-        let window = Unmanaged<UIWindow>.fromOpaque(raw).takeRetainedValue()
-    
-        if window.windowScene == nil {
-            window.windowScene = scene
-        }
-        return window
+        return Unmanaged<UIWindow>.fromOpaque(raw).takeRetainedValue()
     }
     
     private func transition(into slotWindow: UIWindow,
@@ -1033,7 +1028,7 @@ class BootViewController: UIViewController {
             return
         }
         
-        //root.view.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
+        root.view.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
         
         let splashOut = UIViewPropertyAnimator(duration: 0.4, curve: .easeOut) {
             self.logoView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
@@ -1081,7 +1076,7 @@ class BootViewController: UIViewController {
         pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         logoView.layer.add(pulse, forKey: "breathe")
     }
-    /*
+    
     private func transition(to child: UIViewController,
                             style: BootTransition = .zoomThrough,
                             completion: (() -> Void)? = nil) {
@@ -1129,31 +1124,7 @@ class BootViewController: UIViewController {
         splashOut.startAnimation()
         appIn.startAnimation()
     }
-    */
-    private func transition(to child: UIViewController,
-                        style: BootTransition = .zoomThrough,
-                        completion: (() -> Void)? = nil) {
-        guard let window = view.window else {
-            addChild(child)
-            view.addSubview(child.view)
-            child.view.frame = view.bounds
-            completion?()
-            return
-        }
-        if style == .crossfade || UIAccessibility.isReduceMotionEnabled {
-            UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
-                window.rootViewController = child
-            }) { _ in
-                completion?()
-            }
-            return
-        }
-        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
-            window.rootViewController = child
-        }) { _ in
-            completion?()
-        }
-    }
+    
     var changableStatusBarHidden = true
     override var prefersStatusBarHidden: Bool {
         return self.changableStatusBarHidden
@@ -1182,8 +1153,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        window.overrideUserInterfaceStyle = .unspecified
-        window.frame = windowScene.coordinateSpace.bounds
         window.rootViewController = BootViewController()
         window.makeKeyAndVisible()
         self.window = window
