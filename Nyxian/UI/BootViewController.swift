@@ -1129,6 +1129,7 @@ class BootViewController: UIViewController {
         splashOut.startAnimation()
         appIn.startAnimation()
     }
+    */
     
     var changableStatusBarHidden = true
     override var prefersStatusBarHidden: Bool {
@@ -1143,7 +1144,7 @@ class BootViewController: UIViewController {
         splashView.superview == nil ? children.last : nil
     }
 }
-*/
+
 private func transition(to child: UIViewController,
                         style: BootTransition = .zoomThrough,
                         completion: (() -> Void)? = nil) {
