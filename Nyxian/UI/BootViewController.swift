@@ -976,15 +976,15 @@ class BootViewController: UIViewController {
                     self.setNeedsStatusBarAppearanceUpdate()
                 }
                 
-                if let slotCreateWindow, let slotWindow = self.makeSlotWindow(slotCreateWindow) {
-                    self.transition(into: slotWindow, root: slotRoot) {
-                        slotDidAppear?()
-                    }
-                } else {
+                //if let slotCreateWindow, let slotWindow = self.makeSlotWindow(slotCreateWindow) {
+                    //self.transition(into: slotWindow, root: slotRoot) {
+                        //slotDidAppear?()
+                    //}
+                //} else {
                     self.transition(to: slotRoot) {
                         slotDidAppear?()
                     }
-                }
+                //}
             }
         }
     }
@@ -1033,7 +1033,7 @@ class BootViewController: UIViewController {
             return
         }
         
-        root.view.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
+        //root.view.transform = CGAffineTransform(scaleX: 0.97, y: 0.97)
         
         let splashOut = UIViewPropertyAnimator(duration: 0.4, curve: .easeOut) {
             self.logoView.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
@@ -1081,7 +1081,7 @@ class BootViewController: UIViewController {
         pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         logoView.layer.add(pulse, forKey: "breathe")
     }
-    
+    /*
     private func transition(to child: UIViewController,
                             style: BootTransition = .zoomThrough,
                             completion: (() -> Void)? = nil) {
@@ -1143,6 +1143,23 @@ class BootViewController: UIViewController {
         splashView.superview == nil ? children.last : nil
     }
 }
+*/
+private func transition(to child: UIViewController,
+                        style: BootTransition = .zoomThrough,
+                        completion: (() -> Void)? = nil) {
+    guard let window = view.window else {
+        addChild(child)
+        view.addSubview(child.view)
+        child.view.frame = view.bounds
+        completion?()
+        return
+    }
+    UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
+        window.rootViewController = child
+    }) { _ in
+        completion?()
+    }
+}
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -1158,6 +1175,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         
         let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .unspecified
         window.frame = windowScene.coordinateSpace.bounds
         window.rootViewController = BootViewController()
         window.makeKeyAndVisible()
