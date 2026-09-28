@@ -61,8 +61,8 @@ kern_return_t ksurface_fs_init(void)
     
     typedef struct {
         FSMountAttr permissionFlags;
-        const char *device_dir;
-        const char *mount_dir;
+        __strong NSString *device_dir;
+        __strong NSString *mount_dir;
     } FSMountInitRegistry;
     
     /* something like fstab x3 */
@@ -70,175 +70,175 @@ kern_return_t ksurface_fs_init(void)
         /* virtual file systems */
         {
             kFSMountAttrNone,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs", home] UTF8String]
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs", home]
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrClear,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrClear,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home],
         },
         {
             kFSMountAttrRead,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,   /* write will later be allowed through entitlement org.emexlabs.nyxian.launch-services.toggle */
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,   /* write will later be allowed through entitlement org.emexlabs.nyxian.storage.etc.allow */
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/etcfs", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/etcfs", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrClear,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec", home],
         },
         
         /* bind mounts */
         {
             kFSMountAttrRead,
-            [[[NSBundle mainBundle] bundleURL] URLByAppendingPathComponent:@"/Frameworks/bootstrapd.dylib"].path.UTF8String,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec/bootstrapd", home] UTF8String],
+            [[[NSBundle mainBundle] bundleURL] URLByAppendingPathComponent:@"/Frameworks/bootstrapd.dylib"].path,
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec/bootstrapd", home],
         },
         {
             kFSMountAttrRead,
-            [[[NSBundle mainBundle] bundleURL] URLByAppendingPathComponent:@"/Frameworks/MobileDevelopmentService.dylib"].path.UTF8String,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec/MobileDevelopmentService", home] UTF8String],
+            [[[NSBundle mainBundle] bundleURL] URLByAppendingPathComponent:@"/Frameworks/MobileDevelopmentService.dylib"].path,
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/libexec/MobileDevelopmentService", home],
         },
         {
             kFSMountAttrRead,
-            NSBundle.mainBundle.bundlePath.UTF8String,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/bootloader", home] UTF8String],
+            NSBundle.mainBundle.bundlePath,
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/bootloader", home],
         },
         {
             kFSMountAttrRead,
-            [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/kernel"] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/headers", home] UTF8String],
+            [NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/kernel"],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/headers", home],
         },
         {
             kFSMountAttrRead,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kexts", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/kextfs", home],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs/kexts", home],
         },
         {
             kFSMountAttrRead,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/dev", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/devfs", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/dev", home],
         },
         {
             kFSMountAttrRead,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/boot", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/bootfs", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/boot", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/System/Library/LaunchDaemons", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/lsfs", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/System/Library/LaunchDaemons", home],
         },
         {
             kFSMountAttrRead,
-            [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.bootstrapd.plist"] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs/org.emexlabs.bootstrapd.plist", home] UTF8String],
+            [NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.bootstrapd.plist"],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/lsfs/org.emexlabs.bootstrapd.plist", home],
         },
         {
             kFSMountAttrRead,
-            [[NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.compilerd.plist"] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/lsfs/org.emexlabs.compilerd.plist", home] UTF8String],
+            [NSBundle.mainBundle.bundlePath stringByAppendingString:@"/Shared/LaunchServices/org.emexlabs.compilerd.plist"],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/lsfs/org.emexlabs.compilerd.plist", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            [[NSString stringWithFormat:@"%s/Documents/mntfs/etcfs", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/etc", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/mntfs/etcfs", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/etc", home],
         },
         
         /* root mounts */
         {
             kFSMountAttrRead | kFSMountAttrWrite | kFSMountAttrClear,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/tmp", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/tmp", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/var/containers", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/var/containers", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/Containers", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/Containers", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/tmp", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/var/mobile/tmp", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite | kFSMountAttrClear,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/var/root", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/var/root", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/bin", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/bin", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/sbin", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/sbin", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/lib", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/lib", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            "/dev/nounlink",
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/include", home] UTF8String],
+            @"/dev/nounlink",
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/include", home],
         },
         
         /* root bind mounts */
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/bin", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/bin", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/bin", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/bin", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/sbin", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/sbin", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/sbin", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/sbin", home],
         },
         {
             kFSMountAttrRead | kFSMountAttrWrite,
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/lib", home] UTF8String],
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/lib", home] UTF8String],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/lib", home],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/lib", home],
         },
         {
             kFSMountAttrRead,
-            [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"libexec"].UTF8String,
-            [[NSString stringWithFormat:@"%s/Documents/rootfs/usr/libexec", home] UTF8String],
+            [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"libexec"],
+            [NSString stringWithFormat:@"%s/Documents/rootfs/usr/libexec", home],
         },
     };
     
     for(int i = 0; i < sizeof(fstab) / sizeof(FSMountInitRegistry); i++)
     {
-        kr = ksurface_fs_mount2(fstab[i].permissionFlags, fstab[i].device_dir, fstab[i].mount_dir);
+        kr = ksurface_fs_mount2(fstab[i].permissionFlags, fstab[i].device_dir.fileSystemRepresentation, fstab[i].mount_dir.fileSystemRepresentation);
         if(kr != KERN_SUCCESS)
         {
             klog_log("ksurface:fs", "failed to create %s userspace mount", fstab[i].mount_dir);

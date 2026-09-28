@@ -66,6 +66,21 @@ final class ROMPath {
     }
 }
 
+func adaptiveImage(light: UIImage, dark: UIImage) -> UIImage {
+    let asset = UIImageAsset()
+    let lightTraits = UITraitCollection(traitsFrom: [
+        .current,
+        UITraitCollection(userInterfaceStyle: .light)
+    ])
+    asset.register(light, with: lightTraits)
+    let darkTraits = UITraitCollection(traitsFrom: [
+        .current,
+        UITraitCollection(userInterfaceStyle: .dark)
+    ])
+    asset.register(dark, with: darkTraits)
+    return asset.image(with: .current)
+}
+
 final class ROMManifest {
     // ABI
     let manifestVersion: Int
@@ -85,6 +100,9 @@ final class ROMManifest {
     let installer: String?
     let uninstaller: String?
     let executable: String
+    
+    // bootlogo
+    let bootlogo: UIImage?
     
     // helpers
     var isNyxianMinimumVersionMet: Bool {
@@ -139,6 +157,17 @@ final class ROMManifest {
         self.installer = manifestContent["NXRomInstaller"] as? String
         self.uninstaller = manifestContent["NXRomUninstaller"] as? String
         self.executable = executable
+        
+        // bootlogo
+        if let bootLogoConfig = manifestContent["NXRomBootLogo"] as? [String:String],
+           let lightPath = bootLogoConfig["Light"],
+           let darkPath = bootLogoConfig["Dark"],
+           let light = UIImage(contentsOfFile: manifestPlistURL.deletingLastPathComponent().appendingPathComponent(lightPath).path) {
+            let dark = UIImage(contentsOfFile: manifestPlistURL.deletingLastPathComponent().appendingPathComponent(darkPath).path) ?? light
+            self.bootlogo = adaptiveImage(light: light, dark: dark)
+        } else {
+            self.bootlogo = nil
+        }
     }
 }
 
@@ -235,10 +264,55 @@ private func slotFile(_ relative: String,
     return url
 }
 
-private func runRomGeneric(_ relative: String,
-                           symbol: String,
-                           slot: URL) throws {
+private let nxRomLogFD: Int32 = 27
+private let romQueue = DispatchQueue(label: "org.emexlabs.nyxian.bootloader.rom", qos: .userInitiated)
+private var romOperationInProgress = false
+
+private struct RomLog {
+    let controller: NXRecoveryViewController
+    
+    func info(_ message: String) {
+        DispatchQueue.main.async { controller.recoveryLog(message) }
+    }
+    
+    func error(_ message: String) {
+        DispatchQueue.main.async { controller.recoveryLogError(message) }
+    }
+    
+    func rom(_ line: String) {
+        if line.hasPrefix("ERROR:") {
+            error(line)
+        } else {
+            info(line)
+        }
+    }
+}
+
+private func romIsBusy(_ c: NXRecoveryViewController) -> Bool {
+    if romOperationInProgress {
+        c.recoveryLogError("ERROR: a ROM operation is still running")
+    }
+    return romOperationInProgress
+}
+
+private func runRomOperation(_ c: NXRecoveryViewController, _ work: @escaping (RomLog) -> Void) {
+    dispatchPrecondition(condition: .onQueue(.main))
+    guard !romIsBusy(c) else { return }
+    romOperationInProgress = true
+    let log = RomLog(controller: c)
+    romQueue.async {
+        work(log)
+        DispatchQueue.main.async {
+            romOperationInProgress = false
+        }
+    }
+}
+
+private func runRomGeneric(_ relative: String, symbol: String, slot: URL, onLine: @escaping (String) -> Void) throws {
+    dispatchPrecondition(condition: .notOnQueue(.main))
+    
     let url = try slotFile(relative, in: slot)
+    
     guard let handle = dlopen(url.path, RTLD_NOW | RTLD_LOCAL) else {
         throw romError("couldnt load \(relative): \(lastDlError())")
     }
@@ -247,29 +321,73 @@ private func runRomGeneric(_ relative: String,
     guard let sym = dlsym(handle, symbol) else {
         throw romError("\(relative) has no \(symbol) entry point")
     }
+    
+    var fds: [Int32] = [0, 0]
+    guard pipe(&fds) == 0 else {
+        throw romError("pipe failed: \(String(cString: strerror(errno)))")
+    }
+    
+    let readFD = fds[0]
+    let writeFD = fds[1]
+    
+    let oldFD = dup(nxRomLogFD)
+    guard dup2(writeFD, nxRomLogFD) >= 0 else {
+        close(readFD)
+        close(writeFD)
+        if oldFD >= 0 { close(oldFD) }
+        throw romError("dup2 failed: \(String(cString: strerror(errno)))")
+    }
+    close(writeFD)
+    
+    // don't touch this, it works
+    let drained = DispatchGroup()
+    drained.enter()
+    DispatchQueue.global(qos: .userInitiated).async {
+        var buf = [UInt8](repeating: 0, count: 4096)
+        var pending: [UInt8] = []
+        while true {
+            let n = read(readFD, &buf, buf.count)
+            if n > 0 {
+                pending.append(contentsOf: buf[0..<n])
+                var start = pending.startIndex
+                while let nl = pending[start...].firstIndex(of: 0x0A) {
+                    emitRomLine(pending[start..<nl], onLine)
+                    start = nl + 1
+                }
+                pending.removeFirst(start)
+                continue
+            }
+            if n < 0 && errno == EINTR {
+                continue
+            }
+            break
+        }
+        emitRomLine(pending[...], onLine)
+        close(readFD)
+        drained.leave()
+    }
     let generic = unsafeBitCast(sym, to: NXRomGenericFn.self)
     let rc = slot.path.withCString {
         generic($0)
     }
+    close(nxRomLogFD)
+    if oldFD >= 0 {
+        dup2(oldFD, nxRomLogFD)
+        close(oldFD)
+    }
+    drained.wait()
     guard rc == 0 else {
         throw romError("\(symbol) returned \(rc)")
     }
 }
 
-private func runUninstallerIfPresent(_ c: NXRecoveryViewController) {
-    let slot = flashedSlotURL()
-    let manifestURL = slot.appendingPathComponent("manifest.plist")
-    guard FileManager.default.fileExists(atPath: manifestURL.path) else { return }
-    
-    do {
-        let manifest = try ROMManifest(manifestPlistURL: manifestURL)
-        guard let uninstaller = manifest.uninstaller else { return }
-        c.recoveryLog("running uninstaller of \(manifest.name)")
-        try runRomGeneric(uninstaller, symbol: "NXRomUninstall", slot: slot)
-        c.recoveryLog("uninstaller finished")
-    } catch {
-        c.recoveryLogError("uninstaller failed: \(error.localizedDescription)")
+private func emitRomLine(_ bytes: ArraySlice<UInt8>, _ onLine: (String) -> Void) {
+    var bytes = bytes
+    if bytes.last == 0x0D {
+        bytes = bytes.dropLast()
     }
+    guard !bytes.isEmpty else { return }
+    onLine(String(decoding: bytes, as: UTF8.self))
 }
 
 private enum SlotLoadResult {
@@ -668,7 +786,7 @@ func recoveryConfirmWipe(recoveryController c: NXRecoveryViewController) {
     )
 }
 
-@discardableResult private func runUninstaller(_ c: NXRecoveryViewController) -> Bool {
+@discardableResult private func runUninstaller(_ log: RomLog) -> Bool {
     let slot = flashedSlotURL()
     let manifestURL = slot.appendingPathComponent("manifest.plist")
     guard FileManager.default.fileExists(atPath: manifestURL.path) else { return true }
@@ -676,26 +794,28 @@ func recoveryConfirmWipe(recoveryController c: NXRecoveryViewController) {
     do {
         let manifest = try ROMManifest(manifestPlistURL: manifestURL)
         guard let uninstaller = manifest.uninstaller else { return true }
-        c.recoveryLog("running uninstaller of \(manifest.name)")
-        try runRomGeneric(uninstaller, symbol: "NXRomUninstall", slot: slot)
-        c.recoveryLog("uninstaller finished")
+        log.info("running uninstaller of \(manifest.name)")
+        try runRomGeneric(uninstaller, symbol: "NXRomUninstall", slot: slot, onLine: log.rom)
+        log.info("uninstaller finished")
         return true
     } catch {
-        c.recoveryLogError("uninstaller failed: \(error.localizedDescription)")
+        log.error("uninstaller failed: \(error.localizedDescription)")
         return false
     }
 }
 
-private func removeFlashedSlot(_ c: NXRecoveryViewController) {
+private func removeFlashedSlot(_ log: RomLog) {
     do {
         try FileManager.default.removeItem(at: flashedSlotURL())
-        c.recoveryLog("flashed ROM removed, next boot uses SuperSlot.dylib")
+        log.info("flashed ROM removed, next boot uses SuperSlot.dylib")
     } catch {
-        c.recoveryLogError("ERROR: \(errnoDescription(error))")
+        log.error("ERROR: \(errnoDescription(error))")
     }
 }
 
 func recoveryShowUnflash(recoveryController c: NXRecoveryViewController) {
+    guard !romIsBusy(c) else { return }
+    
     let slot = flashedSlotURL()
     guard FileManager.default.fileExists(atPath: slot.path) else {
         c.recoveryLogError("no ROM flashed")
@@ -722,22 +842,26 @@ func recoveryShowUnflash(recoveryController c: NXRecoveryViewController) {
         items.append(NXRecoveryItem(title: title) { c in
             guard let c = c else { return }
             recoveryShowMenu(recoveryController: c)
-            c.recoveryLog("\n-- Unflashing \(manifest.name)...")
-            
-            guard runUninstaller(c) else {
-                c.recoveryLogError("ROM kept, use force removal to delete it anyway")
-                return
+            runRomOperation(c) { log in
+                log.info("\n-- Unflashing \(manifest.name)...")
+                
+                guard runUninstaller(log) else {
+                    log.error("ROM kept, use force removal to delete it anyway")
+                    return
+                }
+                removeFlashedSlot(log)
             }
-            removeFlashedSlot(c)
         })
     }
     
     items.append(NXRecoveryItem(title: "Force remove (skip uninstaller)") { c in
         guard let c = c else { return }
         recoveryShowMenu(recoveryController: c)
-        c.recoveryLog("\n-- Force removing ROM...")
-        c.recoveryLogError("uninstaller skipped, leftovers outside the slot may remain")
-        removeFlashedSlot(c)
+        runRomOperation(c) { log in
+            log.info("\n-- Force removing ROM...")
+            log.error("uninstaller skipped, leftovers outside the slot may remain")
+            removeFlashedSlot(log)
+        }
     })
     
     c.enterRecovery(
@@ -748,6 +872,99 @@ func recoveryShowUnflash(recoveryController c: NXRecoveryViewController) {
         onSelect: nil,
         onMove: nil
     )
+}
+
+private func flashROM(archive: URL, log: RomLog) throws -> ROMManifest {
+    let fm = FileManager.default
+    let slot = flashedSlotURL()
+    
+    log.info("\n-- Flashing rom...")
+    log.info("selected rom: \(archive.lastPathComponent)")
+    
+    try? fm.removeItem(at: slot)
+    try fm.createDirectory(at: slot, withIntermediateDirectories: true, attributes: [:])
+    
+    guard unzipArchiveAtPathWithoutParentDirectory(archive.path, slot.path) else {
+        throw romError("failed to extract ROM")
+    }
+    
+    log.info("extracted rom")
+    
+    let manifest: ROMManifest = try ROMManifest(manifestPlistURL: slot.appendingPathComponent("manifest.plist"))
+    
+    log.info("setting up default file and directory permissions")
+    guard let enumerator = fm.enumerator(at: slot, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]) else {
+        throw NSError(domain: "org.emexlabs.nyxian.bootloader.rom-flash", code: 2, userInfo: [NSLocalizedDescriptionKey: "could not enumerate \(slot)"])
+    }
+    var dirs: [URL] = [slot]
+    for case let url as URL in enumerator {
+        let values = try url.resourceValues(forKeys: Set([.isDirectoryKey, .isSymbolicLinkKey]))
+        if values.isSymbolicLink == true { continue }
+        if values.isDirectory == true {
+            dirs.append(url)
+        } else {
+            try fm.setAttributes([.posixPermissions: manifest.defaultFilePermission], ofItemAtPath: url.path)
+        }
+    }
+    for dir in dirs.reversed() {
+        try fm.setAttributes([.posixPermissions: manifest.defaultDirectoryPermission], ofItemAtPath: dir.path)
+    }
+    
+    log.info("setting up explicit path permissions and configurations")
+    var signFiles: [(String, Int)] = []
+    for path in manifest.paths {
+        log.info("setting up \(path.path)")
+        
+        if path.requiresCodeSigning {
+            signFiles.append((path.path, path.permission))
+        } else {
+            try fm.setAttributes([.posixPermissions: path.permission], ofItemAtPath: slot.appendingPathComponent(path.path).path)
+        }
+    }
+    
+    log.info("signing files")
+    for (file, _) in signFiles {
+        guard NXBootSignMachOWithoutPatch(slot.appendingPathComponent(file)) else {
+            throw romError("failed to sign \(file)")
+        }
+        log.info("signed \(file)")
+    }
+    
+    for (file, _) in signFiles {
+        guard refreshVnode(atPath: slot.appendingPathComponent(file).path) else {
+            throw romError("failed to refresh \(file)")
+        }
+        log.info("refreshed \(file)")
+    }
+    
+    log.info("refixing sign files permissions")
+    for (file, permission) in signFiles {
+        try fm.setAttributes([.posixPermissions: permission], ofItemAtPath: slot.appendingPathComponent(file).path)
+    }
+    
+    if let installer = manifest.installer {
+        log.info("running installer")
+        do {
+            try runRomGeneric(installer, symbol: "NXRomInstall", slot: slot, onLine: log.rom)
+        } catch {
+            throw romError("installer failed: \(error.localizedDescription)")
+        }
+        log.info("installer finished")
+    }
+    
+    return manifest
+}
+
+private func recoveryFlashROM(_ c: NXRecoveryViewController, archive: URL) {
+    runRomOperation(c) { log in
+        do {
+            let manifest = try flashROM(archive: archive, log: log)
+            log.info("flashed \(manifest.name) \(manifest.version)")
+        } catch {
+            log.error("ERROR: \(error.localizedDescription)")
+            try? FileManager.default.removeItem(at: flashedSlotURL())
+        }
+    }
 }
 
 // Cuz it is weak
@@ -778,104 +995,10 @@ func recoveryShowMenu(recoveryController: NXRecoveryViewController) {
                 }
             },
             NXRecoveryItem(title: "Flash ROM") { c in
-                if let c = c {
-                    romImporter.present(from: c) { url in
-                        if let url = url {
-                            do {
-                                let slot: URL = flashedSlotURL()
-                                c.recoveryLog("\n-- Flashing rom...")
-                                c.recoveryLog("selected rom: \(url.lastPathComponent)")
-                                try? FileManager.default.removeItem(at: slot)
-                                try FileManager.default.createDirectory(at: slot, withIntermediateDirectories: true, attributes: [:])
-                                
-                                if !unzipArchiveAtPathWithoutParentDirectory(url.path, slot.path) {
-                                    c.recoveryLogError("ERROR: failed to extract ROM")
-                                    try? FileManager.default.removeItem(at: slot)
-                                    return
-                                }
-                                
-                                c.recoveryLog("extracted rom")
-                                
-                                let manifest: ROMManifest = try ROMManifest(manifestPlistURL: slot.appendingPathComponent("manifest.plist"))
-                                
-                                // fixing up default file and directory permissions
-                                c.recoveryLog("fixing up default file and directory permissions")
-                                guard let enumerator = FileManager.default.enumerator(at: slot, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]) else {
-                                        throw NSError(domain: "org.emexlabs.nyxian.bootloader.rom-flash", code: 2, userInfo: [NSLocalizedDescriptionKey: "could not enumerate \(slot)"])
-                                }
-                                var dirs: [URL] = [slot]
-                                for case let url as URL in enumerator {
-                                    let values = try url.resourceValues(forKeys: Set([.isDirectoryKey, .isSymbolicLinkKey]))
-                                    if values.isSymbolicLink == true { continue }
-                                    if values.isDirectory == true {
-                                        dirs.append(url)
-                                    } else {
-                                        try FileManager.default.setAttributes([.posixPermissions: manifest.defaultFilePermission], ofItemAtPath: url.path)
-                                    }
-                                }
-                                for dir in dirs.reversed() {
-                                    try FileManager.default.setAttributes([.posixPermissions: manifest.defaultDirectoryPermission], ofItemAtPath: dir.path)
-                                }
-                                
-                                // fixing up explicit paths and registering them in signFiles if needed
-                                c.recoveryLog("fixing up explicit paths")
-                                var signFiles: [(String,Int)] = []
-                                for path in manifest.paths {
-                                    c.recoveryLog("fixing up explicit path \(path.path)")
-                                    
-                                    let url: URL = slot.appendingPathComponent(path.path)
-                                    if path.requiresCodeSigning {
-                                        signFiles.append((path.path, path.permission))
-                                    } else {
-                                        try FileManager.default.setAttributes([.posixPermissions:path.permission], ofItemAtPath: url.path)
-                                    }
-                                }
-                                
-                                // fixing up code signing of paths if required
-                                c.recoveryLog("signing files")
-                                for file in signFiles {
-                                    if !NXBootSignMachOWithoutPatch(slot.appendingPathComponent(String(file.0))) {
-                                        c.recoveryLogError("ERROR: failed to sign \(file.0)")
-                                        try? FileManager.default.removeItem(at: slot)
-                                        return
-                                    } else {
-                                        c.recoveryLog("signed \(file.0)")
-                                    }
-                                }
-                                
-                                for file in signFiles {
-                                    if !refreshVnode(atPath: slot.appendingPathComponent(String(file.0)).path) {
-                                        c.recoveryLogError("ERROR: failed to refresh \(file.0)")
-                                        try? FileManager.default.removeItem(at: slot)
-                                        return
-                                    } else {
-                                        c.recoveryLog("refreshed \(file.0)")
-                                    }
-                                }
-                                
-                                // fixing up permissions of sign files
-                                c.recoveryLog("refixing sign files permissions")
-                                for file in signFiles {
-                                    try FileManager.default.setAttributes([.posixPermissions:file.1], ofItemAtPath: slot.appendingPathComponent(String(file.0)).path)
-                                }
-                                
-                                if let installer = manifest.installer {
-                                    c.recoveryLog("running installer")
-                                    do {
-                                        try runRomGeneric(installer, symbol: "NXRomInstall", slot: slot)
-                                        c.recoveryLog("installer finished")
-                                    } catch {
-                                        c.recoveryLogError("ERROR: installer failed: \(error.localizedDescription)")
-                                        try? FileManager.default.removeItem(at: slot)
-                                        return
-                                    }
-                                }
-
-                                c.recoveryLog("flashed \(manifest.name) \(manifest.version)")
-                            } catch {
-                                c.recoveryLogError("ERROR: \(error.localizedDescription)")
-                            }
-                        }
+                guard let c = c, !romIsBusy(c) else { return }
+                romImporter.present(from: c) { url in
+                    if let url = url {
+                        recoveryFlashROM(c, archive: url)
                     }
                 }
             },
@@ -931,7 +1054,13 @@ class BootViewController: UIViewController {
         splashView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         self.view.addSubview(splashView)
         
-        logoView.image = UIImage(named: "EmexLogo")
+        let slot: URL = flashedSlotURL()
+        if let manifest: ROMManifest = try? ROMManifest(manifestPlistURL: slot.appendingPathComponent("manifest.plist")),
+           let logo: UIImage = manifest.bootlogo {
+            logoView.image = logo
+        } else {
+            logoView.image = UIImage(named: "EmexLogo")
+        }
         logoView.contentMode = .scaleAspectFit
         logoView.translatesAutoresizingMaskIntoConstraints = false
         
