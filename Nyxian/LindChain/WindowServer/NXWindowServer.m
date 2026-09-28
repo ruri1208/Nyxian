@@ -953,9 +953,9 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
     CGRect bounds = self.bounds;
     
     /* calculating fullscreen rectangle */
-    CGRect allowed = UIEdgeInsetsInsetRect(bounds, insets);
-    CGRect boundsInset = allowed;
-    allowed.size.height += insets.bottom;
+    //CGRect allowed = UIEdgeInsetsInsetRect(bounds, insets);
+    //CGRect boundsInset = allowed;
+    //allowed.size.height += insets.bottom;
     
     /* checking if maximised */
     //if(window.isMaximized)
