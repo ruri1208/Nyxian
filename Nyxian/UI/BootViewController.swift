@@ -1130,7 +1130,30 @@ class BootViewController: UIViewController {
         appIn.startAnimation()
     }
     */
-    
+    private func transition(to child: UIViewController,
+                        style: BootTransition = .zoomThrough,
+                        completion: (() -> Void)? = nil) {
+        guard let window = view.window else {
+            addChild(child)
+            view.addSubview(child.view)
+            child.view.frame = view.bounds
+            completion?()
+            return
+        }
+        if style == .crossfade || UIAccessibility.isReduceMotionEnabled {
+            UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = child
+            }) { _ in
+                completion?()
+            }
+            return
+        }
+        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
+            window.rootViewController = child
+        }) { _ in
+            completion?()
+        }
+    }
     var changableStatusBarHidden = true
     override var prefersStatusBarHidden: Bool {
         return self.changableStatusBarHidden
@@ -1142,23 +1165,6 @@ class BootViewController: UIViewController {
     
     override var childForStatusBarStyle: UIViewController? {
         splashView.superview == nil ? children.last : nil
-    }
-}
-
-private func transition(to child: UIViewController,
-                        style: BootTransition = .zoomThrough,
-                        completion: (() -> Void)? = nil) {
-    guard let window = view.window else {
-        addChild(child)
-        view.addSubview(child.view)
-        child.view.frame = view.bounds
-        completion?()
-        return
-    }
-    UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
-        window.rootViewController = child
-    }) { _ in
-        completion?()
     }
 }
 
