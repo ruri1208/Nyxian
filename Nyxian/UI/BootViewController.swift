@@ -992,7 +992,12 @@ class BootViewController: UIViewController {
     private func makeSlotWindow(_ create: NXSlotCreateWindowFn) -> UIWindow? {
         guard let scene = view.window?.windowScene else { return nil }
         guard let raw = create(Unmanaged.passUnretained(scene).toOpaque()) else { return nil }
-        return Unmanaged<UIWindow>.fromOpaque(raw).takeRetainedValue()
+        let window = Unmanaged<UIWindow>.fromOpaque(raw).takeRetainedValue()
+    
+        if window.windowScene == nil {
+            window.windowScene = scene
+        }
+        return window
     }
     
     private func transition(into slotWindow: UIWindow,
