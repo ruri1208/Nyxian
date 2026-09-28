@@ -1098,7 +1098,7 @@ static NSString * const kNXSimulatorEnabledKey = @"simulator";
     if (!self.simulator) {
         CGFloat x = safeArea.left;
         CGFloat y = safeArea.top;
-        CGRect contentFrame = CGRectMake(x, y, availableW, availableH);
+        CGRect fullScreenFrame = CGRectMake(x, y, availableW, availableH);
         for (UIView *subview in window.view.subviews) {
             subview.frame = fullScreenFrame;
             subview.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | 
