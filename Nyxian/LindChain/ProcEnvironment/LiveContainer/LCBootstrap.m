@@ -145,7 +145,6 @@ int LCBootstrapMain(NSString *executablePath,
         fprintf(stderr, "failed to find entry in executable\n");
         return 1;
     }
-    fprintf(stderr, "passed tests\n");
     assert(entry);
     
     /*

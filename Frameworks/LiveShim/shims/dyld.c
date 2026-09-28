@@ -486,7 +486,7 @@ void *dlopen_cdhash_verified(const char *path,
     cdhash_must_valid = true;
     cdhash_data_container_match = cdhash;
     cdhash_verifier_failed_callback = callback;
-    void *ret = dlopen__swz(path, flags);
+    void *ret = dlopen(path, flags);
     cdhash_verifier_failed_callback = NULL;
     cdhash_data_container_match = NULL;
     cdhash_must_valid = false;

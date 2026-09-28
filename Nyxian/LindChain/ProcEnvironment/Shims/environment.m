@@ -63,7 +63,7 @@ void environment_client_connect_to_syscall_proxy(PEMachPort *port)
 
 #pragma mark - Initilizer
 
-static void PEInsertLibrariesIfNeeded(void)
+void PEInsertLibrariesIfNeeded(void)
 {
     const char *librariesToInsert = getenv("DYLD_INSERT_LIBRARIES");
     if(librariesToInsert == NULL)
@@ -89,13 +89,22 @@ void PEOverwriteExecutablePath(NSString *executablePath)
 {
     /* literally swapping CFBundle CFRuntime instances */
     CFBundleRef currentMainCFBundle = CFBundleGetMainBundle();
-    assert(currentMainCFBundle != NULL);
+    if(currentMainCFBundle == NULL)
+    {
+        goto skip_to_exec_override;
+    }
     CFAllocatorRef allocator = CFGetAllocator(currentMainCFBundle); /* doesnt matter if zero */
     CFURLRef urlRef = CFURLCreateWithFileSystemPath(allocator, (__bridge CFStringRef)[executablePath stringByDeletingLastPathComponent], kCFURLPOSIXPathStyle, true);
-    assert(urlRef != NULL);
+    if(urlRef == NULL)
+    {
+        goto skip_to_exec_override;
+    }
     CFBundleRef guestMainCFBundle = CFBundleCreate(allocator, urlRef);
     CFRelease(urlRef);  /* took a reference of it most probably */
-    assert(guestMainCFBundle != NULL);
+    if(guestMainCFBundle == NULL)
+    {
+        goto skip_to_exec_override;
+    }
     
     /*
      * Swaps both bundles simply, not leaking any memory
@@ -108,6 +117,7 @@ void PEOverwriteExecutablePath(NSString *executablePath)
     assert(CFSwap(currentMainCFBundle, guestMainCFBundle));
     CFRelease(guestMainCFBundle);                   /* destroys the real bundle, sounds like swizzling x3 */
     
+skip_to_exec_override:
     LCOverwriteExecutablePath(executablePath);
 }
 

@@ -212,7 +212,6 @@ int64_t liveshim_syscall_invoke(syscall_client_t *client,
      * must be large enough to hold the reply plus any trailer.
      */
     kern_return_t kr = mach_msg(&buffer.req.header, MACH_SEND_MSG | MACH_RCV_MSG, sizeof(syscall_request_t), sizeof(buffer), reply_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-    
     if(kr != KERN_SUCCESS)
     {
         errno = EBADMSG;
@@ -226,13 +225,16 @@ int64_t liveshim_syscall_invoke(syscall_client_t *client,
      */
     if(buffer.reply.oolp.address != VM_MIN_ADDRESS)
     {
-        /* TODO: more validation prolly needed */
-        for(uint32_t c = 0; c < buffer.reply.oolp.count; c++)
+        mach_port_t *recv = (mach_port_t *)buffer.reply.oolp.address;
+        uint32_t n = buffer.reply.oolp.count;
+        for(uint32_t c = 0; c < n && c < out_ports_cnt; c++)
         {
-            (*out_ports)[c] = ((mach_port_t*)(buffer.reply.oolp.address))[c];
+            if(out_ports[c] != NULL)
+            {
+                *out_ports[c] = recv[c];
+            }
         }
-        
-        vm_deallocate(mach_task_self(), (mach_vm_address_t)buffer.reply.oolp.address, buffer.reply.oolp.count * sizeof(mach_port_t));
+        vm_deallocate(mach_task_self(), (mach_vm_address_t)recv, n * sizeof(mach_port_t));
     }
     
     /*

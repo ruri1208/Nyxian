@@ -19,11 +19,13 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#import <Foundation/Foundation.h>
 #import <LindChain/IDEConsole/Utils.h>
 #include <LindChain/ProcEnvironment/Shims/vfork.h>
 #include <LindChain/ProcEnvironment/Shims/posix_spawn.h>
 #include <LiveShim/LiveShimSyscall.h>
 #include <LindChain/ProcEnvironment/litehook/litehook.h>
+#include <LindChain/ProcEnvironment/LiveContainer/LCBootstrap.h>
 #include <mach/mach.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -260,6 +262,69 @@ DEFINE_HOOK(fork, pid_t, (void)) __attribute__((optnone))
 
 #pragma mark - exec*() symbol family helpers
 
+static int PEArgcFromArgv(char *const argv[])
+{
+    if(argv == NULL)
+    {
+        return 0;
+    }
+    int argc = 0;
+    while(argv[argc] != NULL)
+    {
+        argc++;
+    }
+    return argc;
+}
+
+static kern_return_t PETearDownOwnTask(void)
+{
+    /* tear down all threads */
+    task_t task = mach_task_self();
+    thread_t self = mach_thread_self();
+    thread_act_array_t threads = NULL;
+    mach_msg_type_number_t threadCount = 0;
+    kern_return_t kr = task_threads(task, &threads, &threadCount);
+    if(kr != KERN_SUCCESS)
+    {
+        mach_port_deallocate(task, self);
+        return kr;
+    }
+    kern_return_t result = KERN_SUCCESS;
+    for(mach_msg_type_number_t i = 0; i < threadCount; i++)
+    {
+        thread_t thread = threads[i];
+        if(thread == self)
+        {
+            continue;
+        }
+        kern_return_t suspendKR = thread_suspend(thread);
+        if(suspendKR != KERN_SUCCESS && result == KERN_SUCCESS)
+        {
+            result = suspendKR;
+        }
+    }
+    for(mach_msg_type_number_t i = 0; i < threadCount; i++)
+    {
+        thread_t thread = threads[i];
+        if(thread != self)
+        {
+            kern_return_t terminateKR = thread_terminate(thread);
+            if(terminateKR != KERN_SUCCESS)
+            {
+                thread_resume(thread);
+                if(result == KERN_SUCCESS)
+                {
+                    result = terminateKR;
+                }
+            }
+        }
+        mach_port_deallocate(task, thread);
+    }
+    vm_deallocate(task, (vm_address_t)threads, threadCount * sizeof(thread_t));
+    mach_port_deallocate(task, self);
+    return result;
+}
+
 // MARK: Helper for all use cases
 __attribute__((optnone))
 int environment_execvpa(const char * __path,
@@ -270,6 +335,34 @@ int environment_execvpa(const char * __path,
     /* sanity check */
     if(local_fork_thread_snapshot == NULL)
     {
+        NSString *executablePath = [NSString stringWithUTF8String:__path];
+        if(executablePath == nil)
+        {
+            errno = EFAULT;
+            return -1;
+        }
+        
+        if(__envp == NULL)
+        {
+            extern void clear_environment(void);
+            clear_environment();
+            
+            /* override envp */
+        }
+        
+        int argc = PEArgcFromArgv((char *const *)__argv);
+        
+        /* at that point the process is too unstable to recover */
+        PETearDownOwnTask();
+        
+        void PEOverwriteExecutablePath(NSString *executablePath);
+        PEOverwriteExecutablePath(executablePath);
+        void PEInsertLibrariesIfNeeded(void);
+        PEInsertLibrariesIfNeeded();
+        
+        
+        exit(LCBootstrapMain(executablePath, argc, (char **)__argv));
+        
         errno = EBADEXEC;
         return -1;
     }

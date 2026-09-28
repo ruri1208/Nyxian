@@ -43,7 +43,7 @@ LIBKERN_PATCH(int, openpty, (int *amaster,
     mach_port_t master_port = MACH_PORT_NULL;
     mach_port_t slave_port  = MACH_PORT_NULL;
     
-    int ret = (int)liveshim_syscall(SYS_openpty, &master_port, &slave_port, 0, 0, 0, 0);
+    int ret = (int)liveshim_syscall(SYS_openpty, &master_port, &slave_port);
     if(ret != 0)
     {
         return -1;
