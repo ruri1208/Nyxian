@@ -488,7 +488,7 @@ Boolean HWHookThreadContextDisableHooks(HWHookThreadContextRef context)
 Boolean HWHookThreadContextAppendHook(HWHookThreadContextRef context,
                                       HWHookRef hook)
 {
-    if(context == NULL || HWHookThreadContextGetCurrent() == context)
+    if(context == NULL)
     {
         return false;
     }

@@ -363,7 +363,7 @@ static int hook_stat64(const char *path,
     return ret;
 }
 
-static HWHookThreadContextRef HWHookDlopenThreadContext(void)
+HWHookThreadContextRef HWHookDlopenThreadContext(void)
 {
     if(!ksurface_user_patchcache_load())
     {
