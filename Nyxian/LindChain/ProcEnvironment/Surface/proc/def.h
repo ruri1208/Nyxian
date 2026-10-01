@@ -27,6 +27,10 @@
 #include <LindChain/ProcEnvironment/Surface/trust/trust.h>
 #include <sys/sysctl.h>
 
+#ifndef PE_SUPPLEMENTARY_GROUPS_MAX
+#define PE_SUPPLEMENTARY_GROUPS_MAX 32
+#endif
+
 /// Helper macros
 #define proc_getpid(proc) ((proc)->bsd.kp_proc.p_pid)
 #define proc_getpidv(proc) ((proc)->nyx.pidv)
@@ -35,7 +39,10 @@
 #define proc_getmaxentitlements(proc) ((proc)->nyx.maxEntitlements)
 
 #define proc_setpid(proc, pid) (proc)->bsd.kp_proc.p_pid = pid
-#define proc_setppid(proc, ppid) (proc)->bsd.kp_proc.p_oppid = ppid; (proc)->bsd.kp_eproc.e_ppid = ppid; (proc)->bsd.kp_eproc.e_pgid = ppid
+#define proc_setppid(proc, ppid) do { \
+    (proc)->bsd.kp_proc.p_oppid = (ppid); \
+    (proc)->bsd.kp_eproc.e_ppid = (ppid); \
+} while(0)
 #define proc_setpidv(proc, spidv) (proc)->nyx.pidv = (spidv)
 #define proc_setentitlements(proc, entitlement) (proc)->nyx.entitlements = entitlement
 #define proc_setmaxentitlements(proc, entitlement) (proc)->nyx.maxEntitlements = entitlement
@@ -60,9 +67,15 @@
 #define proc_setegid(proc, gid) (proc)->bsd.kp_eproc.e_ucred.cr_groups[0] = gid
 #define proc_setsvgid(proc, svgid) (proc)->bsd.kp_eproc.e_pcred.p_svgid = svgid
 
-/// SID Helper macros
+/// SID + PGID Helper macros
 #define proc_getsid(proc) ((proc)->nyx.sid)
-#define proc_setsid(proc, ssid) (proc)->nyx.sid = ssid
+#define proc_setsid(proc, ssid) ((proc)->nyx.sid = (ssid))
+
+#define proc_getpgid(proc) ((proc)->nyx.pgid)
+#define proc_setpgid(proc, spgid) do { \
+    (proc)->nyx.pgid = (spgid); \
+    (proc)->bsd.kp_eproc.e_pgid = (spgid); \
+} while(0)
 
 #define proc_setmobilecred(proc) proc_setruid(proc, 501); proc_seteuid(proc, 501); proc_setsvuid(proc, 501); proc_setrgid(proc, 501); proc_setegid(proc, 501); proc_setsvgid(proc, 501)
 #define proc_setrootcred(proc) proc_setruid(proc, 0); proc_seteuid(proc, 0); proc_setsvuid(proc, 0); proc_setrgid(proc, 0); proc_setegid(proc, 0); proc_setsvgid(proc, 0)
@@ -124,9 +137,16 @@ struct ksurface_proc {
     
     /* nyxian specific process structure */
     struct knyx_proc {
-        /* session identifier */
+        /* session and process group identifiers */
         pid_t sid;
+        pid_t pgid;
         int pidv;
+        
+        /* BSD login identity and supplementary groups */
+        char login_name[MAXLOGNAME];
+        uint16_t login_name_len;
+        gid_t supplementary_groups[PE_SUPPLEMENTARY_GROUPS_MAX];
+        uint16_t supplementary_group_count;
         
         /* wait4 markers */
         int64_t p_status;

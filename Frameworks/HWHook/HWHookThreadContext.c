@@ -496,3 +496,13 @@ Boolean HWHookThreadContextAppendHook(HWHookThreadContextRef context,
     CFArrayAppendValue(context->symbols, hook);
     return true;
 }
+
+CFArrayRef HWHookThreadContextGetHooks(HWHookThreadContextRef context)
+{
+    if(context == NULL)
+    {
+        return NULL;
+    }
+    
+    return context->symbols;
+}

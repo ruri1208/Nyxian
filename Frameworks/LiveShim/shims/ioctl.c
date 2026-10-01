@@ -21,6 +21,7 @@
 
 #include <LiveShim/shim.h>
 #include <Broadpatch/Broadpatch.h>
+#include <sys/ioccom.h>
 
 #if LIVESHIM_IOCTL_ENABLED
 
@@ -28,25 +29,20 @@ LIBKERN_PATCH(int, ioctl, (int fd,
                            unsigned long flag,
                            ...),
 {
-    /* starting variadic argument parse */
-    va_list args;
-    va_start(args, flag);
+    uintptr_t arg = 0;
     
-    /* parsing arguments */
-    int64_t sys_args[7];
-    for(uint8_t i = 0; i < 6; i++)
+    if(IOCPARM_LEN(flag) != 0)
     {
-        sys_args[i] = va_arg(args, int64_t);
+        va_list ap;
+        va_start(ap, flag);
+        arg = va_arg(ap, uintptr_t);
+        va_end(ap);
     }
     
-    /* ending parse */
-    va_end(args);
-    
-    int ret = (int)liveshim_syscall(SYS_ioctl, fd, flag, sys_args[0], sys_args[1], sys_args[2], sys_args[3], sys_args[4], sys_args[5], sys_args[6]);
-    if(ret != 0 &&
-       errno == ENOSYS)
+    int ret = (int)liveshim_syscall(SYS_ioctl, fd, flag, arg, 0, 0, 0);
+    if(ret != 0 && errno == ENOSYS)
     {
-        return LIBKERN_ORIG(ioctl)(fd, flag, sys_args[0], sys_args[1], sys_args[2], sys_args[3], sys_args[4], sys_args[5], sys_args[6]);
+        return LIBKERN_ORIG(ioctl)(fd, flag, arg);
     }
     
     return ret;

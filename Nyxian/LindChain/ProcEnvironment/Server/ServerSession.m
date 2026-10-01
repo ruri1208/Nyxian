@@ -74,6 +74,8 @@
     withEnvironmentVariables:(NSDictionary *)environment
                withFileTable:(PEFileTable*)fileTable
         withWorkingDirectory:(NSString *)workingDirectory
+              withSpawnFlags:(short)spawnFlags
+             withSpawnPgroup:(pid_t)spawnPgroup
                    withReply:(void (^)(int64_t))reply
 {
     static dispatch_queue_t spawnQueue;
@@ -109,6 +111,8 @@
                 @"PEArguments": arguments,
                 @"PEEnvironment": environment,
                 @"PEWorkingDirectory": workingDirectory,
+                @"PEPOSIXSpawnFlags": @(spawnFlags),
+                @"PEPOSIXSpawnPgroup": @(spawnPgroup),
             }];
             
             if(fileTable != nil)

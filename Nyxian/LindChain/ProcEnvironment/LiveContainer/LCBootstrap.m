@@ -97,7 +97,7 @@ void LCOverwriteExecutablePath(NSString *executablePath)
     _NSGetExecutablePath((char*)[executablePath UTF8String], NULL);
     /* put the original function back */
     performHookDyldApiFast(kDyldNSGetExecutablePathVTFN, nil, orig__NSGetExecutablePath);
-        
+    
     /* overwriting remaining upper systems */
     NSString *procName = [executablePath lastPathComponent];
     NSProcessInfo.processInfo.processName = procName;
@@ -122,8 +122,17 @@ int LCBootstrapMain(NSString *executablePath,
     }
     
     /* preload executable to bypass RT_NOLOAD */
+    static os_unfair_lock lock = OS_UNFAIR_LOCK_INIT;
+    os_unfair_lock_lock(&lock);
+    
+    int64_t ret = -1;
     char cdhash[USER_FSIGNATURES_CDHASH_LEN];
-    int64_t ret = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetCDHash, cdhash, NULL, MACH_PORT_NULL);
+    static atomic_flag initialSpawnFlag = ATOMIC_FLAG_INIT;
+    bool initialSpawn = atomic_flag_test_and_set(&initialSpawnFlag);
+    if(!initialSpawn)
+    {
+        ret = liveshim_syscall(SYS_pectl, kPECTLCategoryCodeSigning, kPECTLCodeSigningGetCDHash, cdhash, NULL, MACH_PORT_NULL);
+    }
     appMainImageIndex = _dyld_image_count();
     /* makes sure the binary gets loaded that is meant to have the ksurface capabilities */
     void *guestHandle = dlopenBypassingLockWithTrust(executablePath.fileSystemRepresentation, RTLD_LAZY | RTLD_GLOBAL | RTLD_FIRST | RTLD_NODELETE, ret != 0 ? NULL : cdhash);
@@ -135,17 +144,12 @@ int LCBootstrapMain(NSString *executablePath,
     }
     
     /* find main */
-    int (*entry)(int, char**) = PEGetMachOEntryPointOfHeader(guestHandle);
-    if(entry == NULL)
-    {
-        entry = dlsym(guestHandle, "main");
-    }
+    int (*entry)(int, char**) = PEGetMachOEntryPointOfHeader(guestHandle)?: dlsym(guestHandle, "main");
     if(entry == NULL)
     {
         fprintf(stderr, "failed to find entry in executable\n");
         return 1;
     }
-    assert(entry);
     
     /*
      * now we load the executable of the bundle, as it doesn't
@@ -164,11 +168,14 @@ int LCBootstrapMain(NSString *executablePath,
     }
     
     /* now applying LC hooks */
-    NUDGuestHooksInit();
-    NSFMGuestHooksInit();
-    UIKitGuestHooksInit();
-    initDead10ccFix();
-    DyldHooksInit();
+    if(!initialSpawn)
+    {
+        NUDGuestHooksInit();
+        NSFMGuestHooksInit();
+        UIKitGuestHooksInit();
+        initDead10ccFix();
+        DyldHooksInit();
+    }
     
     return entry(argc, argv);
 }

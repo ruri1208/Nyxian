@@ -530,6 +530,12 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
 @property (nonatomic, copy, nullable) NXRecoveryAction browserOnBack;
 @property (nonatomic, copy, nullable) NXRecoveryFileHandler browserOnFile;
 
+@property (nonatomic, readwrite, getter=isConsoleActive) BOOL consoleActive;
+@property (nonatomic, copy, nullable) NXRecoveryAction consoleSelectAction;
+@property (nonatomic) NSInteger savedLogMax;
+@property (nonatomic, strong) NSLayoutConstraint *menuFooterConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *consoleTopConstraint;
+
 @end
 
 @implementation NXRecoveryViewController
@@ -669,6 +675,10 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
     
     UILayoutGuide *guide = self.view.safeAreaLayoutGuide;
     
+    self.menuFooterConstraint = [stack.bottomAnchor constraintLessThanOrEqualToAnchor:footer.topAnchor constant:-NXRecoveryMenuFooterGap];
+    self.consoleTopConstraint = [footer.topAnchor constraintGreaterThanOrEqualToAnchor:guide.topAnchor constant:12];
+    footer.clipsToBounds = YES;
+    
     [NSLayoutConstraint activateConstraints:@[
         [header.topAnchor constraintEqualToAnchor:guide.topAnchor constant:12],
         [header.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor constant:NXRecoveryMargin],
@@ -681,7 +691,7 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
         [stack.topAnchor constraintEqualToAnchor:instructions.bottomAnchor constant:4],
         [stack.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor constant:NXRecoveryMargin],
         [stack.trailingAnchor constraintEqualToAnchor:guide.trailingAnchor constant:0],
-        [stack.bottomAnchor constraintLessThanOrEqualToAnchor:footer.topAnchor constant:-NXRecoveryMenuFooterGap],
+        self.menuFooterConstraint,
         
         [footer.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor constant:-12],
         [footer.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor constant:NXRecoveryMargin],
@@ -693,6 +703,14 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
 {
     [super viewDidLayoutSubviews];
     
+    if(self.consoleActive)
+    {
+        if([self trimRecoveryLog])
+        {
+            [self paintRecoveryLog];
+        }
+        return;
+    }
     if(self.mutableItems.count == 0)
     {
         return;
@@ -1082,7 +1100,16 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
     {
         return;
     }
-    
+    if(self.consoleActive)
+    {
+        if(kind == NXRecoveryEventKindSelect && self.consoleSelectAction != nil)
+        {
+            NXRecoveryAction action = self.consoleSelectAction;
+            self.consoleSelectAction = nil;
+            action(self);
+        }
+        return;
+    }
     if(kind == NXRecoveryEventKindSelect)
     {
         [self performRecoverySelect];
@@ -1128,13 +1155,60 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
     [self paintRecoveryLog];
 }
 
-- (void)trimRecoveryLog
+- (NSInteger)rowsForLogText:(NSString *)text
+                     columns:(NSUInteger)columns
 {
+    NSInteger rows = 0;
+    for(NSString *part in [(text ?: @"") componentsSeparatedByString:@"\n"])
+    {
+        NSUInteger len = [part lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+        rows += MAX((NSInteger)1, (NSInteger)((len + columns - 1) / columns));
+    }
+    return rows;
+}
+
+- (BOOL)trimRecoveryLog
+{
+    BOOL trimmed = NO;
+    
     NSInteger over = (NSInteger)self.logLines.count - self.recoveryLogMax;
     if(over > 0)
     {
         [self.logLines removeObjectsInRange:NSMakeRange(0, (NSUInteger)over)];
+        trimmed = YES;
     }
+    
+    if(!self.consoleActive)
+    {
+        return trimmed;
+    }
+    
+    CGRect frame = self.view.safeAreaLayoutGuide.layoutFrame;
+    CGSize cell = [[self makeGlyphViewWrapping:YES color:UIColor.whiteColor bold:NO] cellSizeInPoints];
+    CGFloat width = CGRectGetWidth(frame) - NXRecoveryMargin;
+    CGFloat height = CGRectGetHeight(frame) - 24.0;
+    if(cell.width <= 0.0 || cell.height <= 0.0 || width <= 0.0 || height <= 0.0)
+    {
+        return trimmed;
+    }
+    
+    NSUInteger columns = (NSUInteger)MAX((NSInteger)1, (NSInteger)floor(width / cell.width));
+    NSInteger capacity = MAX((NSInteger)1, (NSInteger)floor(height / cell.height));
+    
+    NSInteger total = 0;
+    for(NXRecoveryLogLine *line in self.logLines)
+    {
+        total += [self rowsForLogText:line.text columns:columns];
+    }
+    
+    while(total > capacity && self.logLines.count > 1)
+    {
+        total -= [self rowsForLogText:self.logLines.firstObject.text columns:columns];
+        [self.logLines removeObjectAtIndex:0];
+        trimmed = YES;
+    }
+    
+    return trimmed;
 }
 
 - (UIColor *)logColorForLevel:(NXRecoveryLogLevel)level
@@ -1341,6 +1415,64 @@ static void NXRecoveryReleaseData(void *info, const void *data, size_t size)
 {
     [self enterRecoveryWithHeader:(header ?: @"Files") instructions:nil footer:nil items:@[] onSelect:nil onMove:nil];
     [self browsePath:path root:root header:header onBack:onBack onFile:onFile];
+}
+
+- (void)enterConsole
+{
+    [self createRecoveryView];
+    if(self.consoleActive)
+    {
+        return;
+    }
+    
+    self.consoleActive = YES;
+    self.consoleSelectAction = nil;
+    
+    self.savedLogMax = self.recoveryLogMax;
+    _recoveryLogMax = 1024;
+    
+    self.headerView.hidden = YES;
+    self.instructionsView.hidden = YES;
+    self.menuStack.hidden = YES;
+    self.view.userInteractionEnabled = NO;
+    
+    self.menuFooterConstraint.active = NO;
+    self.consoleTopConstraint.active = YES;
+    [self.view setNeedsLayout];
+    [self.view layoutIfNeeded];
+    
+    [self trimRecoveryLog];
+    [self paintRecoveryLog];
+}
+
+- (void)finishConsoleWithSelectAction:(NXRecoveryAction)action
+{
+    if(!self.consoleActive)
+    {
+        return;
+    }
+    self.consoleSelectAction = action;
+}
+
+- (void)exitConsole
+{
+    if(!self.consoleActive)
+    {
+        return;
+    }
+    
+    self.consoleActive = NO;
+    self.consoleSelectAction = nil;
+    
+    self.consoleTopConstraint.active = NO;
+    self.menuFooterConstraint.active = YES;
+    
+    self.headerView.hidden = NO;
+    self.instructionsView.hidden = NO;
+    self.menuStack.hidden = NO;
+    self.view.userInteractionEnabled = YES;
+    
+    self.recoveryLogMax = self.savedLogMax;
 }
 
 @end

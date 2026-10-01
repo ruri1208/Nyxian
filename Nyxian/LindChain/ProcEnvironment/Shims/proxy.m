@@ -55,10 +55,12 @@ int64_t environment_proxy_spawn_process_at_path(NSString *path,
                                                 NSArray *arguments,
                                                 NSDictionary *environment,
                                                 PEFileTable *fileTable,
-                                                NSString *workingDirectory)
+                                                NSString *workingDirectory,
+                                                short spawnFlags,
+                                                pid_t spawnPgroup)
 {
     return sync_call_with_timeout_int64(PROXY_TYPE_REPLY(int64_t){
-        [hostProcessProxy spawnProcessWithPath:path withArguments:arguments withEnvironmentVariables:environment withFileTable:fileTable withWorkingDirectory:workingDirectory withReply:reply];
+        [hostProcessProxy spawnProcessWithPath:path withArguments:arguments withEnvironmentVariables:environment withFileTable:fileTable withWorkingDirectory:workingDirectory withSpawnFlags:spawnFlags withSpawnPgroup:spawnPgroup withReply:reply];
     });
 }
 

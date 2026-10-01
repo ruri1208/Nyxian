@@ -59,6 +59,7 @@ LIBKERN_DEFINE_PATCHABLE(kern_return_t, proc_spawn, (ksurface_proc_t *parent,
         /* process needs fresh credentials */
         proc_setmobilecred(child_new);
         proc_setsid(child_new, proc_getpid(child_new));
+        proc_setpgid(child_new, proc_getpid(child_new));
     }
     
 #if KSURFACE_SYS_UCRED_ENABLED

@@ -28,6 +28,10 @@
 #include <spawn.h>
 #include <limits.h>
 
+#ifndef POSIX_SPAWN_SETSID
+#define POSIX_SPAWN_SETSID 0x0400
+#endif
+
 /* https://github.com/apple/darwin-xnu/blob/2ff845c2e033bd0ff64b5b6aa6063a1f8f65aa32/bsd/sys/spawn_internal.h#L352-L360 */
 typedef enum {
     PSFA_OPEN = 0,

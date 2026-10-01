@@ -31,7 +31,31 @@ typedef struct wait4_payload {
     task_t task;
     recv_buffer_t *buffer;
     pid_t waitonpid;
+    pid_t caller_pgid;
 } wait4_payload_t;
+
+static bool wait4_matches_selector(pid_t selector,
+                                   pid_t caller_pgid,
+                                   ksurface_proc_t *child)
+{
+    pid_t child_pid = proc_getpid(child);
+    pid_t child_pgid = proc_getpgid(child);
+    
+    if(selector > 0)
+    {
+        return selector == child_pid;
+    }
+    if(selector == -1)
+    {
+        return true;
+    }
+    if(selector == 0)
+    {
+        return child_pgid == caller_pgid;
+    }
+    
+    return child_pgid == (pid_t)(-(int64_t)selector);
+}
 
 void *proc_reap_thread(void *ctx)
 {
@@ -47,7 +71,6 @@ bool wait4_proc_event_handler(uint32_t type,
     ksurface_proc_t *parent = (ksurface_proc_t*)(event->owner);
     wait4_payload_t *payload = (wait4_payload_t*)(event->ctx);
     ksurface_proc_t *child = (ksurface_proc_t*)(uintptr_t)val;
-    
     if(type == kvObjEventUnregister)
     {
         mach_port_deallocate(mach_task_self(), payload->task);
@@ -62,9 +85,7 @@ bool wait4_proc_event_handler(uint32_t type,
     
     pthread_mutex_lock(&(parent->children.mutex));
     kvo_wrlock(child);
-    
-    if(payload->waitonpid > 0 &&
-       payload->waitonpid != proc_getpid(child))
+    if(!wait4_matches_selector(payload->waitonpid, payload->caller_pgid, child))
     {
         kvo_unlock(child);
         pthread_mutex_unlock(&(parent->children.mutex));
@@ -73,22 +94,14 @@ bool wait4_proc_event_handler(uint32_t type,
     
     switch(type)
     {
-        case kProcEventTypeWait4:   /* state change happened */
-            
-            /* looking if state change already happened */
+        case kProcEventTypeWait4:
             if((((payload->options & WSTOPPED) == WSTOPPED) && WIFSTOPPED(child->nyx.p_status)) ||
                (((payload->options & WCONTINUED) == WCONTINUED) && WIFCONTINUED(child->nyx.p_status)))
             {
-                /* set to none, so incase it was
-                 * stopped it wont fire again without
-                 * another state change, cuz the state
-                 * change was collected.
-                 */
                 goto out_trigger_unregister;
             }
             else if(child->bsd.kp_proc.p_stat == SZOMB)
             {
-                /* process has already exited, reap it */
                 if(!kvo_retain(child))
                 {
                     kpanic("failed to retain exited child process");
@@ -104,7 +117,6 @@ bool wait4_proc_event_handler(uint32_t type,
                     pthread_detach(thread);
                 }
                 
-                /* in-case it did stop but is now zombified */
                 if(!WIFEXITED(child->nyx.p_status))
                 {
                     child->nyx.p_status = W_EXITCODE(0, SIGKILL);
@@ -112,7 +124,6 @@ bool wait4_proc_event_handler(uint32_t type,
                 
                 goto out_trigger_unregister;
             }
-            
             break;
         default:
             break;
@@ -132,88 +143,64 @@ out_trigger_unregister:
 }
 
 DEFINE_SYSCALL_HANDLER(wait4)
-{    
-    /* prepare arguments */
+{
     pid_t u_pid = (pid_t)args[0];
     int u_options = (int)args[2];
-    
-    /* need process visibility */
-    proc_visibility_t vis = proc_get_proc_visibility(sys_proc_snapshot_);
+    pid_t caller_pgid = proc_getpgid(sys_proc_snapshot_);
+    bool matched_child = false;
     
     pthread_mutex_lock(&(sys_proc_->children.mutex));
     for(uint64_t i = 0; i < sys_proc_->children.children_cnt; i++)
     {
-        /*
-         * getting strongly referenced process from array
-         * it is strongly referenced, because of the mutex
-         * and because of the reference contract done by
-         * proc_fork(3)
-         */
         ksurface_proc_t *proc = sys_proc_->children.children[i];
-        
-        if(u_pid < 0 || proc_getpid(proc) == u_pid)
+        if(!wait4_matches_selector(u_pid, caller_pgid, proc))
         {
-            kvo_rdlock(proc);
-            
-            /* visibility check */
-            if(!proc_can_see_proc(sys_proc_snapshot_, proc, vis))
-            {
-                kvo_unlock(proc);
-                continue;
-            }
-            
-            /* need a new reference to safely use it */
-            if(!kvo_retain(proc))
-            {
-                kvo_unlock(proc);
-                continue;
-            }
-            
-            /* looking if state change already happened */
-            if((((u_options & WSTOPPED) == WSTOPPED) && WIFSTOPPED(proc->nyx.p_status)) ||
-               (((u_options & WCONTINUED) == WCONTINUED) && WIFCONTINUED(proc->nyx.p_status)))
-            {
-                goto out_report;
-            }
-            else if(proc->bsd.kp_proc.p_stat == SZOMB)
-            {
-                /*
-                 * process has already exited, reap it, but
-                 * unlock the mutex, because proc_reap will
-                 * lock it for it self
-                 */
-                pthread_mutex_unlock(&(sys_proc_->children.mutex));
-                proc_reap(proc);
-                pthread_mutex_lock(&(sys_proc_->children.mutex));
-                
-                /* in-case it did stop but is now zombified */
-                if(!WIFEXITED(proc->nyx.p_status))
-                {
-                    proc->nyx.p_status = W_EXITCODE(0, SIGKILL);
-                }
-                
-            out_report:
-                syscall_copy_out(sys_task_, sizeof(int), &(proc->nyx.p_status), (userspace_pointer_t)args[1]);
-                
-                /*
-                 * set to none, so incase it was
-                 * stopped it wont fire again without
-                 * another state change, cuz the state
-                 * change was collected.
-                 */
-                proc->nyx.p_status = 0;
-                
-                u_pid = proc_getpid(proc);
-                kvo_unlock(proc);   /* unlock first! releasing it will cause entire process and lock to release */
-                kvo_release(proc);
-                pthread_mutex_unlock(&(sys_proc_->children.mutex));
-                return u_pid;
-            }
-            
-            kvo_unlock(proc);   /* unlock first! releasing it might cause entire process and lock to release */
-            kvo_release(proc);
+            continue;
         }
+        
+        matched_child = true;
+        kvo_rdlock(proc);
+        
+        if(!kvo_retain(proc))
+        {
+            kvo_unlock(proc);
+            continue;
+        }
+        
+        if((((u_options & WSTOPPED) == WSTOPPED) && WIFSTOPPED(proc->nyx.p_status)) || (((u_options & WCONTINUED) == WCONTINUED) && WIFCONTINUED(proc->nyx.p_status)))
+        {
+            goto out_report;
+        }
+        else if(proc->bsd.kp_proc.p_stat == SZOMB)
+        {
+            pthread_mutex_unlock(&(sys_proc_->children.mutex));
+            proc_reap(proc);
+            pthread_mutex_lock(&(sys_proc_->children.mutex));
+            
+            if(!WIFEXITED(proc->nyx.p_status))
+            {
+                proc->nyx.p_status = W_EXITCODE(0, SIGKILL);
+            }
+            
+        out_report:
+            syscall_copy_out(sys_task_, sizeof(int), &(proc->nyx.p_status), (userspace_pointer_t)args[1]);
+            proc->nyx.p_status = 0;
+            
+            pid_t reported_pid = proc_getpid(proc);
+            kvo_unlock(proc);
+            kvo_release(proc);
+            pthread_mutex_unlock(&(sys_proc_->children.mutex));
+            return reported_pid;
+        }
+        
         kvo_unlock(proc);
+        kvo_release(proc);
+    }
+    
+    if(!matched_child)
+    {
+        pthread_mutex_unlock(&(sys_proc_->children.mutex));
+        sys_return_failure_with_errno(ECHILD);
     }
     
     if((u_options & WNOHANG) == WNOHANG)
@@ -222,7 +209,6 @@ DEFINE_SYSCALL_HANDLER(wait4)
         sys_return;
     }
     
-    /* creating payload */
     wait4_payload_t *payload = malloc(sizeof(wait4_payload_t));
     if(payload == NULL)
     {
@@ -236,19 +222,19 @@ DEFINE_SYSCALL_HANDLER(wait4)
         goto out_again;
     }
     
-    /* stuffing payload */
     payload->task = sys_task_;
     payload->status_ptr = (userspace_pointer_t)args[1];
     payload->rusage_ptr = (userspace_pointer_t)args[3];
     payload->options = u_options;
     payload->buffer = *recv_buffer;
     payload->waitonpid = u_pid;
+    payload->caller_pgid = caller_pgid;
     
-    /* register event */
     kr = kvo_event_register(sys_proc_, kProcEventTypeWait4, wait4_proc_event_handler, payload, NULL);
     if(kr != KERN_SUCCESS)
     {
-        mach_port_deallocate(mach_task_self(), sys_task_);  /* drop the reference, created prior */
+        mach_port_deallocate(mach_task_self(), sys_task_);
+        
     out_again:
         pthread_mutex_unlock(&(sys_proc_->children.mutex));
         free(payload);

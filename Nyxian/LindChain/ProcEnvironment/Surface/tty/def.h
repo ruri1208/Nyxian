@@ -58,7 +58,8 @@ struct ksurface_tty {
     char rbuf[TTY_MAX_RD];
     char obuf[TTY_MAX_RD * 2];
     
-    /* foreground process group */
+    /* controlling session and foreground process group */
+    pid_t sid;
     pid_t pgrp;
 };
 

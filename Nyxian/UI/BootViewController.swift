@@ -55,14 +55,20 @@ final class ROMImporter: NSObject, UIDocumentPickerDelegate {
 final class ROMPath {
     let path: String
     let permission: Int
-    let requiresCodeSigning: Bool
+    
+    struct ROMPathCodeSigningInfo {
+        let needed: Bool
+        let neededNXT2: Bool
+        let nxt2: [String:Any]
+    }
+    let codesigning: ROMPath.ROMPathCodeSigningInfo
     
     init(path: String,
          permission: Int,
-         requiresCodeSigning: Bool) {
+         codesigning: ROMPath.ROMPathCodeSigningInfo) {
         self.path = path
         self.permission = permission
-        self.requiresCodeSigning = requiresCodeSigning
+        self.codesigning = codesigning
     }
 }
 
@@ -145,12 +151,30 @@ final class ROMManifest {
         var actualPathObjects: [ROMPath] = []
         let paths: [[String:Any]] = manifestContent["NXRomPaths"] as? [[String:Any]] ?? []
         for pathDict in paths {
-            guard let path: String = pathDict["NXPath"] as? String else {
-                throw NSError(domain: "org.emexlabs.nyxian.bootloader.rom-flash", code: 1, userInfo: [NSLocalizedDescriptionKey:"malformed manifest path's in manifest plist"])
-            }
             let permission: Int = pathDict["NXPermission"] as? Int ?? self.defaultFilePermission
             let requiresCodeSigning: Bool = pathDict["NXRequiresCodeSigning"] as? Bool ?? false
-            actualPathObjects.append(ROMPath(path: path, permission: permission, requiresCodeSigning: requiresCodeSigning))
+            var requiresNXT2Signing: Bool = requiresCodeSigning
+            let nxt2Entitlements: [String:Any]
+            if requiresNXT2Signing {
+                if let nxt2: [String:Any] = pathDict["NXT2Entitlements"] as? [String:Any] {
+                    nxt2Entitlements = nxt2
+                } else {
+                    nxt2Entitlements = [:]
+                    requiresNXT2Signing = false
+                }
+            } else {
+                nxt2Entitlements = [:]
+            }
+            
+            if let path: [String] = pathDict["NXPath"] as? [String] {
+                for additionalPath in path {
+                    actualPathObjects.append(ROMPath(path: additionalPath, permission: permission, codesigning: ROMPath.ROMPathCodeSigningInfo(needed: requiresCodeSigning, neededNXT2: requiresNXT2Signing, nxt2: nxt2Entitlements)))
+                }
+            } else if let path: String = pathDict["NXPath"] as? String {
+                actualPathObjects.append(ROMPath(path: path, permission: permission, codesigning: ROMPath.ROMPathCodeSigningInfo(needed: requiresCodeSigning, neededNXT2: requiresNXT2Signing, nxt2: nxt2Entitlements)))
+            } else {
+                throw NSError(domain: "org.emexlabs.nyxian.bootloader.rom-flash", code: 1, userInfo: [NSLocalizedDescriptionKey:"malformed manifest path's in manifest plist"])
+            }
         }
         self.paths = actualPathObjects
         
@@ -911,35 +935,49 @@ private func flashROM(archive: URL, log: RomLog) throws -> ROMManifest {
     }
     
     log.info("setting up explicit path permissions and configurations")
-    var signFiles: [(String, Int)] = []
+    var signFiles: [ROMPath] = []
     for path in manifest.paths {
         log.info("setting up \(path.path)")
         
-        if path.requiresCodeSigning {
-            signFiles.append((path.path, path.permission))
+        if path.codesigning.needed {
+            signFiles.append(path)
         } else {
             try fm.setAttributes([.posixPermissions: path.permission], ofItemAtPath: slot.appendingPathComponent(path.path).path)
         }
     }
     
-    log.info("signing files")
-    for (file, _) in signFiles {
-        guard NXBootSignMachOWithoutPatch(slot.appendingPathComponent(file)) else {
-            throw romError("failed to sign \(file)")
+    if !signFiles.isEmpty {
+        log.info("signing files")
+        for file in signFiles {
+            guard NXSignMachOAuto(slot.appendingPathComponent(file.path)) else {
+                throw romError("failed to sign \(file.path)")
+            }
+            log.info("signed \(file.path)")
         }
-        log.info("signed \(file)")
-    }
-    
-    for (file, _) in signFiles {
-        guard refreshVnode(atPath: slot.appendingPathComponent(file).path) else {
-            throw romError("failed to refresh \(file)")
+        
+        log.info("refreshing signed files")
+        for file in signFiles {
+            guard refreshVnode(atPath: slot.appendingPathComponent(file.path).path) else {
+                throw romError("failed to refresh \(file.path)")
+            }
+            log.info("refreshed \(file.path)")
         }
-        log.info("refreshed \(file)")
-    }
-    
-    log.info("refixing sign files permissions")
-    for (file, permission) in signFiles {
-        try fm.setAttributes([.posixPermissions: permission], ofItemAtPath: slot.appendingPathComponent(file).path)
+        
+        log.info("adding NXT2 entitlements if needed")
+        for file in signFiles {
+            if file.codesigning.neededNXT2 {
+                let kr: kern_return_t = trust_nxt2_sign(slot.appendingPathComponent(file.path).path, file.codesigning.nxt2 as CFDictionary, true, nil)
+                if kr != 0 {
+                    throw romError("failed to add NXT2 entitlements to \(file.path): \(String(cString: mach_error_string(kr)))")
+                }
+                log.info("added NXT2 entitlements to \(file.path)")
+            }
+        }
+        
+        log.info("refixing sign files permissions")
+        for file in signFiles {
+            try fm.setAttributes([.posixPermissions: file.permission], ofItemAtPath: slot.appendingPathComponent(file.path).path)
+        }
     }
     
     if let installer = manifest.installer {
@@ -956,13 +994,30 @@ private func flashROM(archive: URL, log: RomLog) throws -> ROMManifest {
 }
 
 private func recoveryFlashROM(_ c: NXRecoveryViewController, archive: URL) {
+    guard !romIsBusy(c) else { return }
+    c.enterConsole()
+    
     runRomOperation(c) { log in
         do {
             let manifest = try flashROM(archive: archive, log: log)
             log.info("flashed \(manifest.name) \(manifest.version)")
+            DispatchQueue.main.async {
+                c.recoveryLog("\nFlash complete.\nPress both volume buttons to reboot when ready.")
+                c.finishConsole(selectAction: { _ in
+                    restartSelf()
+                })
+            }
         } catch {
             log.error("ERROR: \(error.localizedDescription)")
             try? FileManager.default.removeItem(at: flashedSlotURL())
+            DispatchQueue.main.async {
+                c.recoveryLogError("\nFlash failed.\nPress both volume buttons to return to the menu.")
+                c.finishConsole(selectAction: { c in
+                    guard let c = c else { return }
+                    c.exitConsole()
+                    recoveryShowMenu(recoveryController: c)
+                })
+            }
         }
     }
 }

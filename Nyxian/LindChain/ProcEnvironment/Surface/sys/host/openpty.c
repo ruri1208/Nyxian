@@ -38,6 +38,8 @@ DEFINE_SYSCALL_HANDLER(openpty)
     kvo_wrlock(tty);
     memset(&tty->t, 0, sizeof(tty->t));
     memset(&tty->ws, 0, sizeof(tty->ws));
+    tty->sid = 0;
+    tty->pgrp = 0;
     
     tty->t.c_iflag = ICRNL | ISTRIP | INPCK;
     tty->t.c_oflag = OPOST | ONLCR;
@@ -55,7 +57,6 @@ DEFINE_SYSCALL_HANDLER(openpty)
     
     fileport_t master_port = MACH_PORT_NULL;
     fileport_t slave_port = MACH_PORT_NULL;
-    
     if(fileport_makeport(tty->userspacefd[MASTERFD], &master_port) != 0)
     {
         kvo_release(tty);
@@ -69,7 +70,7 @@ DEFINE_SYSCALL_HANDLER(openpty)
         sys_return_failure_with_errno(EBADF);
     }
     
-    kern_return_t kr = tty_attach_proc(sys_proc_, tty);
+    kern_return_t kr = tty_hold_proc(sys_proc_, tty);
     if(kr != KERN_SUCCESS)
     {
         mach_port_deallocate(mach_task_self(), master_port);
@@ -83,7 +84,6 @@ DEFINE_SYSCALL_HANDLER(openpty)
     {
         mach_port_deallocate(mach_task_self(), master_port);
         mach_port_deallocate(mach_task_self(), slave_port);
-        kvo_release(tty);
         sys_return_failure_with_errno(ENOMEM);
     }
     sys_export_port(master_port);

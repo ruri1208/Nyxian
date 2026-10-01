@@ -121,6 +121,9 @@ int sysctl_kernproc(sysctl_req_t *req)
         case KERN_PROC_SESSION:
             flavour = PROC_FLV_SID;
             goto validate;
+        case KERN_PROC_PGRP:
+            flavour = PROC_FLV_PGID;
+            goto validate;
         case KERN_PROC_PID:
             flavour = PROC_FLV_PID;
             

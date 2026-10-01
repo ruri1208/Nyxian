@@ -36,8 +36,8 @@ void tty_kill(ksurface_tty_t *tty,
 {
     kinfo_proc_t *kp  = NULL;
     size_t len = 0;
-
-    kern_return_t kr = proc_list(kernel_proc_, &kp, &len, PROC_FLV_SID, tty->pgrp);
+    
+    kern_return_t kr = proc_list(kernel_proc_, &kp, &len, PROC_FLV_PGID, tty->pgrp);
     if(kr == KERN_SUCCESS)
     {
         size_t count = len / sizeof(kinfo_proc_t);
@@ -125,9 +125,9 @@ LIBKERN_DEFINE_PATCHABLE(int, tty_input, (ksurface_tty_t *tty))
     }
     
     ssize_t off = 0;
-    while(off < n)
+    while(off < new_n)
     {
-        ssize_t w = write(tty->kernelfds[SLAVEFD], tty->rbuf + off, n - off);
+        ssize_t w = write(tty->kernelfds[SLAVEFD], tty->rbuf + off, new_n - off);
         if(w <= 0)
         {
             return -1;

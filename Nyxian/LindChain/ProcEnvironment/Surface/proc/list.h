@@ -35,13 +35,17 @@ typedef enum {
     PROC_FLV_SID = 1,
     PROC_FLV_UID = 2,
     PROC_FLV_RUID = 3,
-    PROC_FLV_PID = 4
+    PROC_FLV_PID = 4,
+    PROC_FLV_PGID = 5
 } proc_flavour_t;
 
 /* Side quests xD */
 proc_visibility_t proc_get_proc_visibility(ksurface_proc_snapshot_t *caller);
 bool proc_can_see_proc(ksurface_proc_snapshot_t *caller, ksurface_proc_t *target, proc_visibility_t vis);
 bool proc_is_flavour_matching(ksurface_proc_t *target, proc_flavour_t flavour, pid_t dsid);
+
+bool proc_pgrp_exists(pid_t pgid);
+bool proc_pgrp_exists_in_session(pid_t pgid, pid_t sid);
 
 /* Actual syscall handler */
 kern_return_t proc_list(ksurface_proc_snapshot_t *proc_snapshot, kinfo_proc_t **kp, size_t *len, proc_flavour_t flavour, pid_t dsid);

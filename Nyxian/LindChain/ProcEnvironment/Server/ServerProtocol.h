@@ -34,7 +34,7 @@
 /*
  posix_spawn
  */
-- (void)spawnProcessWithPath:(NSString*)path withArguments:(NSArray<NSObject<NSSecureCoding,NSCopying>*>*)arguments withEnvironmentVariables:(NSDictionary *)environment withFileTable:(PEFileTable*)fileTable withWorkingDirectory:(NSString*)workingDirectory withReply:(void (^)(int64_t))reply;
+- (void)spawnProcessWithPath:(NSString*)path withArguments:(NSArray<NSObject<NSSecureCoding,NSCopying>*>*)arguments withEnvironmentVariables:(NSDictionary *)environment withFileTable:(PEFileTable*)fileTable withWorkingDirectory:(NSString*)workingDirectory withSpawnFlags:(short)spawnFlags withSpawnPgroup:(pid_t)spawnPgroup withReply:(void (^)(int64_t))reply;
 
 /*
  App Switcher Services

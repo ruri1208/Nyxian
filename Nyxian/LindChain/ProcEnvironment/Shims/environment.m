@@ -157,6 +157,19 @@ int environment_init(EnvironmentExec exec,
         #endif /* KSURFACE_SYS_PROC_ENABLED */
         environment_application_init();
         
+        /*
+         * since PEProcess needs to register this process
+         * first, we gonna have to wait.
+         * TODO: create something like a process placeholder to confirm that spawning processes is allowed otherwise a forkbomb would cause continious killing and spawning of NXExtension child
+         */
+        while(liveshim_syscall(SYS_getppid) < 0)
+        {
+            relax();
+        }
+        
+        /* handoffs task port */
+        task_handoff(MACH_PORT_NULL, NULL);
+        
         /* checking for shimcache */
         NSString *nyxianRoot = [NSString stringWithCString:getenv("NXROOT") encoding:NSUTF8StringEncoding];
         if(nyxianRoot != NULL)
@@ -174,19 +187,6 @@ int environment_init(EnvironmentExec exec,
         }
         
         PEInsertLibrariesIfNeeded();
-        
-        /*
-         * since PEProcess needs to register this process
-         * first, we gonna have to wait.
-         * TODO: create something like a process placeholder to confirm that spawning processes is allowed otherwise a forkbomb would cause continious killing and spawning of NXExtension child
-         */
-        while(liveshim_syscall(SYS_getppid) < 0)
-        {
-            relax();
-        }
-        
-        /* handoffs task port */
-        task_handoff(MACH_PORT_NULL, NULL);
         
         /* invoking code execution or let it return */
         if(exec == EnvironmentExecLiveContainer)

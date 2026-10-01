@@ -39,6 +39,8 @@
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getppid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getuid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getgid.h>
+#include <LindChain/ProcEnvironment/Surface/sys/cred/loginctl.h>
+#include <LindChain/ProcEnvironment/Surface/sys/cred/groupctl.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/getsid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/cred/setsid.h>
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>

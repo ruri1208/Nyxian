@@ -137,7 +137,35 @@ LIBKERN_PATCH(int, posix_spawn, (pid_t *process_identifier,
                                  const posix_spawn_file_actions_t *fa,
                                  const posix_spawnattr_t *spawn_attr,
                                  char *const argv[],
-                                 char *const envp[]),{
+                                 char *const envp[]),
+{
+    short spawnFlags = 0;
+    pid_t spawnPgroup = 0;
+    
+    if(spawn_attr != NULL)
+    {
+        int attrRet = posix_spawnattr_getflags(spawn_attr, &spawnFlags);
+        if(attrRet != 0)
+        {
+            return attrRet;
+        }
+        
+        if((spawnFlags & POSIX_SPAWN_SETSID) &&
+           (spawnFlags & POSIX_SPAWN_SETPGROUP))
+        {
+            return EINVAL;
+        }
+        
+        if(spawnFlags & POSIX_SPAWN_SETPGROUP)
+        {
+            attrRet = posix_spawnattr_getpgroup(spawn_attr, &spawnPgroup);
+            if(attrRet != 0)
+            {
+                return attrRet;
+            }
+        }
+    }
+    
     /*
      * resolving realpath of the executable, to prevent
      * weird file bugs to happen, this is standard
@@ -285,7 +313,7 @@ skip_fileactions:
      * trying to spawn process via old ass ServerSession API, which
      * then triggers the subsystem LDEProcess on the host side.
      */
-    int64_t pid = environment_proxy_spawn_process_at_path([NSString stringWithCString:resolved encoding:NSUTF8StringEncoding], NSArrayFromCArray(argv), NSDictionaryFromCDictionary(envp), fileTable, nsCwd);
+    int64_t pid = environment_proxy_spawn_process_at_path([NSString stringWithCString:resolved encoding:NSUTF8StringEncoding], NSArrayFromCArray(argv), NSDictionaryFromCDictionary(envp), fileTable, nsCwd, spawnFlags, spawnPgroup);
     if(pid < 0)
     {
         /* lacking entitlements? */
@@ -315,7 +343,8 @@ LIBKERN_PATCH(int, posix_spawnp, (pid_t * __restrict pid,
                                   const posix_spawn_file_actions_t *file_actions,
                                   const posix_spawnattr_t * __restrict attrp,
                                   char *const argv[ __restrict],
-                                  char *const envp[ __restrict]),{
+                                  char *const envp[ __restrict]),
+{
     const char *env_path;
     char *bp;
     char *cur;

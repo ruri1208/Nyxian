@@ -63,8 +63,13 @@ syscall_list_item_t sys_list[] = {
     { .name = "SYS_geteuid",        .sysnum = SYS_geteuid,      .hndl = GET_SYSCALL_HANDLER(geteuid)        },
     { .name = "SYS_getgid",         .sysnum = SYS_getgid,       .hndl = GET_SYSCALL_HANDLER(getgid)         },
     { .name = "SYS_getegid",        .sysnum = SYS_getegid,      .hndl = GET_SYSCALL_HANDLER(getegid)        },
+    { .name = "SYS_getpgrp",        .sysnum = SYS_getpgrp,      .hndl = GET_SYSCALL_HANDLER(getpgrp)        },
+    { .name = "SYS_setpgid",        .sysnum = SYS_setpgid,      .hndl = GET_SYSCALL_HANDLER(setpgid)        },
     { .name = "SYS_getsid",         .sysnum = SYS_getsid,       .hndl = GET_SYSCALL_HANDLER(getsid)         },
     { .name = "SYS_setsid",         .sysnum = SYS_setsid,       .hndl = GET_SYSCALL_HANDLER(setsid)         },
+    { .name = "SYS_getpgid",        .sysnum = SYS_getpgid,      .hndl = GET_SYSCALL_HANDLER(getpgid)        },
+    { .name = "SYS_loginctl",       .sysnum = SYS_loginctl,     .hndl = GET_SYSCALL_HANDLER(loginctl)       },
+    { .name = "SYS_groupctl",       .sysnum = SYS_groupctl,     .hndl = GET_SYSCALL_HANDLER(groupctl)       },
 #endif /* KSURFACE_SYS_UCRED_ENABLED */
     
 #if KSURFACE_SYS_PROC_ENABLED
@@ -250,12 +255,14 @@ static inline void ksurface_kinit_kproc(void)
     proc_setpid(kproc, 0);
     proc_setppid(kproc, 0);
     proc_setsid(kproc, 0);
+    proc_setpgid(kproc, 0);
     strlcpy(kproc->bsd.kp_proc.p_comm, "kernel_task", MAXCOMLEN);
 #else
     /* setting up properties */
     proc_setpid(kproc, getpid());
     proc_setppid(kproc, getppid());
     proc_setsid(kproc, getsid(getpid()));
+    proc_setpgid(kproc, getpgrp());
     const char *name = strrchr(kproc->nyx.identity->path, '/');
     name = name ? name + 1 : kproc->nyx.identity->path;
     strlcpy(kproc->bsd.kp_proc.p_comm, name, MAXCOMLEN);

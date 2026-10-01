@@ -25,6 +25,7 @@
 #import <LindChain/ProcEnvironment/Surface/tty/def.h>
 #import <LindChain/ProcEnvironment/Surface/proc/def.h>
 
+kern_return_t tty_hold_proc(ksurface_proc_t *proc, ksurface_tty_t *tty);
 kern_return_t tty_attach_proc(ksurface_proc_t *proc, ksurface_tty_t *tty);
 
 #endif /* TTY_ATTACH_H */

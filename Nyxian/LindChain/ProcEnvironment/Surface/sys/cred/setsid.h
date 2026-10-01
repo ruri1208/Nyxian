@@ -25,5 +25,6 @@
 #include <LindChain/ProcEnvironment/Surface/surface.h>
 
 DEFINE_SYSCALL_HANDLER(setsid);
+DEFINE_SYSCALL_HANDLER(setpgid);
 
 #endif /* SURFACE_SYS_SETSID_H */

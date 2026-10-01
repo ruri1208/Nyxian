@@ -91,6 +91,26 @@ void *HWHookGetReplacementPtr(HWHookRef hook)
     return hook->replacement;
 }
 
+void HWHookSetSymbolPtr(HWHookRef hook,
+                        void *symbol)
+{
+    if(hook == NULL)
+    {
+        return;
+    }
+    hook->symbol = symbol;
+}
+
+void HWHookSetReplacementPtr(HWHookRef hook,
+                             void *replacement)
+{
+    if(hook == NULL)
+    {
+        return;
+    }
+    hook->replacement = replacement;
+}
+
 Boolean HWHookGetDisableContextHooksInFrame(HWHookRef hook)
 {
     if(hook == NULL)

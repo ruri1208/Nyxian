@@ -52,7 +52,25 @@
 #define SYS_waittask        759 /* waits till task port of a task is available */
 #define SYS_pectl           760 /* utility for many proc environment operations */
 #define SYS_sign            761 /* this is to be able to sign the binary */
-#define SYS_openpty         762
+#define SYS_openpty         762 /* opens new pseudo terminal */
+#define SYS_loginctl        763 /* process login-name control */
+#define SYS_groupctl        764 /* supplementary group control */
+
+typedef CF_ENUM(UInt16, PELoginCTLAction) {
+    kPELoginCTLGetLength = 0,
+    kPELoginCTLGetWord = 1,
+    kPELoginCTLSetWord = 2,
+    kPELoginCTLCommit = 3,
+    kPELoginCTLClear = 4,
+};
+
+typedef CF_ENUM(UInt16, PEGroupCTLAction) {
+    kPEGroupCTLGetCount = 0,
+    kPEGroupCTLGetAt = 1,
+    kPEGroupCTLSetAt = 2,
+    kPEGroupCTLCommit = 3,
+    kPEGroupCTLClear = 4,
+};
 
 /* proc environment control mappings */
 /* categories */

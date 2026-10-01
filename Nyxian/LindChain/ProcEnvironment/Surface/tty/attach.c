@@ -42,33 +42,42 @@ bool tty_proc_event_handler(kvobject_event_type_t type,
     }
 }
 
-kern_return_t tty_attach_proc(ksurface_proc_t *proc,
-                              ksurface_tty_t *tty)
+kern_return_t tty_hold_proc(ksurface_proc_t *proc,
+                            ksurface_tty_t *tty)
 {
-    /* retain process */
     if(!kvo_retain(proc))
     {
         return KERN_FAILURE;
     }
     
-    /*
-     * attach to process lifecycle
-     * and consume callers reference.
-     */
     kern_return_t kr = kvo_event_register(proc, 0, tty_proc_event_handler, tty, NULL);
+    kvo_release(proc);
+    return kr;
+}
+
+kern_return_t tty_attach_proc(ksurface_proc_t *proc,
+                              ksurface_tty_t *tty)
+{
+    kern_return_t kr = tty_hold_proc(proc, tty);
     if(kr != KERN_SUCCESS)
     {
-        kvo_release(proc);
-        return KERN_FAILURE;
+        return kr;
     }
     
-    kvo_wrlock(proc);
-    proc->bsd.kp_proc.p_flag |= P_CONTROLT;
+    pid_t sid;
+    pid_t pgid;
     
-    /* TODO: implement pgrp support */
-    tty->pgrp = proc_getsid(proc);
+    kvo_wrlock(proc);
+    sid = proc_getsid(proc);
+    pgid = proc_getpgid(proc);
+    proc->bsd.kp_proc.p_flag |= P_CONTROLT;
+    proc->bsd.kp_eproc.e_tpgid = pgid;
     kvo_unlock(proc);
     
-    kvo_release(proc);
+    kvo_wrlock(tty);
+    tty->sid = sid;
+    tty->pgrp = pgid;
+    kvo_unlock(tty);
+    
     return KERN_SUCCESS;
 }

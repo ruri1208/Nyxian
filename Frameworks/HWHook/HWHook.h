@@ -33,6 +33,9 @@ CF_EXPORT HWHookRef HWHookCreateWithPointerToSymbol(CFAllocatorRef allocator, vo
 CF_EXPORT void *HWHookGetSymbolPtr(HWHookRef hook);
 CF_EXPORT void *HWHookGetReplacementPtr(HWHookRef hook);
 
+CF_EXPORT void HWHookSetSymbolPtr(HWHookRef hook, void *symbol);
+CF_EXPORT void HWHookSetReplacementPtr(HWHookRef hook, void *replacement);
+
 /*
  * makes you able to call original symbols without manually
  * fiddling around, the hooking server will disable automatically

@@ -55,5 +55,6 @@ CF_EXPORT Boolean HWHookThreadContextDisableHooks(HWHookThreadContextRef context
  * Duy Tran, this! THIS is flexibility and scalability!
  */
 CF_EXPORT Boolean HWHookThreadContextAppendHook(HWHookThreadContextRef context, HWHookRef hook);
+CF_EXPORT CFArrayRef HWHookThreadContextGetHooks(HWHookThreadContextRef context);
 
 #endif /* HWHOOKTHREADCONTEXT_H */

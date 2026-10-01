@@ -19,21 +19,11 @@
  along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PROCENVIRONMENT_FORK_H
-#define PROCENVIRONMENT_FORK_H
+#ifndef SURFACE_SYS_LOGINCTL_H
+#define SURFACE_SYS_LOGINCTL_H
 
-/* ----------------------------------------------------------------------
- *  Apple API Headers
- * -------------------------------------------------------------------- */
-#include <stdlib.h>
-#include <spawn.h>
+#include <LindChain/ProcEnvironment/Surface/surface.h>
 
-/*!
- @function `environment_fork_init`
- @abstract Initializes fork environment.
- @discussion
-    Fixes vfork() and exec*() family symbols using a creative thread snapshotting and conditioning system.
- */
-void environment_vfork_init(void);
+DEFINE_SYSCALL_HANDLER(loginctl);
 
-#endif /* PROCENVIRONMENT_FORK_H */
+#endif /* SURFACE_SYS_LOGINCTL_H */

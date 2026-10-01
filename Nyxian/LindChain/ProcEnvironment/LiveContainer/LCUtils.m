@@ -175,7 +175,101 @@ extern BOOL PEURLIsContainedIn(NSURL *candidate, NSURL *root);
 
 @end
 
-BOOL NXBootSignMachOWithoutPatch(NSURL *url)
+typedef enum {
+    NXMachONone = 0,
+    NXMachOExec,
+    NXMachOLib,
+    NXMachOOther,
+} NXMachOKind;
+
+static NXMachOKind NXClassifyMachO(const char *path)
 {
-    return [LCUtils signMachOWithoutPatchAtURL:url];
+    int fd = open(path, O_RDONLY);
+    if(fd < 0)
+    {
+        return NXMachONone;
+    }
+
+    NXMachOKind kind = NXMachONone;
+    uint32_t magic = 0;
+
+    if(pread(fd, &magic, sizeof(magic), 0) == (ssize_t)sizeof(magic))
+    {
+        off_t hdr = 0;
+        if(magic == FAT_MAGIC || magic == FAT_CIGAM || magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64)
+        {
+            bool swap = (magic == FAT_CIGAM || magic == FAT_CIGAM_64);
+            bool is64 = (magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64);
+            uint32_t nfat = 0;
+            if(pread(fd, &nfat, 4, 4) == 4)
+            {
+                if(swap)
+                {
+                    nfat = __builtin_bswap32(nfat);
+                }
+                if(nfat > 0)
+                {
+                    if(is64)
+                    {
+                        uint64_t o = 0;
+                        if(pread(fd, &o, 8, 16) == 8)
+                        {
+                            hdr = (off_t)(swap ? __builtin_bswap64(o) : o);
+                        }
+                    }
+                    else
+                    {
+                        uint32_t o = 0;
+                        if(pread(fd, &o, 4, 16) == 4)
+                        {
+                            hdr = (off_t)(swap ? __builtin_bswap32(o) : o);
+                        }
+                    }
+                }
+            }
+        }
+
+        uint32_t m = 0;
+        if(pread(fd, &m, 4, hdr) == 4 && (m == MH_MAGIC || m == MH_CIGAM || m == MH_MAGIC_64 || m == MH_CIGAM_64))
+        {
+            bool swap = (m == MH_CIGAM || m == MH_CIGAM_64);
+            uint32_t ft = 0;
+            if(pread(fd, &ft, 4, hdr + 12) == 4)
+            {
+                if(swap)
+                {
+                    ft = __builtin_bswap32(ft);
+                }
+                switch(ft)
+                {
+                    case MH_EXECUTE:
+                        kind = NXMachOExec;
+                        break;
+                    case MH_DYLIB: case MH_BUNDLE:
+                        kind = NXMachOLib;
+                        break;
+                    default:
+                        kind = NXMachOOther;
+                        break;
+                }
+            }
+        }
+    }
+
+    close(fd);
+    return kind;
+}
+
+BOOL NXSignMachOAuto(NSURL *url)
+{
+    NXMachOKind kind = NXClassifyMachO(url.path.UTF8String);
+    switch(kind)
+    {
+        case NXMachOExec:
+            return [LCUtils signMachOAtURL:url];
+        case NXMachOLib:
+            return [LCUtils signMachOWithoutPatchAtURL:url];
+        default:
+            return NO;
+    }
 }

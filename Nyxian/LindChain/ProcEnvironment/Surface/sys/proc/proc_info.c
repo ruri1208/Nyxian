@@ -95,7 +95,7 @@ DEFINE_SYSCALL_HANDLER(proc_info_pidinfo)
             strlcpy(bsd_pcb.pbi_comm, target->bsd.kp_proc.p_comm, MAXCOMLEN);
             strlcpy(bsd_pcb.pbi_name, target->bsd.kp_proc.p_comm, MAXCOMLEN);
             bsd_pcb.pbi_nfiles = 0;
-            bsd_pcb.pbi_pgid = proc_getpid(target); /* no process groups yet */
+            bsd_pcb.pbi_pgid = proc_getpgid(target);
             bsd_pcb.pbi_pjobc = 0;  /* no job control yet */
             bsd_pcb.e_tdev = 0;     /* controlling tty dev */
             bsd_pcb.e_tpgid = 0;    /* tty process group id */

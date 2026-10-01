@@ -45,6 +45,6 @@ __attribute__((objc_runtime_name("NXBootLCUtils")))
 
 @end
 
-BOOL NXBootSignMachOWithoutPatch(NSURL *url);
+BOOL NXSignMachOAuto(NSURL *url);
 
 #endif /* LIVECONTAINER_LCUTILS_H */

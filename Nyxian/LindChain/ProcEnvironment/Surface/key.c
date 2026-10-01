@@ -269,10 +269,26 @@ bool get_static_kernel_key(uint8_t **priv_bytes,
             return false;
         }
         
-        *priv_bytes = new_priv;
-        *priv_len = new_priv_len;
-        *pub_bytes = new_pub;
-        *pub_len = new_pub_len;
+        if(priv_bytes)
+        {
+            *priv_bytes = new_priv;
+            *priv_len = new_priv_len;
+        }
+        else
+        {
+            free(new_priv);
+        }
+                
+        if(pub_bytes)
+        {
+            *pub_bytes = new_pub;
+            *pub_len = new_pub_len;
+        }
+        else
+        {
+            free(new_pub);
+        }
+        
         return true;
     }
     

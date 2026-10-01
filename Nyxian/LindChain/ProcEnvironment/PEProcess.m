@@ -28,6 +28,58 @@
 #import <LindChain/ProcEnvironment/Server/Server.h>
 #import <LindChain/ProcEnvironment/Surface/proc/proctil.h>
 #import <LindChain/IDEFoundation/NXBootstrap.h>
+#import <LindChain/ProcEnvironment/PEFileTable.h>
+#import <LindChain/ProcEnvironment/PEFileHandle.h>
+#import <LindChain/ProcEnvironment/Shims/posix_spawn.h>
+#import <LindChain/ProcEnvironment/Surface/proc/list.h>
+#import <LindChain/ProcEnvironment/Surface/tty/tty.h>
+#import <LindChain/Private/mach/fileport.h>
+#include <mach/mach.h>
+#include <unistd.h>
+
+static void PEAttachControllingTTYForSpawn(NSDictionary *items,
+                                           ksurface_proc_t *child)
+{
+    PEFileTable *fileTable = items[@"PEFileTable"];
+    if(fileTable == nil)
+    {
+        return;
+    }
+    
+    /* TODO: go through the entire file table */
+    PEFileHandle *stdinHandle = fileTable.fd_map[@(STDIN_FILENO)];
+    if(stdinHandle == nil)
+    {
+        return;
+    }
+    
+    int fd = [stdinHandle extractFileDescriptor];
+    if(fd < 0)
+    {
+        return;
+    }
+    
+    fileport_t port = MACH_PORT_NULL;
+    if(fileport_makeport(fd, &port) != 0)
+    {
+        close(fd);
+        return;
+    }
+    close(fd);
+    
+    ksurface_tty_t *tty = NULL;
+    kern_return_t kr = tty_for_port(port, &tty);
+    mach_port_deallocate(mach_task_self(), port);
+    if(kr != KERN_SUCCESS || tty == NULL)
+    {
+        return;
+    }
+    
+    if(tty_attach_proc(child, tty) != KERN_SUCCESS)
+    {
+        kvo_release(tty);
+    }
+}
 
 @implementation PEProcess {
     NSHashTable<id<PEProcessObserver>> *_observers;
@@ -67,6 +119,35 @@
     {
         proctil(kProctilActionUnlock);
         return nil;
+    }
+    
+    short spawnFlags = [items[@"PEPOSIXSpawnFlags"] shortValue];
+    pid_t spawnPgroup = (pid_t)[items[@"PEPOSIXSpawnPgroup"] intValue];
+    
+    if((spawnFlags & POSIX_SPAWN_SETSID) &&
+       (spawnFlags & POSIX_SPAWN_SETPGROUP))
+    {
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    
+    if((spawnFlags & POSIX_SPAWN_SETPGROUP) && spawnPgroup < 0)
+    {
+        proctil(kProctilActionUnlock);
+        return nil;
+    }
+    
+    if((spawnFlags & POSIX_SPAWN_SETPGROUP) && spawnPgroup > 0)
+    {
+        kvo_rdlock(proc);
+        pid_t parentSid = proc_getsid(proc);
+        kvo_unlock(proc);
+        
+        if(!proc_pgrp_exists_in_session(spawnPgroup, parentSid))
+        {
+            proctil(kProctilActionUnlock);
+            return nil;
+        }
     }
     
     kvo_rdlock(proc);
@@ -126,6 +207,25 @@
     }
     else
     {
+        if(spawnFlags & POSIX_SPAWN_SETSID)
+        {
+            kvo_wrlock(child);
+            proc_setsid(child, self.pid);
+            proc_setpgid(child, self.pid);
+            child->bsd.kp_proc.p_flag &= ~P_CONTROLT;
+            child->bsd.kp_eproc.e_tdev = -1;
+            child->bsd.kp_eproc.e_tpgid = -1;
+            kvo_unlock(child);
+            PEAttachControllingTTYForSpawn(items, child);
+        }
+        else if(spawnFlags & POSIX_SPAWN_SETPGROUP)
+        {
+            pid_t desiredPgroup = spawnPgroup == 0 ? self.pid : spawnPgroup;
+            kvo_wrlock(child);
+            proc_setpgid(child, desiredPgroup);
+            kvo_unlock(child);
+        }
+        
         self.proc = child;
     }
     

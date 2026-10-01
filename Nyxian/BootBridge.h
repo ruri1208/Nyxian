@@ -33,4 +33,6 @@
 
 #import <LindChain/Utils/Zip.h>
 
+#import <LindChain/ProcEnvironment/Surface/trust/signing.h>
+
 #endif /* BOOTBRIDGE_H */

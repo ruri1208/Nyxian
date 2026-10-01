@@ -97,6 +97,8 @@ bool proc_is_flavour_matching(ksurface_proc_t *target,
             return dsid == proc_getsid(target);
         case PROC_FLV_RUID:
             return dsid == proc_getruid(target);
+        case PROC_FLV_PGID:
+            return target->bsd.kp_proc.p_stat != SZOMB && dsid == proc_getpgid(target);
         default:
             return false;
     }
@@ -132,6 +134,75 @@ void proc_list_radix_walker_callback(uint64_t ident,
     
     kvo_unlock(proc);
     kvo_release(proc);
+}
+
+typedef struct {
+    pid_t pgid;
+    pid_t sid;
+    bool check_sid;
+    bool found;
+} proc_pgrp_lookup_ctx_t;
+
+static void proc_pgrp_lookup_callback(uint64_t ident,
+                                      void *value,
+                                      void *ctx)
+{
+    proc_pgrp_lookup_ctx_t *lookup = ctx;
+    ksurface_proc_t *proc = value;
+    
+    if(lookup->found || !kvo_retain(proc))
+    {
+        return;
+    }
+    
+    kvo_rdlock(proc);
+    bool match = proc->bsd.kp_proc.p_stat != SZOMB && proc_getpgid(proc) == lookup->pgid;
+    if(match && lookup->check_sid)
+    {
+        match = proc_getsid(proc) == lookup->sid;
+    }
+    kvo_unlock(proc);
+    
+    if(match)
+    {
+        lookup->found = true;
+    }
+    
+    kvo_release(proc);
+}
+
+static bool proc_pgrp_lookup(pid_t pgid,
+                             pid_t sid,
+                             bool check_sid)
+{
+    if(pgid <= 0)
+    {
+        return false;
+    }
+    
+    proc_pgrp_lookup_ctx_t ctx = {
+        .pgid = pgid,
+        .sid = sid,
+        .check_sid = check_sid,
+        .found = false,
+    };
+    
+    proc_table_rdlock();
+    radix_walk(&(ksurface->proc_info.tree), proc_pgrp_lookup_callback, &ctx);
+    proc_table_unlock();
+    
+    return ctx.found;
+}
+
+bool proc_pgrp_exists(pid_t pgid)
+{
+    return proc_pgrp_lookup(pgid, 0, false);
+}
+
+bool proc_pgrp_exists_in_session(pid_t pgid,
+                                 pid_t sid)
+{
+    return proc_pgrp_lookup(pgid, sid, true);
 }
 
 kern_return_t proc_list(ksurface_proc_snapshot_t *proc_copy,

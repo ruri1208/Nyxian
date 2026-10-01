@@ -22,53 +22,113 @@
 #include <LindChain/ProcEnvironment/Surface/sys/proc/kill.h>
 #include <LindChain/ProcEnvironment/Surface/proc/proc.h>
 #include <LindChain/ProcEnvironment/Surface/proc/permit.h>
+#include <LindChain/ProcEnvironment/Surface/proc/list.h>
+#include <errno.h>
+
+static bool kill_one_target(ksurface_proc_snapshot_t *caller_snapshot,
+                            ksurface_proc_t *target,
+                            int sig)
+{
+    if(!proc_snapshot_primitive_over_proc_allowed(caller_snapshot, target, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
+    {
+        return false;
+    }
+    
+    kvo_rdlock(target);
+    bool system_process = (target->bsd.kp_proc.p_flag & P_SYSTEM) != 0;
+    kvo_unlock(target);
+    
+    if(system_process)
+    {
+        return false;
+    }
+    
+    if(sig == 0)
+    {
+        return true;
+    }
+    
+    return proc_kill(target, sig) == KERN_SUCCESS;
+}
 
 DEFINE_SYSCALL_HANDLER(kill)
-{    
-    /* getting args, nu checks needed the syscall server does them */
+{
     pid_t u_pid = (pid_t)args[0];
     int u_signal = (int)args[1];
     
-    /* checking signal bounds */
-    if(u_signal <= 0 || u_signal >= NSIG)
+    if(u_signal < 0 || u_signal >= NSIG)
     {
         sys_return_failure_with_errno(EINVAL);
     }
     
-    ksurface_proc_t *target;
-    kern_return_t kr = proc_for_pid(u_pid, &target);
+    if(u_pid > 0)
+    {
+        ksurface_proc_t *target = NULL;
+        kern_return_t kr = proc_for_pid(u_pid, &target);
+        if(kr != KERN_SUCCESS || target == NULL)
+        {
+            sys_return_failure_with_errno(ESRCH);
+        }
+        
+        bool ok = kill_one_target(sys_proc_snapshot_, target, u_signal);
+        kvo_release(target);
+        if(!ok)
+        {
+            sys_return_failure_with_errno(errno ? errno : EPERM);
+        }
+        
+        sys_return;
+    }
+    
+    proc_flavour_t flavour;
+    pid_t selector = 0;
+    
+    if(u_pid == 0)
+    {
+        flavour = PROC_FLV_PGID;
+        selector = proc_getpgid(sys_proc_snapshot_);
+    }
+    else if(u_pid < -1)
+    {
+        flavour = PROC_FLV_PGID;
+        selector = (pid_t)(-(int64_t)u_pid);
+    }
+    else
+    {
+        flavour = PROC_FLV_ALL;
+    }
+    
+    kinfo_proc_t *kp = NULL;
+    size_t len = 0;
+    kern_return_t kr = proc_list(sys_proc_snapshot_, &kp, &len, flavour, selector);
     if(kr != KERN_SUCCESS)
+    {
+        sys_return_failure_with_errno(ENOMEM);
+    }
+    
+    bool any = false;
+    size_t count = len / sizeof(kinfo_proc_t);
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        ksurface_proc_t *target = NULL;
+        if(proc_for_pid(kp[i].kp_proc.p_pid, &target) != KERN_SUCCESS)
+        {
+            continue;
+        }
+        
+        if(kill_one_target(sys_proc_snapshot_, target, u_signal))
+        {
+            any = true;
+        }
+        
+        kvo_release(target);
+    }
+    
+    free(kp);
+    if(!any)
     {
         sys_return_failure_with_errno(ESRCH);
-    }
-    
-    /*
-     * checking if the caller process that makes the call is the same process,
-     * also checks if the caller process has the entitlement to kill
-     * and checks if the process has primitive over the other process.
-     */
-    if(!proc_snapshot_primitive_over_proc_allowed(sys_proc_snapshot_, target, kPEEntitlementFlagProcessKill, kPEEntitlementFlagNone))
-    {
-        kvo_release(target);
-        sys_return_failure_with_errno(errno);
-    }
-    
-    /* making sure it is not ksurface it self */
-    kvo_rdlock(target);
-    if(target->bsd.kp_proc.p_flag & P_SYSTEM)
-    {
-        kvo_unlock(target);
-        kvo_release(target);
-        sys_return_failure_with_errno(EPERM);
-    }
-    kvo_unlock(target);
-    
-    kr = proc_kill(target, u_signal);
-    kvo_release(target);
-    if(kr != KERN_SUCCESS)
-    {
-        /* shall never happen */
-        sys_return_failure_with_errno(EINVAL);
     }
     
     sys_return;

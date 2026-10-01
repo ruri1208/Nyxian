@@ -461,6 +461,8 @@ kern_return_t trust_nxt2_sign_fd(int fd,
     return KERN_SUCCESS;
 }
 
+#if !defined(BOOT)
+
 kern_return_t trust_nxt2_read(const char *path,
                               ksurface_nxt2_t *result)
 {
@@ -650,6 +652,8 @@ signature_invalid:
     result->entitlements = entitlements;
     return KERN_SUCCESS;
 }
+
+#endif /* !defined(BOOT) */
 
 #if HAS_OPENSSL && HOST_ENV
 

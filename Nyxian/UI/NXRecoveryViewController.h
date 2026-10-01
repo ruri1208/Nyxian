@@ -68,6 +68,7 @@ extern const CGFloat NXRecoveryFontSize;
 @property (nonatomic, readonly) NXRecoveryItem *currentRecoveryItem;
 @property (nonatomic, readonly, getter=isRecoveryActive) BOOL recoveryActive;
 @property (nonatomic) NSInteger recoveryLogMax;
+@property (nonatomic, readonly, getter=isConsoleActive) BOOL consoleActive;
 
 + (UIColor *)recoveryBackgroundColor;
 + (UIColor *)recoveryHeaderColor;
@@ -103,6 +104,10 @@ extern const CGFloat NXRecoveryFontSize;
 - (void)browsePath:(NSString *)path root:(NSString *)root header:(NSString *)header onBack:(NXRecoveryAction)onBack onFile:(NXRecoveryFileHandler)onFile;
 - (void)browsePath:(NSString *)path;
 - (void)enterFileBrowserAtPath:(NSString *)path root:(NSString *)root header:(NSString *)header onBack:(NXRecoveryAction)onBack onFile:(NXRecoveryFileHandler)onFile;
+
+- (void)enterConsole;
+- (void)finishConsoleWithSelectAction:(nullable NXRecoveryAction)action;
+- (void)exitConsole;
 
 @end
 

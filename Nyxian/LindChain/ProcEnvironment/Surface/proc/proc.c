@@ -47,6 +47,9 @@ DEFINE_KVOBJECT_MAIN_EVENT_HANDLER(proc)
             proc->bsd.kp_proc.p_usrpri = PUSER;
             proc->bsd.kp_eproc.e_tdev = -1;
             proc->bsd.kp_eproc.e_flag = 2;
+            proc->nyx.login_name[0] = '\0';
+            proc->nyx.login_name_len = 0;
+            proc->nyx.supplementary_group_count = 0;
             
 #if !KSURFACE_SYS_UCRED_ENABLED
             proc_setmobilecred(proc);
