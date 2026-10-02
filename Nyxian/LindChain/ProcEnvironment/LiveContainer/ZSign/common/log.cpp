@@ -5,7 +5,7 @@ int ZLog::g_nLogLevel = ZLog::E_INFO;
 
 void ZLog::_Print(const char* szLog, int nColor)
 {
-#if DEBUG
+#if DEBUG && 0
 	if (g_nLogLevel <= E_NONE) {
 		return;
 	}
@@ -49,7 +49,7 @@ void ZLog::_Print(const char* szLog, int nColor)
     writeToLogFile(szLog);
 	
 #endif /* _WIN32 */
-#endif /* DEBUG */
+#endif /* DEBUG  && 0 */
 }
 
 void ZLog::Print(int nLevel, const char* szLog)

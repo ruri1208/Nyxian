@@ -553,6 +553,8 @@
 		8F412B0330488853004E63DF /* Exceptions for "Nyxian" folder in "LiveShim" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				LindChain/ProcEnvironment/litehook/litehook.c,
+				LindChain/ProcEnvironment/LiveContainer/LCMachOUtils.m,
 				LindChain/ProcEnvironment/Surface/trust/apple.c,
 				LindChain/ProcEnvironment/Surface/trust/cdhash.c,
 			);
@@ -871,6 +873,7 @@
 				LiveShim/ServiceKit/ServiceProtocol.h,
 				LiveShim/shims/dyld.c,
 				LiveShim/shims/dyld.h,
+				LiveShim/shims/io.c,
 				LiveShim/shims/ioctl.c,
 				LiveShim/shims/libproc.c,
 				LiveShim/shims/mount.c,
@@ -2283,7 +2286,10 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_VERSION = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+				);
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -2328,7 +2334,10 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				GCC_VERSION = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)",
+					Nyxian/,
+				);
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
