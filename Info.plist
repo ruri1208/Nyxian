@@ -64,12 +64,7 @@
 	<true/>
 	<key>SBAppUsesLocalNotifications</key>
 	<integer>1</integer>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Inconsolata-Regular.ttf</string>
-		<string>Inconsolata-Bold.ttf</string>
-	</array>
-		<key>UIApplicationSceneManifest</key>
+	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
@@ -86,12 +81,6 @@
 			</array>
 		</dict>
 	</dict>
-	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
 	<key>UIFileSharingEnabled</key>
 	<false/>
 	<key>UTImportedTypeDeclarations</key>
