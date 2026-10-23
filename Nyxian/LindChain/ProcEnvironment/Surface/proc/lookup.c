@@ -1,22 +1,23 @@
 /*
- SPDX-License-Identifier: AGPL-3.0-or-later
+ SPDX-License-Identifier: LicenseRef-EPSL-1.1
 
  Copyright (C) 2025 - 2026 emexlab
 
  This file is part of Nyxian.
 
- Nyxian is free software: you can redistribute it and/or modify
- it under the terms of the GNU Affero General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+ Licensed under the emexLabs Public Source License, version 1.1
+ (EPSL 1.1).
 
- Nyxian is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU Affero General Public License for more details.
+ Private use and modification are permitted under the license.
+ Redistribution of source or binaries, modified or unmodified,
+ requires prior written permission from emexLabs.
 
- You should have received a copy of the GNU Affero General Public License
- along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
+ External deployment is subject to the source-availability
+ requirements and other conditions of the license.
+
+ Provided "AS IS", without warranty, to the extent permitted by law.
+
+ See LICENSE for the full license terms.
 */
 
 #include <LindChain/ProcEnvironment/Surface/proc/lookup.h>
@@ -82,17 +83,17 @@ kern_return_t proc_for_pid_with_pidv(pid_t pid,
 }
 
 LIBKERN_DEFINE_PATCHABLE(kern_return_t, proc_task_for_proc, (ksurface_proc_t *proc,
-                                                             task_special_port_t flavour,
+                                                             task_special_port_t *flavour,
                                                              task_t *task))
 {
-    assert(proc != NULL && task != NULL);
+    assert(proc != NULL && task != NULL && flavour != NULL);
     
     /*
      * whitelisting acquirable task special ports
      * by type, making sure we hand in a expected
      * type.
      */
-    switch(flavour)
+    switch(*flavour)
     {
         case TASK_KERNEL_PORT:
         case TASK_NAME_PORT:
@@ -146,7 +147,7 @@ LIBKERN_DEFINE_PATCHABLE(kern_return_t, proc_task_for_proc, (ksurface_proc_t *pr
              * the port is a normal task ksurface
              * serves for.
              */
-            kr = task_get_special_port(tmp_task, flavour, &tmp_task);
+            kr = task_get_special_port(tmp_task, *flavour, &tmp_task);
             break;
         case IPC_OTYPE_TASK_NAME:       /* IKOT_TASK_NAME */
             /*
@@ -164,6 +165,7 @@ LIBKERN_DEFINE_PATCHABLE(kern_return_t, proc_task_for_proc, (ksurface_proc_t *pr
              * name port to protect ksurface from
              * attacks.
              */
+            *flavour = TASK_NAME_PORT;
             kr = mach_port_mod_refs(mach_task_self(), tmp_task, MACH_PORT_RIGHT_SEND, 1);
             break;
         default:
@@ -204,7 +206,7 @@ LIBKERN_DEFINE_PATCHABLE(kern_return_t, proc_task_for_proc, (ksurface_proc_t *pr
 }
 
 kern_return_t proc_task_for_pid(pid_t pid,
-                                task_special_port_t flavour,
+                                task_special_port_t *flavour,
                                 task_t *task)
 {
     /* aquiring proc object */

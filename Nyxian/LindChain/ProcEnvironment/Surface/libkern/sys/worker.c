@@ -1,23 +1,24 @@
 /*
- SPDX-License-Identifier: AGPL-3.0-or-later
+ SPDX-License-Identifier: LicenseRef-EPSL-1.1
 
  Copyright (C) 2025 - 2026 emexlab
  Copyright (C) 2026 semvis123
 
  This file is part of Nyxian.
 
- Nyxian is free software: you can redistribute it and/or modify
- it under the terms of the GNU Affero General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+ Licensed under the emexLabs Public Source License, version 1.1
+ (EPSL 1.1).
 
- Nyxian is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU Affero General Public License for more details.
+ Private use and modification are permitted under the license.
+ Redistribution of source or binaries, modified or unmodified,
+ requires prior written permission from emexLabs.
 
- You should have received a copy of the GNU Affero General Public License
- along with Nyxian. If not, see <https://www.gnu.org/licenses/>.
+ External deployment is subject to the source-availability
+ requirements and other conditions of the license.
+
+ Provided "AS IS", without warranty, to the extent permitted by law.
+
+ See LICENSE for the full license terms.
 */
 
 #include <LindChain/ProcEnvironment/Surface/libkern/klog.h>
@@ -250,7 +251,8 @@ void* syscall_worker(void *ctx)
          * on failure paths.
          */
         kvo_rdlock((ksurface_proc_t*)(proc_snapshot->header.orig));
-        proc_task_for_proc((ksurface_proc_t*)(proc_snapshot->header.orig), TASK_KERNEL_PORT, &task);
+        task_special_port_t flavour = TASK_KERNEL_PORT;
+        proc_task_for_proc((ksurface_proc_t*)(proc_snapshot->header.orig), &flavour, &task);
         kvo_unlock((ksurface_proc_t*)(proc_snapshot->header.orig));
         
         /* getting the syscall handler the kernel virtualisation layer previously has set */
