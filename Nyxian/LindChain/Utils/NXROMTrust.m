@@ -26,10 +26,6 @@
 #if NX_ROM_BOOTLOADER
 #import "NXTrustStore.h"
 #endif
-#ifndef NX_ROM_PUBLIC_KEY_HEADER
-#define NX_ROM_PUBLIC_KEY_HEADER "NXROMPublicKey.h"
-#endif
-#import NX_ROM_PUBLIC_KEY_HEADER
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonHMAC.h>
@@ -184,6 +180,14 @@ NSDictionary *NXROMArchiveProofForFD(int fd,
         NXROMFail(error, @"ROM release signature does not match any trusted release key.");
         return nil;
     }
+    
+#if NX_ROM_BOOTLOADER
+    if(NXTrustStoreReleaseRevocation(proof[@"digest"]) != NXTrustStoreRevocationNone)
+    {
+        NXROMFail(error, @"This ROM release was revoked by its publisher and can't be installed anymore.");
+        return nil;
+    }
+#endif /* NX_ROM_BOOTLOADER */
     
     return proof;
 }
@@ -371,8 +375,8 @@ static NSDictionary *NXROMInventory(NSString *root,
     return inventory;
 }
 
-static NSData *NXROMSealMAC(NSData *payload,
-                            NSData *key)
+NX_BOOT_ONLY static NSData *NXROMSealMAC(NSData *payload,
+                                         NSData *key)
 {
     CCHmacContext context;
     unsigned char mac[CC_SHA256_DIGEST_LENGTH];
