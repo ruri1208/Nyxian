@@ -304,14 +304,12 @@ enum BootConfig {
     }
 }
 
-/// Boot arguments (BootHandoff/NXBootArgs.h): one string instead of the boot toggles. The standard ones are written
-/// onto the old BootFlag keys before every slot load, so 0.11.6.1 ROMs and SuperSlot keep reading what they always did.
 enum BootArguments {
     static let key = "nyxian.boot-args"
     
     static let help = """
         Separated by spaces. The standard ones:
-        -v  verbose boot
+        -v  verbose boot, the ROM shows its log
         -x  don't load kernel extensions
         klog_obfuscate=0  kernel log in clear text
         fs_sandbox=0  no filesystem sandbox
@@ -442,6 +440,10 @@ private func currentNyxianVersion() -> String {
     Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
 }
 
+private var bootloaderUserAgent: String {
+    "Nyxian/\(currentNyxianVersion()) (bootloader)"
+}
+
 private func compareVersions(_ a: String, _ b: String) -> ComparisonResult {
     let left = a.split(separator: ".").map { Int($0) ?? 0 }
     let right = b.split(separator: ".").map { Int($0) ?? 0 }
@@ -479,6 +481,7 @@ private func fetchAndStageInitialROM(progress: @escaping (Double, String) -> Voi
     guard initialROMSlotsAreEmpty() else { DispatchQueue.main.async { completion(nil) }; return }
     let nyxian = currentNyxianVersion()
     var request = URLRequest(url: otaFeedURL, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+    request.setValue(bootloaderUserAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     
     DispatchQueue.main.async { progress(0.0, "Checking for updates…") }
@@ -498,6 +501,9 @@ private func fetchAndStageInitialROM(progress: @escaping (Double, String) -> Voi
                   let url = URL(string: urlStr),
                   let sha = entry["sha256"] as? String,
                   let min = entry["minimumNyxianVersion"] as? String else { continue }
+            if let signed = entry["signed"] as? Bool, !signed {
+                continue
+            }
             let max = entry["maximumNyxianVersion"] as? String
             let name = (entry["name"] as? String) ?? "ROM \(version)"
             let rel = OTARelease(version: version, name: name, downloadURL: url, sha256: sha.lowercased(), minimumNyxianVersion: min, maximumNyxianVersion: max)
@@ -830,10 +836,11 @@ private func bootLog(_ message: String) {
 
 private func downloadTrustStore(timeout: TimeInterval) -> (data: Data?, failure: String?) {
     dispatchPrecondition(condition: .notOnQueue(.main))
-    let request = URLRequest(url: NXTrustStoreUpdateURL(), cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeout)
+    var request = URLRequest(url: NXTrustStoreUpdateURL(), cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeout)
+    request.setValue(bootloaderUserAgent, forHTTPHeaderField: "User-Agent")
     let done = DispatchSemaphore(value: 0)
     var result: (data: Data?, failure: String?) = (nil, "no answer")
-    URLSession.shared.dataTask(with: request) { data, response, error in
+    let task = URLSession.shared.dataTask(with: request) { data, response, error in
         if let error {
             result = (nil, error.localizedDescription)
         } else if let http = response as? HTTPURLResponse, http.statusCode != 200 {
@@ -844,8 +851,13 @@ private func downloadTrustStore(timeout: TimeInterval) -> (data: Data?, failure:
             result = (nil, "empty response")
         }
         done.signal()
-    }.resume()
-    done.wait()
+    }
+    task.resume()
+    if done.wait(timeout: .now() + timeout) == .timedOut {
+        task.cancel()
+        done.wait()
+        return (nil, "timed out after \(Int(timeout)) s")
+    }
     return result
 }
 
@@ -1122,6 +1134,9 @@ private func loadSlot(loadSuperslotForcefully: Bool) -> SlotLoadResult {
             guard fm.fileExists(atPath: image.path) else { throw romError("ROM executable missing") }
             guard NXROMDeviceCommitRollback(slot.path, &trustError) else {
                 throw trustError ?? romError("ROM rollback protection failed")
+            }
+            guard NXROMDeviceCheckRevocation(slot.path, &trustError) else {
+                throw trustError ?? romError("ROM release was revoked")
             }
             name = manifest.name
         } catch {
@@ -2300,13 +2315,8 @@ class BootViewController: UIViewController, NXBootHandoffHostDelegate {
             logoView.trailingAnchor.constraint(equalTo: splashView.trailingAnchor),
         ])
         
-        let verbose = BootArguments.verbose
-        verboseConsole = VerboseBootConsole(in: splashView, visible: verbose)
+        verboseConsole = VerboseBootConsole(in: splashView, visible: false)
         NXBootHandoffHost.shared.delegate = self
-        if verbose {
-            logoView.isHidden = true
-            startBootCapture()
-        }
         
     }
     
@@ -2341,10 +2351,11 @@ class BootViewController: UIViewController, NXBootHandoffHostDelegate {
                 return
             }
             
-            if !FileManager.default.fileExists(atPath: NXTrustStoreDownloadedPath()) {
-                if verbose { bootLog("bootloader: fetching the TrustStore") }
-                updateTrustStore(timeout: 8) { line, _ in bootLog("bootloader: " + line) }
+            let haveStore = FileManager.default.fileExists(atPath: NXTrustStoreDownloadedPath())
+            if verbose {
+                bootLog("bootloader: checking for a newer TrustStore")
             }
+            updateTrustStore(timeout: haveStore ? 4 : 8) { line, _ in bootLog("bootloader: " + line) }
             
             if mode == 0, let otaPath = takePendingOTA() {
                 if verbose { bootLog("bootloader: OTA pending: \(otaPath)") }
@@ -2407,9 +2418,7 @@ class BootViewController: UIViewController, NXBootHandoffHostDelegate {
             }
             let slotRoot = Unmanaged<UIViewController>.fromOpaque(raw).takeRetainedValue()
             
-            let handoff = NXBootHandoffHost.shared
-            let holdConsole = handoff.isClaimed ? handoff.wantsVerboseHold : verbose
-            let hold: TimeInterval = holdConsole ? verboseBootHold : 0
+            let hold: TimeInterval = NXBootHandoffHost.shared.wantsVerboseHold ? verboseBootHold : 0
             DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
                 self.changableStatusBarHidden = false
                 UIView.animate(withDuration: 0.3) {
